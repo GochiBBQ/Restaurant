@@ -37,9 +37,9 @@ local UIController
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Client Functions
-function SeatingController:EclapsedTime()
+function SeatingController:ElapsedTime()
     local ElapsedTime = 0
-    coroutine.wrap(function()
+    task.delay(0.2, function()
         while self.ActiveTable and task.wait(1) do
             local SecondsFormatted = ElapsedTime % 60
             local MinutesFormatted = math.floor(ElapsedTime / 60)
@@ -58,15 +58,20 @@ function SeatingController:KnitStart()
 end
 
 function SeatingController:SeatCustomer(TableNumber: number)
-    self.TableTicket.PlayerAvatar.Image = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%s&width=420&height=420&format=png", Player.UserId)
-    self.TableTicket.Description.Text = "Thank you for choosing to dine with Gochi! If you require any assistance, let your server know!"
-    self.TableTicket.Table.Text = "Table #" .. TableNumber
+    local State, PlayerAvatar = pcall(PlayerService:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420))
+    local NoAvatar = PlayerService:GetUserThumbnailAsync(1, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
-    spr.target(self.TableTicket.Parent, 0.75, 2, { GroupTransparency = 0, Position = UDim2.fromScale(0.88, 0.9)})
-    self:EclapsedTime()
+    self.TableTicket.Description.Text = "Thank you for choosing to dine with Gochi! If you require any assistance, let your server know!"
+    self.TableTicket.PlayerAvatar.Image = State and PlayerAvatar or NoAvatar
+    self.TableTicket.Table.Text = "Table #" .. TableNumber
+    self.ActiveTable = true
+
+    spr.target(self.TableTicket.Parent, 0.85, 1, { GroupTransparency = 0, Position = UDim2.fromScale(0.88, 0.9)})
+    self:ElapsedTime()
 
     trove:Add(self.TableTicket.DoneButton.MouseButton1Click:Connect(function()
-        spr.target(self.TableTicket.Parent, 0.75, 2, { GroupTransparency = 1, Position = UDim2.fromScale(0.88, 1.2)})
+        spr.target(self.TableTicket.Parent, 0.85, 1, { GroupTransparency = 1, Position = UDim2.fromScale(0.88, 0.91)})
+        self.ActiveTable = false
     end))
 end
 

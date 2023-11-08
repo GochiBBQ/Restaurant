@@ -40,7 +40,7 @@ local NotificationService
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
 function SeatingService:KnitStart()
-    NotificationService = Knit.GetService("NotificationService")
+    --NotificationService = Knit.GetService("NotificationService")
 end
 
 function SeatingService:ClaimSeat(Server: Player, Customer: Player, TableNumber: number)
