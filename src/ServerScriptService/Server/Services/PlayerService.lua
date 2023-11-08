@@ -71,14 +71,6 @@ function PlayerService:CreateData(Player: Player, Profile: Instance)
 	Player:SetAttribute("Petals", Profile.Petals)
 	Player:SetAttribute("Movement", false)
 	Player:SetAttribute("AFK", false)
-
-	if Player:GetAttribute("SK_Rank") >= 150 then
-		Player.Team = TeamService["🌸 Executive"]
-	elseif Player:GetAttribute("SK_Rank") >= 90 then
-		Player.Team = TeamService["✿ Management"]
-	elseif Player:GetAttribute("SK_Rank") >= 40 then
-		Player.Team = TeamService["👨‍🍳 Staff Team"]
-	end
 end
 
 function PlayerService:KnitStart()

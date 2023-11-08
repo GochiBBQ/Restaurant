@@ -23,53 +23,58 @@ local Configuration = {
 
 	['Group Configuration'] = {
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 90,
-			['Tolerance Type'] = '>=',
-			['Admin Level'] = 1,
-		},
-		{
-			['Group ID'] = 6975354,
+			['Group ID'] = 5874921,
 			['Group Rank'] = 110,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 2,
 		},
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 150,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 160,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 3,
 		},
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 180,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 252,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 4,
 		},
 	},
 
 	['Command Configuration'] = {
-
+		['fly'] = {
+			['Permission'] = 3,
+		},
+		['unfly'] = {
+			['Permission'] = 3,
+		},
+		["crash"] = {
+			['Permission'] = 3,
+		},
+		["btools"] = {
+			['Permission'] = 4,
+		},
 	},
 
-	['Prefix'] = (':'), -- The prefix to the admin, i.e :cmds or :sm hi
+	['Prefix'] = (''), -- The prefix to the admin, i.e :cmds or :sm hi
 	['Kick Reason'] = ('You have been kicked from the server.'), -- Displayed to people that are kicked.
 	['Ban Reason'] = ('You have been banned from the game.'), -- Displayed to people that are banned.
 	['Shutdown Reason'] = ('This server is shutting down..\nTry joining a different server!'), -- Displayed to people when the server is shut down.
-	['Server Message'] = ('🥢Sakura Announcement'), -- Displayed in the :sm command's title.
-	['Server Lock Reason'] = ('🥢This server is currently locked. This means that only staff members are able to access it at this time. Please try joining another server!'), -- Displayed to people being kicked that try to enter a locked server.
-	['Trello'] = false, -- Use trello? HttpService must be enabled.
-	['Trello Board'] = (''), -- Trello board ID.
-	['Trello App Key'] = (''), -- Private trello application key.
-	['Trello Token'] = (''), -- Private trello token.
+	['Server Message'] = ('Server Message'), -- Displayed in the :sm command's title.
+	['Server Lock Reason'] = ('The server is locked.'), -- Displayed to people being kicked that try to enter a locked server.
+	['Trello'] = true, -- Use trello? HttpService must be enabled.
+	['Trello Board'] = ('R61tcuYH'), -- Trello board ID.
+	['Trello App Key'] = ('1ec144c9c52058202ce9ff5873022235'), -- Private trello application key.
+	['Trello Token'] = ('66f484f1f749ff75a95294b8f28c6db7efcc7dab0ac025e56b8590adb1607640'), -- Private trello token.
 	['Creator Debugging'] = true, -- Allows the creator to debug potential issues with the admin.
 	['Donor Perks'] = true, -- Gives people who purchase an admin donation the ability to cape, put hats on, etc.
-	['Public Commands'] = false, -- Will people that are not admin be able to say :cmds, or !clean?
+	['Public Commands'] = true, -- Will people that are not admin be able to say :cmds, or !clean?
 	['Auto Clean'] = true, -- Will hats and gear automatically be cleaned up every so often?
-	['System Color'] = Color3.fromRGB(235, 127, 113), -- Color of the admin's guis.
-	['Tools Location'] = game:GetService("ServerStorage"), -- Where the :tools and :give command will get tools from.
+	['System Color'] = Color3.new(31/255,31/255,31/255), -- Color of the admin's guis.
+	['Tools Location'] = game.ServerStorage, -- Where the :tools and :give command will get tools from.
 	['Command Confirmation'] = true, -- Validates certain commands like :Ban all, or :PBan all.
-	['Datastore Key'] = ('SakuraAdmin') -- What cape data, ban data, etc. is stored under. Changing will wipe it.
+	['Datastore Key'] = ('BAE_#$DGF') -- What cape data, ban data, etc. is stored under. Changing will wipe it.
 }
 
 --------------------------

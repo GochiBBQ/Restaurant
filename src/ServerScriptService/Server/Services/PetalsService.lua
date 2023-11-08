@@ -31,8 +31,6 @@ local PetalsService = Knit.CreateService {
 	},
 }
 
-local SubscriptionService
-
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Server Functions
 function PetalsService:GetBalance(Player: Player)
@@ -77,32 +75,12 @@ function PetalsService:SetPetals(Player: Player, Amount: number)
 	self:UpdateClient(Player)
 end
 
-function PetalsService:CalculateMultiplier(Player: Player, Amount: number)
-	local Active, Expiration = SubscriptionService:GetSubscription(Player)
-
-	if Knit.Gamepasses[Player][13588976] then -- x2 Points
-		Amount += 2
-	end
-	if Knit.Gamepasses[Player][13588993] then -- x5 Points
-		Amount += 5
-	end
-	if Active and Expiration then -- x2 Premium Points
-		Amount += 2
-	end
-
-	return Amount
-end
-
 function PetalsService:UpdateClient(Player: Player)
 	local Petals = self:GetBalance(Player)
 
 	if Petals then
 		self.Client.Update:Fire(Player, Petals)
 	end
-end
-
-function PetalsService:KnitStart()
-	SubscriptionService = Knit.GetService("SubscriptionService")
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

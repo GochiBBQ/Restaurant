@@ -51,35 +51,7 @@ function OverheadService:KnitStart()
 end
 
 function OverheadService:CreateFunction(Player: Player)
-	local ClonedFrame = Knit.Static:WaitForChild("OverheadTemplate"):Clone()
-	local Character = Player.Character or Player.CharacterAdded:Wait()
-	repeat task.wait() until Character.Head
-	
-	ClonedFrame.Frame.Rank.Text = Player:GetRoleInGroup(6975354)
-	ClonedFrame.Frame.Username.Text = Player.Name
-	ClonedFrame.Parent = Character.Head
-	
-	self:TweenFunction(Player)
-end
 
-function OverheadService:TweenFunction(Player: Player)
-	while task.wait() do
-		local Character = Player.Character or Player.CharacterAdded:Wait()
-		local Overhead = Character.Head:WaitForChild("OverheadTemplate"):WaitForChild("Frame")
-		local Badges = Overhead:WaitForChild("Icons")
-		
-		if #Badges:GetChildren() > 1 then
-			for _, Badge in next, Badges:GetChildren() do
-				TweenService:Create(Badge, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
-				TweenService:Create(Badge.Misc, TweenInfo.new(1), {TextTransparency = 0}):Play()
-				task.wait(5)
-				
-				TweenService:Create(Badge, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
-				TweenService:Create(Badge.Misc, TweenInfo.new(1), {TextTransparency = 1}):Play()
-				task.wait(0.3)
-			end
-		end
-	end
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
