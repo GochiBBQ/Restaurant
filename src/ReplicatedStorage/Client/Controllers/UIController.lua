@@ -1,25 +1,17 @@
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
--- Services
-local Services = setmetatable({}, {
-	__index = function(self, index)
-		self[index] = game:GetService(index)
-		return self[index]
-	end
-})
-
-local ReplicatedStorage = Services.ReplicatedStorage
-local PlayerService = Services.Players
-local Player = PlayerService.LocalPlayer
-
-local Knit = require(ReplicatedStorage.Packages.Knit)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerService = game:GetService("Players")
 
 -- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
 -- Variables
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local Player = PlayerService.LocalPlayer
+
 local UIEffects = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("UIEffects"))
 local spr = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("spr"))
-local TopbarController = require(ReplicatedStorage.Modules.Icon.IconController)
+
+local IconController = require(ReplicatedStorage.Modules.Icon.IconController)
 local Themes = require(ReplicatedStorage.Modules.Icon.Themes)
-local Topbar = require(ReplicatedStorage.Modules.Icon)
+local Icon = require(ReplicatedStorage.Modules.Icon)
 
 -- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
 -- Create Knit Controller
@@ -27,7 +19,7 @@ local UIController = Knit.CreateController {
 	Name = "UIController"
 }
 
-local function commaValue(amount)
+local function FormatNumber(amount) -- Adds commas to number digits.
 	local formatted = amount
 	while true do  
 		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
@@ -44,8 +36,7 @@ function UIController:KnitInit()
 	-- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵
 	-- init self
 	local playerGui = Knit.Player:WaitForChild("PlayerGui")
-	self.GUI = playerGui:WaitForChild("GochiUI")
-	self.UI = playerGui:WaitForChild("GochiUI"):WaitForChild("Pages")
+	self.UI = playerGui:WaitForChild("GochiUI")
 	self.HUD = playerGui:WaitForChild("GochiUI"):WaitForChild("HUD")
 	
 	-- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵

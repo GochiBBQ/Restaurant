@@ -5,17 +5,17 @@
 ▀░░▀ ▀▀▀▀ ▀▀▀░ ▀▀▀▀ ░▀▀▀ ▀▀▀░ ░░▀░░ ▀▀▀ ▀░░▀ ▀▀▀ ▀░▀
 
 Author: nodoubtzack
-For: Sakura Kitchen 🥢
-https://www.roblox.com/groups/6975354/Sakura-Kitchen#!/about
+For: Gochí Restaurant 🥩
+https://www.roblox.com/groups/5874921/Goch#!/about
 
 ]]
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerService = game:GetService("Players")
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local SakuraAutomation = require(Knit.Modules.SakuraAutomation)
@@ -23,7 +23,7 @@ local SakuraAutomation = require(Knit.Modules.SakuraAutomation)
 local RateLimiter = require(Knit.Modules.RateLimiter)
 local RequestRateLimiter = RateLimiter.NewRateLimiter(5)
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service
 local MathService = Knit.CreateService {
     Name = "MathService",
@@ -31,7 +31,7 @@ local MathService = Knit.CreateService {
 	},
 }
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Server Functions
 function MathService:RandomWeighted(Weights: table): number
     local Maximum = 0
@@ -79,6 +79,6 @@ function MathService:RandomString(Length: number): string
     return String
 end
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Return Service to Knit.
 return MathService

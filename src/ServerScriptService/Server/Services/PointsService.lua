@@ -5,24 +5,24 @@
 ▀░░▀ ▀▀▀▀ ▀▀▀░ ▀▀▀▀ ░▀▀▀ ▀▀▀░ ░░▀░░ ▀▀▀ ▀░░▀ ▀▀▀ ▀░▀
 
 Author: nodoubtzack
-For: Sakura Kitchen 🥢
-https://www.roblox.com/groups/6975354/Sakura-Kitchen#!/about
+For: Gochí Restaurant 🥩
+https://www.roblox.com/groups/5874921/Goch#!/about
 
 ]]
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerService = game:GetService("Players")
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local RateLimiter = require(Knit.Modules.RateLimiter)
 local RequestRateLimiter = RateLimiter.NewRateLimiter(4)
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service
 local PointsService = Knit.CreateService {
 	Name = "PointsService",
@@ -31,7 +31,7 @@ local PointsService = Knit.CreateService {
 	},
 }
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Server Functions
 function PointsService:GetBalance(Player: Player)
 	if Knit.Profiles[Player] then
@@ -81,6 +81,6 @@ function PointsService:UpdateAmount(Player, Amount: number)
 	Player:WaitForChild("leaderstats"):WaitForChild("Worker Points").Value = Amount
 end
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Return Service to Knit.
 return PointsService

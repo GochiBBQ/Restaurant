@@ -5,24 +5,24 @@
 ▀░░▀ ▀▀▀▀ ▀▀▀░ ▀▀▀▀ ░▀▀▀ ▀▀▀░ ░░▀░░ ▀▀▀ ▀░░▀ ▀▀▀ ▀░▀
 
 Author: nodoubtzack
-For: Sakura Kitchen 🥢
-https://www.roblox.com/groups/6975354/Sakura-Kitchen#!/about
+For: Gochí Restaurant 🥩
+https://www.roblox.com/groups/5874921/Goch#!/about
 
 ]]
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerService = game:GetService("Players")
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local RateLimiter = require(Knit.Modules.RateLimiter)
 local RequestRateLimiter = RateLimiter.NewRateLimiter(4)
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service
 local PetalsService = Knit.CreateService {
 	Name = "PetalsService",
@@ -33,7 +33,7 @@ local PetalsService = Knit.CreateService {
 
 local SubscriptionService
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Server Functions
 function PetalsService:GetBalance(Player: Player)
 	if Knit.Profiles[Player] then
@@ -105,6 +105,6 @@ function PetalsService:KnitStart()
 	SubscriptionService = Knit.GetService("SubscriptionService")
 end
 
--- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
+-- ————————— ↢ ⭐️ ↣ —————————
 -- Return Service to Knit.
 return PetalsService
