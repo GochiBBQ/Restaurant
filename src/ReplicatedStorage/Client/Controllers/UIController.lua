@@ -16,6 +16,7 @@ local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local PlayerService = game:GetService("Players")
+local TeamService = game:GetService("Teams")
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
@@ -125,12 +126,70 @@ function UIController:KnitInit()
 	end
 end
 
+function UIController:TopbarMenu()
+	if Player:GetAttribute("GochiRank") >= 60 then 
+		local icon = Icon.new()
+		icon:set("dropdownSquareCorners", false)
+		icon:setLabel("🔑 Staff Options")
+		icon:setName("StaffOptions")
+		icon:setRight()
+		icon:setDropdown({
+			Icon.new()
+				:setLabel("📈 Dashboard")
+				:setName("Dashboard")
+				,
+			Icon.new()
+				:setLabel("🔪 Chef Queue")
+				:setName("ChefQueue")
+				:setEnabled(Player.Team == TeamService["Cook"] and true or false)
+		})
+
+		local icon = IconController.getIcon("ChefQueue")
+		local FrameFound = false
+
+		icon.selected:Connect(function()
+			for _, MenuPages in pairs(self.Pages:GetChildren()) do
+				if MenuPages.Visible then
+					spr.target(MenuPages, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
+					task.wait(0.15)
+					MenuPages.Visible = false
+					FrameFound = true
+				end
+			end
+
+			self.Pages.ChefQueue.Visible = true
+			spr.target(self.Pages.ChefQueue, 1, 4, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.5)})
+			if not FrameFound then UIEffects:CameraZoomIn() end
+		end)
+
+		icon.deselected:Connect(function()
+			spr.target(self.Pages.ChefQueue, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
+			UIEffects:CameraZoomOut()
+			
+			task.wait(0.15)
+			self.Pages.ChefQueue.Visible = false
+		end)
+
+		Player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+			if Player.Team == TeamService["Cook"] then
+				local icon = IconController.getIcon("ChefQueue")
+				icon:setEnabled(true)
+			else
+				local icon = IconController.getIcon("ChefQueue")
+				icon:setEnabled(false)
+			end
+		end)
+	end
+end
+
 function UIController:KnitStart()
+	IconController.setGameTheme(Themes["Gochi"])
 	for _, controller in pairs(self.Interfaces) do
 		task.spawn(controller.Start, controller, Knit)
 	end
 
 	self:NavigationMenu()
+	self:TopbarMenu()
 end
 
 -- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
