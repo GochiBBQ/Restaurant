@@ -33,6 +33,8 @@ local Player = PlayerService.LocalPlayer
 local UISelect = SoundService.UISelect
 local UIHover = SoundService.UIHover
 
+local CurrentFrame = nil
+
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Controller
 local UIController = Knit.CreateController { 
@@ -60,15 +62,23 @@ function UIController:RegisterButtonClick(Button)
 		if self.Pages[Button.Parent.Name].Visible then
 			spr.target(self.Pages[Button.Parent.Name], 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
 			UIEffects:CameraZoomOut()
+			CurrentFrame = nil
 			
 			task.wait(0.15)
 			self.Pages[Button.Parent.Name].Visible = false
 		else
+			CurrentFrame = Button.Name
+
 			for _, MenuPages in pairs(self.Pages:GetChildren()) do
 				if MenuPages.Visible then
 					spr.target(MenuPages, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
 					task.wait(0.15)
 					MenuPages.Visible = false
+
+					if MenuPages.Name == "ChefQueue" then
+						local icon = IconController.getIcon("ChefQueue")
+						icon:deselect()
+					end
 					FrameFound = true
 				end
 			end
@@ -145,9 +155,8 @@ function UIController:TopbarMenu()
 		})
 
 		local icon = IconController.getIcon("ChefQueue")
-		local FrameFound = false
-
 		icon.selected:Connect(function()
+			local FrameFound = false
 			for _, MenuPages in pairs(self.Pages:GetChildren()) do
 				if MenuPages.Visible then
 					spr.target(MenuPages, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
@@ -160,11 +169,13 @@ function UIController:TopbarMenu()
 			self.Pages.ChefQueue.Visible = true
 			spr.target(self.Pages.ChefQueue, 1, 4, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.5)})
 			if not FrameFound then UIEffects:CameraZoomIn() end
+			CurrentFrame = "ChefQueue"
 		end)
 
 		icon.deselected:Connect(function()
 			spr.target(self.Pages.ChefQueue, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
-			UIEffects:CameraZoomOut()
+			if not CurrentFrame or CurrentFrame == "ChefQueue" then UIEffects:CameraZoomOut() end
+			if CurrentFrame == "ChefQueue" then CurrentFrame = nil end
 			
 			task.wait(0.15)
 			self.Pages.ChefQueue.Visible = false
