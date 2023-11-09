@@ -30,65 +30,58 @@ local UIHover = SoundService.UIHover
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Controller
-local SeatingController = Knit.CreateController {
-    Name = "SeatingController",
+local QueueController = Knit.CreateController {
+    Name = "QueueController",
 }
 
-SeatingController.ActiveTable = false
 local UIController
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Client Functions
-function SeatingController:ElapsedTime()
+function QueueController:ElapsedTime()
     local ElapsedTime = 0
     task.spawn(function()
-        while self.ActiveTable and task.wait(1) do
+        while task.wait(1) do
             local SecondsFormatted = ElapsedTime % 60
             local MinutesFormatted = math.floor(ElapsedTime / 60)
             local CompareFormatted = 10 > SecondsFormatted and "0" .. SecondsFormatted
             ElapsedTime += 1
 
-            self.TableTicket.Time.Text = string.format("%s:%s Elapsed", MinutesFormatted, (CompareFormatted or SecondsFormatted))
+            return string.format("%s:%s Elapsed", MinutesFormatted, (CompareFormatted or SecondsFormatted))
         end
     end)
 end
 
-function SeatingController:CloseButton(Button: GuiButton)
-    Button.MouseEnter:Connect(function()
-        spr.target(Button, 0.75, 4, { Size = UDim2.fromScale(0.25, 0.25)})
-        UIHover:Play()
-    end)
+function QueueController:QueueLinkage(Player: Player, Position: number)
+    local ClonedFrame = script.Template:Clone()
 
-    Button.MouseLeave:Connect(function()
-        spr.target(Button, 0.75, 4, { Size = UDim2.fromScale(0.236, 0.217)})
-    end)
-
-    trove:Add(self.TableTicket.DoneButton.MouseButton1Click:Connect(function()
-        spr.target(self.TableTicket.Parent, 0.85, 1, { GroupTransparency = 1, Position = UDim2.fromScale(0.88, 0.91)})
-        self.ActiveTable = false
-        UISelect:Play()
-    end))
+    ClonedFrame.Avatar.Image = PlayerService:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    ClonedFrame.Role.Text = Player:GetAttribute("GochiRank")
+    ClonedFrame.Timer = self:ElapsedTime(Player)
+    ClonedFrame.Username.Text = Player.Name
 end
 
-function SeatingController:KnitStart()
+function QueueController:QueueUpdate(ChefQueue: table)
+    for i, Chef in ipairs(ChefQueue) do
+        self:QueueLinkage(Chef, i)
+    end
+end
+
+function QueueController:QueueJoin()
+    spr.target(self.ChefQueue.JoinQueue, 1, 4, { Color3.fromRGB(107, 76, 193)})
+    task.wait(0.15)
+    spr.target(self.ChefQueue.JoinQueue, 1, 4, { Color3.fromRGB(30, 30, 33)})
+end
+
+function QueueController:KnitStart()
     UIController = Knit.GetController("UIController")
-    self.TableTicket = UIController.Pages.Parent:WaitForChild("TableTicket").Frame
+    self.ChefQueue = UIController.Pages:WaitForChild("ChefQueue").Frame
 
-    task.wait(3)
-    self:SeatCustomer(10)
-end
-
-function SeatingController:SeatCustomer(TableNumber: number)
-    self.TableTicket.PlayerAvatar.Image = PlayerService:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
-    self.TableTicket.Description.Text = "Thank you for choosing to dine with Gochi! If you require any assistance, let your server know!"
-    self.TableTicket.Table.Text = "Table #" .. TableNumber
-    self.ActiveTable = true
-
-    spr.target(self.TableTicket.Parent, 0.85, 1, { GroupTransparency = 0, Position = UDim2.fromScale(0.88, 0.9)})
-    self:CloseButton(self.TableTicket.DoneButton)
-    self:ElapsedTime()
+    self.ChefQueue.JoinQueue.MouseButton1Down:Connect(function()
+        self:QueueJoin()
+    end)
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Return Controller to Knit.
-return SeatingController
+return QueueController

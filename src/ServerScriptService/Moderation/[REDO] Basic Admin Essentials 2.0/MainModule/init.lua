@@ -9,7 +9,6 @@ end
 local Components = script:WaitForChild('Components')
 local clientCode = Components:WaitForChild('Essentials Code')
 local essentialsUI = Components:WaitForChild('Essentials Client')
-local LocalizationService = game:GetService('LocalizationService')
 
 local Workspace = game:GetService('Workspace')
 local Lighting = game:GetService('Lighting')
@@ -53,14 +52,13 @@ local sysTable = {
 	},
 	Keys = {},
 	Debuggers = {
-
+		[0] = "Placeholder",
 	},
 	Permissions = {
 		gameOwners = {4,{}},
 		superAdmins = {3,{}},
 		Admins = {2,{}},
 		Mods = {1,{}},
-		Premium = {0.5,{}},
 		Banned = {},
 	},
 	chatLogs = {},
@@ -69,6 +67,7 @@ local sysTable = {
 	debugLogs = {},
 	joinLogs = {},
 	HandToLogs = {},
+	PanelLogs = {},
 	donorCache = {},
 	donorID = 410700060,
 	adminId = 564796604,
@@ -176,7 +175,6 @@ local CommandsDictionary = {}
 local essentialsFolder
 local essentialsEvent
 local essentialsFunction
-local timezoneFunction
 
 local function returnPlayers(Player,Arg,Command)
 	local toReturn,toConfirm = getPlayers(Player,Arg,returnPermission,sysTable.commandConfirmation,Command)
@@ -190,11 +188,13 @@ local function returnPlayers(Player,Arg,Command)
 			end
 		end
 		local Reply = essentialsFunction:InvokeClient(Player,'Command Confirmation',Command,newConfirming)
+		local now = DateTime.now()
+		local timestamp = now:FormatUniversalTime("LT", "en-us")
 		if Reply then
-			addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = 'Confirmed "'..Command..' '..newConfirming..'"'})
+			addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = 'Confirmed "'..Command..' '..newConfirming..'"'})
 			return getPlayers(Player,Arg,returnPermission,false,Command)
 		else
-			addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = 'Cancelled "'..Command..' '..newConfirming..'"'})
+			addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = 'Cancelled "'..Command..' '..newConfirming..'"'})
 			return {}
 		end
 	else
@@ -364,14 +364,6 @@ function Funcs.Kick(Args)
 	end
 end
 
-function Funcs.TimedBan(Args)
-	local Player = Args[1]
-	local playerPermissions = returnPermission(Player)
-	local Victims = returnPlayers(Player,Args[3],Args[2])
-	local Command = Args[2]
-end
-
-
 function Funcs.Ban(Args)
 	local Player = Args[1]
 	local playerPermissions = returnPermission(Player)
@@ -466,7 +458,7 @@ local function cleanTableData(Table,toPlayer)
 		end
 
 		local Inserting
-		if tableData.Sender and tableData.Data then
+		if tableData.Time and tableData.Sender and tableData.Data then
 			if not tableData.Bypass then
 				local Cleaned,newData = cleanUserData(tableData.Data,toPlayer,toPlayer)
 
@@ -488,7 +480,8 @@ local function cleanTableData(Table,toPlayer)
 			end
 		end
 
-		Inserting = tostring(tableData.Sender)..': '..Inserting
+		
+		Inserting = '<b>['..tableData.Time..' UTC]</b> ' ..tostring(tableData.Sender)..': '..Inserting
 
 		if Inserting then
 			table.insert(newLogTable,Inserting)
@@ -560,19 +553,17 @@ function Funcs.Display(Args)
 		for a,b in next,sysTable.Permissions do
 			if b[1] then
 				for c,d in next,b[2] do
-					if b[1] == 0.5 then
-						table.insert(Table,'🌟 Premium: '..d)
-					elseif b[1] == 1 then
-						table.insert(Table,'🛡️ Moderator: '..d)
+					if b[1] == 1 then
+						table.insert(Table,'[Mod]: '..d)
 					elseif b[1] == 2 then
-						table.insert(Table,'🛡️ Admin: '..d)
+						table.insert(Table,'[Admin]: '..d)
 					elseif b[1] == 3 then
-						table.insert(Table,'🛡️ Super Admin: '..d)
+						table.insert(Table,'[Superadmin]: '..d)
 					elseif b[1] == 4 then
 						if checkDebugger(c) then
-							table.insert(Table,'🛡️ Admin Creator: '..d)
+							table.insert(Table,'<b>[Lead Developer]:</b> '..d)
 						else
-							table.insert(Table,'🛡️ Game Creator: '..d)
+							table.insert(Table,'[Ownership]: '..d)
 						end
 					end
 				end
@@ -585,22 +576,23 @@ function Funcs.Display(Args)
 			local Perm = returnPermission(b)
 			if Perm > 0 then
 				if Perm == 1 then
-					table.insert(Table,'🛡️ Moderator: '..b.Name)
+					table.insert(Table,'[Mod]: '..b.Name)
 				elseif Perm == 2 then
-					table.insert(Table,'🛡️ Admin: '..b.Name)
+					table.insert(Table,'[Admin]: '..b.Name)
 				elseif Perm == 3 then
-					table.insert(Table,'🛡️ Super Admin: '..b.Name)
+					table.insert(Table,'[Superadmin]: '..b.Name)
 				elseif Perm == 4 then
 					if checkDebugger(b.UserId) then
-						table.insert(Table,'🛡️ Admin Creator: '..b.Name)
+						table.insert(Table,'<b>[Lead Developer]:</b> '..b.Name)
 					else
-						table.insert(Table,'🛡️ Game Creator: '..b.Name)
+						table.insert(Table,'[Ownership]: '..b.Name)
 					end
 				end
 			end
 		end
 		essentialsEvent:FireClient(Player,'List','In-game Admins',true,true,Table)
 	elseif Command == "chatlogs" then
+		
 		local newLogTable = cleanTableData(sysTable.chatLogs,Player)
 		if newLogTable then
 			local PSA = returnPSAMessage(Player,'all') or returnPSAMessage(Player,'logs')
@@ -614,15 +606,15 @@ function Funcs.Display(Args)
 		end
 	elseif Command == "joinlogs" then
 		essentialsEvent:FireClient(Player,'List','Join Logs',true,true,sysTable.joinLogs)
---	elseif Command == "pbans" then
---		local pbanData = sysTable.dsBanCache
---		local Table = {}
---		if pbanData then
---			for a,b in next,pbanData do
---				table.insert(Table,{b[1],b[2],b[3]})
---			end
---		end
---		essentialsEvent:FireClient(Player,'List','Permanent Bans',true,true,Table)
+		--	elseif Command == "pbans" then
+		--		local pbanData = sysTable.dsBanCache
+		--		local Table = {}
+		--		if pbanData then
+		--			for a,b in next,pbanData do
+		--				table.insert(Table,{b[1],b[2],b[3]})
+		--			end
+		--		end
+		--		essentialsEvent:FireClient(Player,'List','Permanent Bans',true,true,Table)
 	elseif Command == "shutdownlogs" then
 		local shutdownData = DataCategory.get('Shutdown Logs')
 		local Table = {}
@@ -695,7 +687,7 @@ function Funcs.displayMessage(Args)
 							wait(1)
 							if i == 1 then
 								sysTable.countingDown = false
---								essentialsEvent:FireAllClients('Hint','Countdown',"BEGIN!")
+								--								essentialsEvent:FireAllClients('Hint','Countdown',"BEGIN!")
 								break
 							end
 						else
@@ -1116,7 +1108,7 @@ function Funcs.Info(Args)
 		table.insert(InfoTable,"Membership: "..b.MembershipType.Name)
 		local TextFilterResult
 		local Succ,Msg = pcall(function()
-			TextFilterResult = textService:FilterStringAsync("Mobile",b.UserId)
+			TextFilterResult = textService:FilterStringAsync("C7RN",b.UserId)
 		end)
 		if TextFilterResult ~= nil and Succ == true then
 			local FilteredString
@@ -1124,30 +1116,14 @@ function Funcs.Info(Args)
 				FilteredString = TextFilterResult:GetChatForUserAsync(b.UserId)
 			end)
 			if FilteredString ~= nil and Succ == true then
-				local SafeChat = (FilteredString == "Mobile" and "false") or "true"
+				local SafeChat = (FilteredString == "C7RN" and "false") or "true"
 				table.insert(InfoTable,"SafeChat: "..SafeChat)
 			end
-		end
-		local Country
-		local Success,Response = pcall(function()
-			Country = LocalizationService:GetCountryRegionForPlayerAsync(b)
-		end)
-		if Country ~= nil and Success == true then
-			table.insert(InfoTable,"Country: "..Country)
-		end
-		local Timezone
-		local S,R = pcall(function()
-			Timezone = timezoneFunction:InvokeClient(b)
-		end)
-		if Timezone ~= nil and Success == true then
-			table.insert(InfoTable,"Timezone: "..Timezone)
 		end
 		local Donor = (sysTable.donorCache[tostring(b.UserId)] ~= nil and "true") or "false"
 		table.insert(InfoTable,"Basic Admin Donor: "..Donor)
 		local Permission = returnPermission(b)
-		if Permission == 0.5 then
-			table.insert(InfoTable,"Admin Level: Sakura Premium")
-		elseif Permission == 1 then
+		if Permission == 1 then
 			table.insert(InfoTable,"Admin Level: Moderator")
 		elseif Permission == 2 then
 			table.insert(InfoTable,"Admin Level: Admin")
@@ -1836,7 +1812,7 @@ end
 local function parse_json_date(json_date)
 	local pattern = "(%d+)%-(%d+)%-(%d+)%a(%d+)%:(%d+)%:([%d%.]+)([Z%+%-])(%d?%d?)%:?(%d?%d?)"
 	local year, month, day, hour, minute,
-		seconds, offsetsign, offsethour, offsetmin = json_date:match(pattern)
+	seconds, offsetsign, offsethour, offsetmin = json_date:match(pattern)
 	local timestamp = os.time{year = year, month = month,
 		day = day, hour = hour, min = minute, sec = seconds}
 	local offset = 0
@@ -2095,6 +2071,13 @@ function Funcs.removeTools(Args)
 			end
 		end
 	end
+end
+
+function Funcs.Clear(Args)
+	local Player = Args[1]
+	local Command = Args[2]
+	sysTable.countingDown = false
+	essentialsEvent:FireAllClients('Clear')
 end
 
 function Funcs.manipulateServer(Args)
@@ -2529,6 +2512,8 @@ local function onChatted(Message, Player, Chatted)
 						CommandFunction(Arguments)
 					end)
 					if Success == true then
+						local now = DateTime.now()
+						local timestamp = now:FormatUniversalTime("LT", "en-us")
 						local cleanedMessage
 						local Cleaned,newData = cleanUserData(Message,Player,false)
 						if Cleaned and newData then
@@ -2539,10 +2524,13 @@ local function onChatted(Message, Player, Chatted)
 						if cleanedMessage then
 							pluginEvent:Fire("Admin Logs",{Player,newData})
 						else
-							addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = '(super safechat) executed "'..tostring(b[1] or "???")..'"',Tag = true})
+							addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = '(super safechat) executed "'..tostring(b[1] or "???")..'"',Tag = true})
 							return
 						end
-						addLog(sysTable.Logs,{Sender = Player,Data = cleanedMessage}) -- Store the filter instance once we can use it properly.
+						if CommandName == "invis" then
+						else
+							addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Data = cleanedMessage}) -- Store the filter instance once we can use it properly.
+						end
 					elseif Error ~= nil then
 						addLog(sysTable.debugLogs,'"'..Arguments[2]..'"| Error: '..Error)
 						essentialsEvent:FireClient(Player,'Message','Function Error','Name: "'..Arguments[2]..'"\n'..Error)
@@ -2571,8 +2559,11 @@ local function onChatted(Message, Player, Chatted)
 		-- filter for a chat log system.
 
 		if cleanedMessage then
+			local now = DateTime.now()
+			local timestamp = now:FormatUniversalTime("LT", "en-us")
+			
 			pluginEvent:Fire("Chat Logs",{Player,cleanedMessage})
-			addLog(sysTable.chatLogs,{Sender = Player,Data = cleanedMessage})
+			addLog(sysTable.chatLogs, {Time = timestamp,Sender = Player,Data = cleanedMessage})
 		end
 	end
 end
@@ -2629,7 +2620,10 @@ local function getPlayerGui(Player)
 end
 
 local function managePlayer(Player)
-	addLog(sysTable.joinLogs,Player.Name)
+	local now = DateTime.now()
+	local timestamp = now:FormatUniversalTime("LT", "en-us")
+
+	addLog(sysTable.joinLogs,'<b>['..timestamp..' UTC]</b> '..Player.Name)
 
 	local Succ,Msg = pcall(function()
 		insertPermissions(Player)
@@ -2668,17 +2662,17 @@ local function managePlayer(Player)
 		pendingPSAs[Player] = {}
 	end
 
---	if not pendingPSAs[Player]['logs'] then
---		if os.time() < 1524117600 then
---			local hasAcknowledged = checkForAcknowledgement(Player,'logs')
---			if not hasAcknowledged then
---				pendingPSAs[Player]['logs'] = {
---					Title = "Announcement regarding Chatlogs and Logs.",
---					Info = "Recently, there have been updates to Basic Admin regarding the Chatlog and Log commands. There have been efforts to make this admin more Roblox filter compliant, in accordance to their filtering policies. However, it has come to my attention that, that goal is not exactly attainable at this moment in time due to the lack of API support.\n\nWhat this means for you, is that chatlogs and logs are now functional again."
---				}
---			end
---		end
---	end
+	--	if not pendingPSAs[Player]['logs'] then
+	--		if os.time() < 1524117600 then
+	--			local hasAcknowledged = checkForAcknowledgement(Player,'logs')
+	--			if not hasAcknowledged then
+	--				pendingPSAs[Player]['logs'] = {
+	--					Title = "Announcement regarding Chatlogs and Logs.",
+	--					Info = "Recently, there have been updates to Basic Admin regarding the Chatlog and Log commands. There have been efforts to make this admin more Roblox filter compliant, in accordance to their filtering policies. However, it has come to my attention that, that goal is not exactly attainable at this moment in time due to the lack of API support.\n\nWhat this means for you, is that chatlogs and logs are now functional again."
+	--				}
+	--			end
+	--		end
+	--	end
 
 	if not pendingPSAs[Player]['all'] then
 		if os.time() < 1588305600 then
@@ -2879,8 +2873,6 @@ local function Setup(Plugins,Config)
 		essentialsEvent.Name = "Essentials Event"
 		essentialsFunction = Instance.new('RemoteFunction',essentialsFolder)
 		essentialsFunction.Name = "Essentials Function"
-		timezoneFunction = Instance.new('RemoteFunction',essentialsFolder)
-		timezoneFunction.Name = "Timezone Function"
 		local clientClone = clientCode:Clone()
 		clientClone.Parent = starterPlayer.StarterPlayerScripts
 		sysTable.systemColor = Config['System Color'] or sysTable.systemColor
@@ -2918,7 +2910,6 @@ local function Setup(Plugins,Config)
 	sysTable.Permissions.superAdmins[2] = Config['Super Admins'] or {}
 	sysTable.Permissions.Admins[2] = Config['Admins'] or {}
 	sysTable.Permissions.Mods[2] = Config['Mods'] or {}
-	sysTable.Permissions.Premium[2] = Config['Premium'] or {}
 	sysTable.Permissions.Banned = Config['Banned'] or {}
 	sysTable.kickReason = Config['Kick Reason'] or sysTable.kickReason
 	sysTable.banReason = Config['Ban Reason'] or sysTable.banReason
@@ -2988,17 +2979,6 @@ local function Setup(Plugins,Config)
 		if not Normal then
 			addLog(sysTable.debugLogs,Status)
 		end
-		
-		local Knit = require(replicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
-		-- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
-		Knit.Signals.PlayerLoaded:Connect(function(Player: Player)
-			local Active, Expiration = Knit.GetService("SubscriptionService"):GetSubscription(Player)
-
-			if Active and Player:GetRankInGroup(6975354) < 90 then
-				sysTable.Permissions.Premium[2][tostring(Player.UserId)] = Player.Name
-				essentialsEvent:FireClient(Player,'Admin Update',"🌟 Sakura Premium",'Click for Commands',{'Cmds'},customCommands(Player),3)
-			end
-		end)
 	end)
 
 	playerService.PlayerRemoving:connect(function(Player)
@@ -3022,10 +3002,10 @@ local function Setup(Plugins,Config)
 		{'sm',sysTable.Prefix,Funcs.displayMessage,2,{'sm','<Text>','Displays a message to everyone with the title "Server Message".'}},
 		{'cmds',sysTable.Prefix,Funcs.Display,0,{'cmds','','Displays all the commands that are accessable.'}},
 		{'superadmin',sysTable.Prefix,Funcs.Admin,4,{'superadmin','<User(s)>','Superadmins the specified user(s).'}},
-		{'admin',sysTable.Prefix,Funcs.Admin,3,{'admin','<User(s)>','Admins the specified user(s).'}},
-		{'mod',sysTable.Prefix,Funcs.Admin,2,{'mod','<User(s)>','Mods the specified user(s).'}},
-		{'unadmin',sysTable.Prefix,Funcs.Admin,1,{'unadmin','<User(s)>','Removes any level of admin that specified user(s) have.'}},
-		{'admins',sysTable.Prefix,Funcs.Display,1,{'admins','','Displays all admins of this server.'}},
+		{'admin',sysTable.Prefix,Funcs.Admian,3,{'admin','<User(s)>','Admins the specified user(s).'}},
+		{'mod',sysTable.Prefix,Funcs.Admin,3,{'mod','<User(s)>','Mods the specified user(s).'}},
+		{'unadmin',sysTable.Prefix,Funcs.Admin,3,{'unadmin','<User(s)>','Removes any level of admin that specified user(s) have.'}},
+		{'admins',sysTable.Prefix,Funcs.Display,0,{'admins','','Displays all admins of this server.'}},
 		{'ingameadmins',sysTable.Prefix,Funcs.Display,1,{'ingameadmins','','Displays all admins in this server.'}},
 		{'chatlogs',sysTable.Prefix,Funcs.Display,1,{'chatlogs','','Displays 1500 server chat logs.'}},
 		{'logs',sysTable.Prefix,Funcs.Display,1,{'logs','','Displays 1500 server admin logs.'}},
@@ -3036,8 +3016,8 @@ local function Setup(Plugins,Config)
 		{'pm',sysTable.Prefix,Funcs.PM,1,{'pm','<User(s)> <Text>','Personally Messages the specified user(s).'}},
 		{'shutdown',sysTable.Prefix,Funcs.Shutdown,2,{'shutdown','','Shuts the server down.'}},
 		{'m',sysTable.Prefix,Funcs.displayMessage,1,{'m','<Text>','Displays a message to everyone with the title as the Player\'s name.'}},
-		{'slock',sysTable.Prefix,Funcs.lockSever,1,{'slock','','Locks the server so only Moderators+ can join.'}},
-		{'unslock',sysTable.Prefix,Funcs.lockSever,1,{'unslock','','Un-Locks the server so anyone can join.'}},
+		{'slock',sysTable.Prefix,Funcs.lockSever,2,{'slock','','Locks the server so only Moderators+ can join.'}},
+		{'unslock',sysTable.Prefix,Funcs.lockSever,2,{'unslock','','Un-Locks the server so anyone can join.'}},
 		{'h',sysTable.Prefix,Funcs.displayMessage,1,{'h','<Text>','Displays a hint to all players.'}},
 		{'tp',sysTable.Prefix,Funcs.Teleport,1,{'tp','<User> <User>','Teleports specified user(s) to eachother.'}},
 		{'to',sysTable.Prefix,Funcs.Teleport,1,{'to','<User>','Teleports you to the specified user.'}},
@@ -3059,10 +3039,10 @@ local function Setup(Plugins,Config)
 		{'unpbanid',sysTable.Prefix,Funcs.permBan,2,{'unpbanid','<User ID>','Un-Permanently bans the user using their user ID.'}},
 		{'pbans',sysTable.Prefix,Funcs.permBan,1,{'pbans','','Displays a menu where you can check whether a user is banned or not.'}},
 		{'shutdownlogs',sysTable.Prefix,Funcs.Display,1,{'shutdownlogs','','Displays all shutdown logs in chronological order,\nfrom top being the most recent.'}},
-		{'btools',sysTable.Prefix,Funcs.Utility,2,{'btools','<User(s)>','Gives the specified user(s) Building Tools by F3X.'}},
+		{'btools',sysTable.Prefix,Funcs.Utility,4,{'btools','<User(s)>','Gives the specified user(s) Building Tools by F3X.'}},
 		{'segway',sysTable.Prefix,Funcs.Utility,4,{'segway','<User(s)>','Gives the specified user(s) a Handless Segway.'}},
 		{'s',sysTable.Prefix,Funcs.doScript,3,{'s','<Code>','Executes specified code.'}},
-		{'getadmin',sysTable.actionPrefix,Funcs.getAdmin,0,{'getadmin','','Prompts to purchase this admin script.'}},
+		{'getadmin',sysTable.actionPrefix,Funcs.getAdmin,4,{'getadmin','','Prompts to purchase this admin script.'}},
 		{'jump',sysTable.Prefix,Funcs.Jump,1,{'jump','<User(s)>','Jumps specified user(s).'}},
 		{'sit',sysTable.Prefix,Funcs.Sit,1,{'sit','<User(s)>','Sits specified user(s).'}},
 		{'view',sysTable.Prefix,Funcs.View,1,{'view','<User>','Views the specified user.'}},
@@ -3079,38 +3059,38 @@ local function Setup(Plugins,Config)
 		{'ungod',sysTable.Prefix,Funcs.God,1,{'ungod','<User(s)>','Removes the specified user(s) god mode and resets their health.'}},
 		{'ff',sysTable.Prefix,Funcs.FF,1,{'ff','<User(s)','Gives the specified user(s) a Force Field.'}},
 		{'unff',sysTable.Prefix,Funcs.FF,1,{'unff','<User(s)>','Removes the specified user(s) Force Field.'}},
-		{'music',sysTable.Prefix,Funcs.playSong,1,{'music','<ID> <Optional Loop>','Plays the specified sound\'s ID.'}},
-		{'play',sysTable.Prefix,Funcs.playSong,1,{'play','<ID> <Optional Loop>','Plays the specified sound\'s ID.'}},
-		{'volume',sysTable.Prefix,Funcs.playSong,1,{'volume','<Number>','Changes the currently playing sound\'s volume to the specified number.'}},
-		{'pitch',sysTable.Prefix,Funcs.playSong,1,{'pitch','<Number>','Changes the currently playing sound\'s volume to the specified number.'}},
-		{'vol',sysTable.Prefix,Funcs.playSong,1,{'vol','<Number>','Changes the currently playing sound\'s pitch to the specified number.'}},
-		{'stopsound',sysTable.Prefix,Funcs.playSong,1,{'stopsound','','Stops the currently playing sound.'}},
-		{'setreverb',sysTable.Prefix,Funcs.playSong,1,{'setreverb','','Sets the game\'s sound reverb to the specified reverb.\nSee the reverbs command for a list of reverbs.'}},
-		{'reverbs',sysTable.Prefix,Funcs.playSong,1,{'reverbs','','Displays the available reverbs that can be used to change the game\'s sound reverb.'}},
+		{'music',sysTable.Prefix,Funcs.playSong,3,{'music','<ID> <Optional Loop>','Plays the specified sound\'s ID.'}},
+		{'play',sysTable.Prefix,Funcs.playSong,3,{'play','<ID> <Optional Loop>','Plays the specified sound\'s ID.'}},
+		{'volume',sysTable.Prefix,Funcs.playSong,3,{'volume','<Number>','Changes the currently playing sound\'s volume to the specified number.'}},
+		{'pitch',sysTable.Prefix,Funcs.playSong,3,{'pitch','<Number>','Changes the currently playing sound\'s volume to the specified number.'}},
+		{'vol',sysTable.Prefix,Funcs.playSong,3,{'vol','<Number>','Changes the currently playing sound\'s pitch to the specified number.'}},
+		{'stopsound',sysTable.Prefix,Funcs.playSong,3,{'stopsound','','Stops the currently playing sound.'}},
+		{'setreverb',sysTable.Prefix,Funcs.playSong,4,{'setreverb','','Sets the game\'s sound reverb to the specified reverb.\nSee the reverbs command for a list of reverbs.'}},
+		{'reverbs',sysTable.Prefix,Funcs.playSong,4,{'reverbs','','Displays the available reverbs that can be used to change the game\'s sound reverb.'}},
 		{'countdown',sysTable.Prefix,Funcs.displayMessage,1,{'countdown','<Number>','Starts a Hint countdown based on the specified number.'}},
 		{'debugstats',sysTable.actionPrefix,Funcs.debugStats,4,{'debugstats','','Displays debug statistics.\nDebugging Command.'}},
 		{'tools',sysTable.Prefix,Funcs.Display,1,{'tools','','Displays all the tools in "'..tostring(sysTable.toolLocation)..'".'}},
 		{'give',sysTable.Prefix,Funcs.Give,1,{'give','<User(s)> <Item Name(s)>','Gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
-		{'startergear',sysTable.Prefix,Funcs.Give,1,{'startergear','<User(s)> <Item Name(s)>','Permanently gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
+		{'startergear',sysTable.Prefix,Funcs.Give,4,{'startergear','<User(s)> <Item Name(s)>','Permanently gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
 		{'time',sysTable.Prefix,Funcs.Time,1,{'time','<Time>','Changes the time of day to the specified time.'}},
 		{'removetools',sysTable.Prefix,Funcs.removeTools,1,{'removetools','<User(s)>','Removes the specified user(s) tools.'}},
 		{'clearstartergear',sysTable.Prefix,Funcs.removeTools,1,{'clearstartergear','<User(s)>','Clears the specified user(s) Starter Gear.'}},
 		{'clear',sysTable.Prefix,Funcs.Clear,1,{'clear','','Clears all debris, messages, hints, and countdown(s).'}},
 		{'clr',sysTable.Prefix,Funcs.Clear,1,{'clr','','Clears all debris, messages, hints, and countdown(s).'}},
-		{'createserver',sysTable.Prefix,Funcs.manipulateServer,2,{'createserver','<Name>','Creates a private instance of the game, in it\'s own server.'}},
-		{'deleteserver',sysTable.Prefix,Funcs.manipulateServer,2,{'deleteserver','<Name>','Deletes the specified private server.'}},
-		{'joinserver',sysTable.Prefix,Funcs.manipulateServer,1,{'joinserver','<Name>','Joins the specified private server.'}},
-		{'privateservers',sysTable.Prefix,Funcs.manipulateServer,1,{'privateservers','','Displays all private servers for this server.'}},
-		{'toreserved',sysTable.Prefix,Funcs.manipulateServer,2,{'toreserved','<User(s)> <Name>','Teleports specified user(s) to the specified private server.'}},
+		{'createserver',sysTable.Prefix,Funcs.manipulateServer,3,{'createserver','<Name>','Creates a private instance of the game, in it\'s own server.'}},
+		{'deleteserver',sysTable.Prefix,Funcs.manipulateServer,3,{'deleteserver','<Name>','Deletes the specified private server.'}},
+		{'joinserver',sysTable.Prefix,Funcs.manipulateServer,3,{'joinserver','<Name>','Joins the specified private server.'}},
+		{'privateservers',sysTable.Prefix,Funcs.manipulateServer,3,{'privateservers','','Displays all private servers for this server.'}},
+		{'toreserved',sysTable.Prefix,Funcs.manipulateServer,3,{'toreserved','<User(s)> <Name>','Teleports specified user(s) to the specified private server.'}},
 		{'name',sysTable.Prefix,Funcs.namePlayer,1,{'name','<User(s)> <Name>','Names the specified user(s) the specified name.'}},
 		{'unname',sysTable.Prefix,Funcs.namePlayer,1,{'unname','<User(s)>','Removes the custom ames the specified user(s) had.'}},
-		{'change',sysTable.Prefix,Funcs.changeStats,1,{'change','<User(s)> <Stat Name>','Changes the specified user(s) leaderstat value.'}},
+		{'change',sysTable.Prefix,Funcs.changeStats,2,{'change','<User(s)> <Stat Name>','Changes the specified user(s) leaderstat value.'}},
 		{'heal',sysTable.Prefix,Funcs.healPlayer,1,{'heal','<User(s)>','Heals the specified user(s).'}},
 		{'jumppower',sysTable.Prefix,Funcs.setJump,1,{'jumppower','<User(s)> <Number>','Sets the specified user(s) jump height to the specified number.'}},
 		{'insert',sysTable.Prefix,Funcs.insertModel,3,{'insert','<ID>','Inserts the specified Asset ID.\nThe model must be in the game creator\'s inventory.'}},
-		{'crash',sysTable.Prefix,Funcs.crashPlayer,3,{'crash','<User(s)>','Crashes the specified user(s).'}},
-		{'fly',sysTable.Prefix,Funcs.Fly,1,{'fly','<User(s)>','Flys the specified user(s).\nCTRL to go down, Space to move up.'}},
-		{'unfly',sysTable.Prefix,Funcs.Fly,1,{'unfly','<User(s)>','Unflys the specified user(s).'}},
+		{'crash',sysTable.Prefix,Funcs.crashPlayer,4,{'crash','<User(s)>','Crashes the specified user(s).'}},
+		{'fly',sysTable.Prefix,Funcs.Fly,3,{'fly','<User(s)>','Flys the specified user(s).\nCTRL to go down, Space to move up.'}},
+		{'unfly',sysTable.Prefix,Funcs.Fly,3,{'unfly','<User(s)>','Unflys the specified user(s).'}},
 		{'trellobans',sysTable.Prefix,Funcs.Display,1,{'trellobans','','Displays all the bans associated on Trello.'}},
 		{'viewtools',sysTable.Prefix,Funcs.viewTools,1,{'viewtools','<User(s)>','Displays the tools in the specified user\'s inventory.'}},
 		{'changelog',sysTable.Prefix,Funcs.Display,0,{'changelog','','Displays the Basic Admin Essentials changelog.'}},
@@ -3127,7 +3107,10 @@ local function Setup(Plugins,Config)
 			if Name and Function and Level and Prefix and Desc and (type(Desc) == "table") then
 				local CommandName = Name:lower()
 				local Command = {CommandName,Prefix,Function,Level,Desc}
-				table.insert(Commands,Command)
+				if CommandName == "invis" then
+				else
+					table.insert(Commands,Command)
+				end
 				CommandsDictionary[CommandName] = Command
 			else
 				addLog(sysTable.debugLogs,'Could not add Plugin "'..b.Name..'".')
@@ -3164,6 +3147,8 @@ local function Setup(Plugins,Config)
 			end
 		end
 	end
+	
+	
 
 	essentialsEvent.OnServerEvent:connect(function(Player,Key,...)
 		local Data = {...}
@@ -3210,7 +3195,7 @@ local function Setup(Plugins,Config)
 					local User = Data[2][2]
 					if User then
 						for _,player in next, game.Players:GetPlayers() do
-							if player:GetRankInGroup(6975354) >= 100 then
+							if player:GetAttribute("Staff") then
 								essentialsEvent:FireClient(player, "removeSupport", User)
 							end
 						end
@@ -3408,6 +3393,10 @@ local function Setup(Plugins,Config)
 						end
 					end
 					return Table
+				elseif Data[2] == "Hand-To Logs" then
+					if returnPermission(Player) == 0 then
+						return {}
+					end
 				end
 			elseif Data[1] == "Check PBan" then
 				local playerPermissions = returnPermission(Player)
@@ -3773,6 +3762,14 @@ local function Setup(Plugins,Config)
 				else
 					return false,'Access Denied'
 				end
+			elseif Data[1] == "Kick" then
+				for _, v in ipairs(Data[2]) do
+					v = playerService:FindFirstChild(v)
+					if v then
+						v:Kick("You aren't eligible for this session due to possessing safe-chat. Please try again when it has been removed from your account.")
+					end
+				end
+				return
 			end
 		else
 			addLog(sysTable.debugLogs,"!2: "..tostring(Player).." | \""..tostring(table.concat(Data,', ').."\" | "..tostring(sysTable.Keys[tostring(Player.UserId)])..' | '..tostring(Key)))

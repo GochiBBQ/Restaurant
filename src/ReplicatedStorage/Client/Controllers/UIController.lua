@@ -14,6 +14,7 @@ https://www.roblox.com/groups/5874921/Goch#!/about
 -- Services
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local PlayerService = game:GetService("Players")
 
 -- ————————— ↢ ⭐️ ↣ —————————
@@ -28,6 +29,8 @@ local Icon = require(ReplicatedStorage.Modules.Icon)
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Player = PlayerService.LocalPlayer
+local UISelect = SoundService.UISelect
+local UIHover = SoundService.UIHover
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Controller
@@ -51,6 +54,7 @@ end
 function UIController:RegisterButtonClick(Button)
     Button.MouseButton1Click:Connect(function()
 		local FrameFound = false
+		UISelect:Play()
 
 		if self.Pages[Button.Parent.Name].Visible then
 			spr.target(self.Pages[Button.Parent.Name], 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
@@ -80,6 +84,7 @@ function UIController:NavigationMenu()
         if MenuButtons:IsA("TextButton") then
             MenuButtons.MouseEnter:Connect(function()
                 spr.target(MenuButtons, 0.3, 4, {Rotation = 8})
+				UIHover:Play()
             end)
             
             MenuButtons.MouseLeave:Connect(function()
