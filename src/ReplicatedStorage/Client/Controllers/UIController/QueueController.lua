@@ -41,15 +41,15 @@ local QueueService
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Client Functions
+
 function QueueController:ElapsedTime(Player: Player, Label: TextLabel)
     task.spawn(function()
-        while task.wait(1) do
-            local ElapsedTime = Player:GetAttribute("ElapsedTime")
-            local SecondsFormatted = ElapsedTime % 60
-            local MinutesFormatted = math.floor(ElapsedTime / 60)
-            local CompareFormatted = 10 > SecondsFormatted and "0" .. SecondsFormatted
-
-            Label.Text = string.format("%s:%s Elapsed", MinutesFormatted, (CompareFormatted or SecondsFormatted))
+        local PlayerElapsed = Player:GetAttribute("ElapsedTime")
+        
+        if PlayerElapsed then
+            local FormattedMinutes, FormattedSeconds = math.floor(PlayerElapsed / 60), PlayerElapsed % 60
+            local FormattedCompare = 10 > FormattedSeconds and "0" .. FormattedSeconds
+            Label.Text = string.format("%s:%s Elapsed", FormattedMinutes, (FormattedCompare or FormattedSeconds))
         end
     end)
 end
@@ -61,8 +61,8 @@ function QueueController:QueueLinkage(Player: Player)
     ClonedFrame.Role.Text = Player:GetRoleInGroup(5874921)
     ClonedFrame.Username.Text = Player.Name
     ClonedFrame.Name = Player.Name
-    ClonedFrame.Parent = self.ChefQueue.Holder.ScrollingFrame
 
+    ClonedFrame.Parent = self.ChefQueue.Holder.ScrollingFrame
     self:ElapsedTime(Player, ClonedFrame.Timer)
 end
 

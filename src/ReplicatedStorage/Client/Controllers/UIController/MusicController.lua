@@ -34,28 +34,32 @@ local MusicController = Knit.CreateController {
 local UIController
 local MusicService
 
+MusicController.CurrentVolume = 1
+MusicController.MuteDebounce = false
+
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Client Functions
-function MusicController:SongInformation(Promise: boolean, SongName: string)
+function MusicController:SongInformation(Promise: boolean, SongName: string, SongVolume: number)
     self.GochiRadio.Song.Text = SongName or "Loading..."
+    self.CurrentVolume = SongVolume
 end
 
-function MusicController:MuteSong(Debounce: boolean)
-    self.GochiRadio.MuteButton.MouseButton1Down:Connect(function()
-        if Debounce then
-            self.GochiRadio.MuteButton.Unmuted.Visible = true
-            self.GochiRadio.MuteButton.Muted.Visible = false
+function MusicController:RegisterMuteSong(MuteDebounce: boolean)
+    if self.MuteDebounce then
+        spr.target(self.GochiRadio.MuteButton.Muted, 1, 3, { ImageTransparency = 1})
+        task.wait(0.25)
+        spr.target(self.GochiRadio.MuteButton.Unmuted, 1, 3, { ImageTransparency = 0})
 
-            spr.target(MusicPlayer, 1, 2, { Volume = 1})
-            Debounce = false
-        else
-            self.GochiRadio.MuteButton.Unmuted.Visible = false
-            self.GochiRadio.MuteButton.Muted.Visible = true
+        spr.target(MusicPlayer, 1, 3, { Volume = self.CurrentVolume})
+        self.MuteDebounce = false
+    else
+        spr.target(self.GochiRadio.MuteButton.Unmuted, 1, 3, { ImageTransparency = 1})
+        task.wait(0.25)
+        spr.target(self.GochiRadio.MuteButton.Muted, 1, 3, { ImageTransparency = 0})
 
-            spr.target(MusicPlayer, 1, 2, { Volume = 0})
-            Debounce = true
-        end
-    end)
+        spr.target(MusicPlayer, 1, 3, { Volume = 0})
+        self.MuteDebounce = true
+    end
 end
 
 function MusicController:KnitStart()
@@ -66,10 +70,13 @@ function MusicController:KnitStart()
     self:SongInformation(MusicService:SongInformation():await())
     self:MuteSong()
 
-    MusicService.Update:Connect(function(SongName: string)
-        self:SongInformation(true, SongName)
+    MusicService.Update:Connect(function(SongName: string, SongVolume: number)
+        self:SongInformation(true, SongName, SongVolume)
     end)
 
+    self.GochiRadio.MuteButton.MouseButton1Down:Connect(function()
+        self:RegisterMuteSong()
+    end)
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

@@ -35,6 +35,7 @@ local SeatingController = Knit.CreateController {
 }
 
 SeatingController.ActiveTable = false
+SeatingController.Timer = 1500
 local UIController
 
 -- ————————— ↢ ⭐️ ↣ —————————-
@@ -52,6 +53,17 @@ function SeatingController:ElapsedTime()
         end
     end)
 end
+
+function SeatingController:DiningTimer()
+    local PlayerTimed = Player:GetAttribute("DiningTimer")
+        
+    if PlayerTimed then
+        local FormattedMinutes, FormattedSeconds = math.floor(PlayerTimed / 60), PlayerTimed % 60
+        local FormattedCompare = 10 > FormattedSeconds and "0" .. FormattedSeconds
+         return FormattedMinutes, (FormattedCompare or FormattedSeconds)
+    end
+end
+
 
 function SeatingController:CloseButton(Button: GuiButton)
     Button.MouseEnter:Connect(function()
@@ -87,6 +99,15 @@ function SeatingController:SeatCustomer(TableNumber: number)
     spr.target(self.TableTicket.Parent, 0.85, 1, { GroupTransparency = 0, Position = UDim2.fromScale(0.88, 0.9)})
     self:CloseButton(self.TableTicket.DoneButton)
     self:ElapsedTime()
+end
+
+function SeatingController:TimeEnding()
+    while task.wait(1) do
+        spr.target(self.TableTicket.Description, 1, 3, { TextTransparency = 1})
+        task.wait(0.25)
+        self.TableTicket.Description.Text = string.format("Your time with us is unfortunately coming to an end. You have %:%s more minutes left in your party.", self:DiningTimer())
+        spr.target(self.TableTicket.Description, 1, 3, { TextTransparency = 0})
+    end
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
