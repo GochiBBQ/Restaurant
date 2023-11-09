@@ -30,20 +30,18 @@ local RequestRateLimiter = RateLimiter.NewRateLimiter(4) -- USE TO CREATE A RATE
 local NotificationService = Knit.CreateService {
     Name = "NotificationService",
 	Client = {
-        TemplateRemote = Knit:CreateSignal()
+        Send = Knit:CreateSignal()
 	},
 }
 
-Knit.TemplateVariable = nil
-
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
-function NotificationService:KnitInit()
-    
+function NotificationService:PlayerNotification(Player: Player, Title: string, Message: string)
+    self.Client.Send:Fire(Player, {Title = Title, Text = Message, Duration = 02})
 end
 
-function NotificationService:KnitStart()
-
+function NotificationService:ServerNotification(Title: string, Message: string)
+    self.Client.Send:FireAll({Title = Title, Text = Message, Duration = 02})
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

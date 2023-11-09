@@ -27,36 +27,49 @@ local RequestRateLimiter = RateLimiter.NewRateLimiter(4)
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service
-local SeatingService = Knit.CreateService {
-    Name = "SeatingService",
+local QueueService = Knit.CreateService {
+    Name = "QueueService",
 	Client = {
-        TemplateRemote = Knit:CreateSignal()
+        Update = Knit:CreateSignal()
 	},
 }
 
---local TableManagement = workspace.Functionality:WaitForChild("Tables")
 local NotificationService
+Knit.ChefQueue = {}
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
-function SeatingService:KnitStart()
-    NotificationService = Knit.GetService("NotificationService")
+function QueueService:QueueJoin(Player: Player)
+    if not table.find(Knit.ChefQueue, Player) then
+        NotificationService:PlayerNotification(Player, "Joined 📝", "The server has successfully placed you inside of the chefs queue. Hang tight.")
+        table.insert(Knit.ChefQueue, Player)
+
+        self.Client.Update:FireAll(Knit.ChefQueue)
+        return table.find(Knit.ChefQueue, Player)
+    else
+        NotificationService:PlayerNotification(Player, "Uh Oh 😞", "You already hold a reserved slot in the queue. Please try again later.")
+    end
 end
 
-function SeatingService:ClaimSeat(Server: Player, Customer: Player, TableNumber: number)
-    if TableManagement:FindFirstChild(TableNumber) then
-        local ReservedTable = TableManagement:FindFirstChild(TableNumber)
-        
-        if not ReservedTable:GetAttribute("Claimed") then
+function QueueService:KnitStart()
+    NotificationService = Knit.GetService("NotificationService")
 
-        else
-            NotificationService:PlayerNotification(Server, "Title", "Text")
+    PlayerService.PlayerRemoving:Connect(function(Player)
+        if table.find(Knit.ChefQueue, Player) then
+            table.remove(Knit.ChefQueue, table.find(Knit.ChefQueue, Player))
+            self.Client.Update:FireAll(Knit.ChefQueue)
         end
-    else
-        Server:Kick("🥩 Table #" ..TableNumber.. " does not exist. Do not attempt to exploit our systems.")
-    end
+    end)
+end
+
+function QueueService.Client:QueueJoin(Player: Player)
+    return self.Server:QueueJoin(Player)
+end
+
+function QueueService.Client:QueueUpdate(Player: Player)
+    return Knit.ChefQueue
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Return Service to Knit.
-return SeatingService
+return QueueService

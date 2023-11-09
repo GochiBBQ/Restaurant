@@ -35,6 +35,7 @@ local MusicPlayer = workspace.Music
 local Playlist = script.SongList:GetChildren()
 
 MusicService.CurrentSong = nil
+MusicService.CurrentVolume = 0
 MusicService.PastSong = nil
 
 -- ————————— ↢ ⭐️ ↣ —————————-
@@ -46,7 +47,9 @@ function MusicService:KnitStart()
             local Asset = MarketplaceService:GetProductInfo(tonumber(string.split(ChosenSong.SoundId, "rbxassetid://")[2]))
             if Asset.Name ~= "(Removed for copyright)" then
                 MusicPlayer.SoundId = ChosenSong.SoundId
+                MusicPlayer.Volume = ChosenSong.Volume
                 self.CurrentSong = ChosenSong.Name
+                self.CurrentVolume = ChosenSong.Volume
 
                 if ChosenSong:FindFirstChild("ChorusSoundEffect") then 
                     local ClonedEffect = ChosenSong:FindFirstChild("ChorusSoundEffect"):Clone()
@@ -59,7 +62,7 @@ function MusicService:KnitStart()
                 end
 
                 MusicPlayer:Play()
-                self.Client.Update:FireAll(ChosenSong.Name)
+                self.Client.Update:FireAll(ChosenSong.Name, ChosenSong.Volume)
                 MusicPlayer.Ended:Wait()
 
                 if MusicPlayer:FindFirstChild("ChorusSoundEffect") then 
@@ -77,7 +80,7 @@ end
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Client Functions
 function MusicService.Client:SongInformation(Player: Player)
-    return MusicService.CurrentSong
+    return MusicService.CurrentSong, MusicService.CurrentVolume
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
