@@ -23,11 +23,7 @@ local ProfileTemplate = require(ServerScriptService.Server.Components.ProfileTem
 local ProfileModule = require(ServerScriptService.Server.Modules.ProfileService)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local trove = Trove.new()
-
 local ProfileStore = ProfileModule.GetProfileStore("PlayerData", ProfileTemplate)
-local SakuraAutomation = require(Knit.Modules.SakuraAutomation)
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service

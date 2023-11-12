@@ -18,7 +18,6 @@ local PlayerService = game:GetService("Players")
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local SakuraAutomation = require(Knit.Modules.SakuraAutomation)
 
 local RateLimiter = require(Knit.Modules.RateLimiter)
 local RequestRateLimiter = RateLimiter.NewRateLimiter(5)
