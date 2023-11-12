@@ -26,7 +26,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local spr = require(ReplicatedStorage.Modules.spr)
 
 local Trove = require(ReplicatedStorage.Packages.Trove)
-local trove = Trove.new() -- USE TROVE TO DISCONNECT REMOTE CONNECTIONS (ONLY DISCONNECT IF ITS ONLY USED ONCE) (DONT USE ON PLAYERADDED N STUFF)
+local trove = Trove.new()
 
 local LocalPlayer = PlayerService.LocalPlayer
 

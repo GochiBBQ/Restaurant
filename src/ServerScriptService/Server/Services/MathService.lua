@@ -27,8 +27,7 @@ local RequestRateLimiter = RateLimiter.NewRateLimiter(5)
 -- Create Knit Service
 local MathService = Knit.CreateService {
     Name = "MathService",
-	Client = {
-	},
+	Client = {},
 }
 
 -- ————————— ↢ ⭐️ ↣ —————————

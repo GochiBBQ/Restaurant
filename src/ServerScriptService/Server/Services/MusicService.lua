@@ -40,6 +40,15 @@ MusicService.PastSong = nil
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
+function MusicService:SongSelection(SelectedSong: Instance)
+    --repeat SelectedSong = Playlist[math.random(1, #Playlist)] until SelectedSong.Name ~= self.PastSong end
+    --return SelectedSong
+end
+
+function MusicService:SoundEffects(SongInstance: Instance)
+    
+end
+
 function MusicService:KnitStart()
     while task.wait() do
         if not MusicPlayer.IsPlaying then

@@ -37,7 +37,7 @@ local NotificationService = Knit.CreateService {
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
 function NotificationService:PlayerNotification(Player: Player, Title: string, Message: string)
-    self.Client.Send:Fire(Player, {Title = Title, Text = Message, Duration = 02})
+    self.Client.Send:Fire(Player, {Title = Title, Text = Message, Icon = PlayerService:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420), Duration = 02})
 end
 
 function NotificationService:ServerNotification(Title: string, Message: string)
