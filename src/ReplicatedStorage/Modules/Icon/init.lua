@@ -809,7 +809,7 @@ function Icon.new()
 				IconController._bringBackPlayerlist -= 1
 				if IconController._bringBackPlayerlist <= 0 then
 					IconController._bringBackPlayerlist = nil
-					starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+					starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 				end
 				self._bringBackPlayerlist = nil
 			end
