@@ -65,7 +65,6 @@ function MusicController:KnitStart()
 
     self.GochiRadio = UIController.Pages.Parent:WaitForChild("Radio").GochiMusic
     self:SongInformation(MusicService:SongInformation():await())
-    self:MuteSong()
 
     MusicService.Update:Connect(function(SongName: string, SongVolume: number)
         self:SongInformation(true, SongName, SongVolume)

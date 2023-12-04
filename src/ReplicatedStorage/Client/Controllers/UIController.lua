@@ -34,6 +34,7 @@ local UISelect = SoundService.UISelect
 local UIHover = SoundService.UIHover
 
 local CurrentFrame = nil
+local RankService
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Controller
@@ -111,6 +112,8 @@ function UIController:KnitInit()
 	local playerGui = Knit.Player:WaitForChild("PlayerGui")
 	self.NavigationButtons = playerGui:WaitForChild("GochiUI"):WaitForChild("Navigation")
 	self.Pages = playerGui:WaitForChild("GochiUI"):WaitForChild("Pages")
+
+	RankService = Knit.GetService("RankService")
 
 	-- load all UI controllers into its own env
 	self.Interfaces = {}

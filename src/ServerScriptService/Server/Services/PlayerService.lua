@@ -14,8 +14,10 @@ https://www.roblox.com/groups/5874921/Goch#!/about
 -- Services
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContentProvider = game:GetService("ContentProvider")
 local PlayersService = game:GetService("Players")
 local TeamService = game:GetService("Teams")
+
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
@@ -84,6 +86,34 @@ function PlayerService:KnitStart()
 			Profile:Release()
 		end
 	end)
+
+	--Load poses animations
+	local PoseAnimations = {}
+	for i, Animations in ipairs(workspace:GetDescendants()) do
+		if Animations:IsA("Animation") then
+			if Animations.Parent:IsA("Seat") then
+				table.insert(PoseAnimations, Animations.Parent.sitanim)
+				Animations.Parent.ChildAdded:Connect(function(Child)
+					if Child:IsA("Weld") then
+						local Humanoid = Child.part1.Parent:FindFirstChild("Humanoid")
+						if Humanoid ~= nil then
+							local Animation = Humanoid:LoadAnimation(Animations.Parent.sitanim)
+							Animation:Play()
+
+							local Connection 
+							Connection = Animations.Parent.ChildRemoved:Connect(function(Child)
+								Animation:Stop()
+								Animation:Remove()
+								Connection:Disconnect()
+							end)
+						end
+					end
+				end)
+			end
+		end
+	end
+
+	ContentProvider:PreloadAsync(PoseAnimations)
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

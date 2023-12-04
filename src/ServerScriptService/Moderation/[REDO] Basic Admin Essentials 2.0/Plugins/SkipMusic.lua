@@ -17,15 +17,9 @@
 	
 --]]
 
-local LayeredClothingTypes = {
-    Enum.AccessoryType.DressSkirt,
-    Enum.AccessoryType.Jacket,
-    Enum.AccessoryType.Pants,
-    Enum.AccessoryType.Shirt,
-    Enum.AccessoryType.Shorts,
-    Enum.AccessoryType.Sweater,
-    Enum.AccessoryType.TShirt,
- }
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local Plugin = function(...)
 	local Data = {...}
@@ -45,54 +39,17 @@ local Plugin = function(...)
 	-- cleanData(Sender,nil,"hi") -- Receiver is nil because it is a broadcast
 	
 	-- Plugin Configuration --
-	local pluginName = 'uniform'
+	local pluginName = 'skipsong'
 	local pluginPrefix = Prefix
-	local pluginLevel = 1
-	local pluginUsage = "<F/M>" -- leave blank if the command has no arguments
-	local pluginDescription = "Puts MR uniform on"
+	local pluginLevel = 3
+	local pluginUsage = "" -- leave blank if the command has no arguments
+	local pluginDescription = "Skips the current song on the Gochi Radio."
 	
 	-- Example Plugin Function --
 	local function pluginFunction(Args) -- keep the name of the function as "pluginFunction"
 		local Player = Args[1]
-        local ShirtID
-        local PantsID
-		if Args[3] then
-			if string.lower(Args[3]) == "m" then
-				ShirtID = "http://www.roblox.com/asset/?id=7256693601"
-				PantsID = "http://www.roblox.com/asset/?id=7256475669"
-			elseif string.lower(Args[3]) == "f" then
-				ShirtID = "http://www.roblox.com/asset/?id=7252060241"
-				PantsID = "http://www.roblox.com/asset/?id=7252025644"
-			else
-				ShirtID = "http://www.roblox.com/asset/?id=7256693601"
-				PantsID = "http://www.roblox.com/asset/?id=7256475669"
-			end
-		else
-			ShirtID = "http://www.roblox.com/asset/?id=7256693601"
-			PantsID = "http://www.roblox.com/asset/?id=7256475669"
-		end
-
-		if Player.Character ~= nil then
-			local Character = Player.Character
-
-			for _,z in pairs(Character:GetChildren()) do
-				if z.ClassName == "ShirtGraphic" or z.ClassName == "Shirt" or z.ClassName == "Pants" then
-					z:Destroy()
-				elseif z.ClassName == "Accessory" then
-					if table.find(LayeredClothingTypes, z.AccessoryType) then
-						z:Destroy()
-					end
-				end
-			end
-
-			local UniformShirt = Instance.new("Shirt")
-			UniformShirt.ShirtTemplate = ShirtID
-			UniformShirt.Parent = Character
-
-			local UniformPants = Instance.new("Pants")
-			UniformPants.PantsTemplate = PantsID
-			UniformPants.Parent = Character
-		end
+		local MusicService = Knit.GetService("MusicService")
+		MusicService:SkipSong()
 	end
 	
 	-- Return Everything to the MainModule --

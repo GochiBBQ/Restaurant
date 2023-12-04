@@ -40,48 +40,42 @@ MusicService.PastSong = nil
 
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
-function MusicService:SongSelection(SelectedSong: Instance)
-    --repeat SelectedSong = Playlist[math.random(1, #Playlist)] until SelectedSong.Name ~= self.PastSong end
-    --return SelectedSong
+function MusicService:SongSelection(CurrentSong: Sound)
+    repeat CurrentSong = Playlist[math.random(1, #Playlist)] until CurrentSong.Name ~= self.PastSong
+    return CurrentSong
 end
 
-function MusicService:SoundEffects(SongInstance: Instance)
-    
+function MusicService:CheckCopyright(CurrentSong: Sound)
+    local Asset = MarketplaceService:GetProductInfo(tonumber(string.split(CurrentSong.SoundId, "rbxassetid://")[2]))
+    if Asset.Name == "(Removed for copyright)" then return true end
+end
+
+function MusicService:SoundEffects(CurrentSong: Sound)
+    MusicPlayer.TimePosition = 0
+    MusicPlayer.PlaybackSpeed = CurrentSong.PlaybackSpeed
+    MusicPlayer.SoundId = CurrentSong.SoundId
+    MusicPlayer.Volume = CurrentSong.Volume
+end
+
+function MusicService:SkipSong()
+    MusicPlayer.TimePosition = self.CurrentSong.TimeLength
 end
 
 function MusicService:KnitStart()
     while task.wait() do
         if not MusicPlayer.IsPlaying then
-            local ChosenSong = Playlist[math.random(1, #Playlist)]
-            local Asset = MarketplaceService:GetProductInfo(tonumber(string.split(ChosenSong.SoundId, "rbxassetid://")[2]))
-            if Asset.Name ~= "(Removed for copyright)" then
-                MusicPlayer.SoundId = ChosenSong.SoundId
-                MusicPlayer.Volume = ChosenSong.Volume
-                self.CurrentSong = ChosenSong.Name
-                self.CurrentVolume = ChosenSong.Volume
+            local CurrentSong = self:SongSelection()
+            if self:CheckCopyright(CurrentSong) then return end
 
-                if ChosenSong:FindFirstChild("ChorusSoundEffect") then 
-                    local ClonedEffect = ChosenSong:FindFirstChild("ChorusSoundEffect"):Clone()
-                    ClonedEffect.Parent = MusicPlayer
-                end
+            self:SoundEffects(CurrentSong)
+            self.CurrentSong = CurrentSong
+            MusicPlayer:Play()
 
-                if ChosenSong:FindFirstChild("PitchShiftSoundEffect") then
-                    local ClonedEffect = ChosenSong:FindFirstChild("PitchShiftSoundEffect"):Clone()
-                    ClonedEffect.Parent = MusicPlayer
-                end
+            self.Client.Update:FireAll(CurrentSong.Name, CurrentSong.Volume)
+            MusicPlayer.Ended:Wait()
 
-                MusicPlayer:Play()
-                self.Client.Update:FireAll(ChosenSong.Name, ChosenSong.Volume)
-                MusicPlayer.Ended:Wait()
-
-                if MusicPlayer:FindFirstChild("ChorusSoundEffect") then 
-                    MusicPlayer:FindFirstChild("ChorusSoundEffect"):Destroy()
-                end
-
-                if MusicPlayer:FindFirstChild("PitchShiftSoundEffect") then
-                    MusicPlayer:FindFirstChild("PitchShiftSoundEffect"):Destroy()
-                end
-            end
+            self.PastSong = CurrentSong
+            self.CurrentSong = nil
         end
     end
 end

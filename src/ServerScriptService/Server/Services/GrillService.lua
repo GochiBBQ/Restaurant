@@ -27,36 +27,54 @@ local RequestRateLimiter = RateLimiter.NewRateLimiter(4)
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Create Knit Service
-local SeatingService = Knit.CreateService {
-    Name = "SeatingService",
+local GrillService = Knit.CreateService {
+    Name = "GrillService",
 	Client = {
-        TemplateRemote = Knit:CreateSignal()
 	},
 }
 
---local TableManagement = workspace.Functionality:WaitForChild("Tables")
-local NotificationService
-
 -- ————————— ↢ ⭐️ ↣ —————————-
 -- Server Functions
-function SeatingService:KnitStart()
-    NotificationService = Knit.GetService("NotificationService")
+function GrillService:KnitStart()
+	for i, v in pairs(workspace:WaitForChild("Tables"):GetChildren()) do
+		if v:IsA("Model") then
+			self.ActiveGrills[v.Name] = 5
+			self.PlayerUsing[v.Name] = ""
+
+			v.TableGrill.GrillBottom.ProximityPrompt.Triggered:Connect(function(Player)
+				if self.ActiveGrills[v.Name] > 0 then
+					self:SetActiveUser(Player, v.Name)
+				end
+			end)
+		end
+	end
 end
 
-function SeatingService:ClaimSeat(Server: Player, Customer: Player, TableNumber: number)
-    if TableManagement:FindFirstChild(TableNumber) then
-        local ReservedTable = TableManagement:FindFirstChild(TableNumber)
-        
-        if not ReservedTable:GetAttribute("Claimed") then
+function GrillService:SetActiveUser(Player: Player, Grill: string)
+	if not Player or not Grill then
+		return
+	end
 
-        else
-            NotificationService:PlayerNotification(Server, "Title", "Text")
-        end
-    else
-        Server:Kick("🥩 Table #" ..TableNumber.. " does not exist. Do not attempt to exploit our systems.")
-    end
+	self.ActiveGrills[Grill] -= 1
+	self.PlayerUsing[Grill] = Player
+end
+
+function GrillService:DisplayItem(Grill: string, Item: string, Value: boolean)
+	if not Value then
+		Value = false
+	end
+
+	if not workspace.Tables[Grill] then
+		return
+	end
+
+	if Value and workspace.Tables[Grill].TableGrill.Food:FindFirstChild(Item) then
+		workspace.Tables[Grill].TableGrill.Food:FindFirstChild(Item).Transparency = 0
+	else
+		workspace.Tables[Grill].TableGrill.Food:FindFirstChild(Item).Transparency = 1
+	end
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Return Service to Knit.
-return SeatingService
+return GrillService
