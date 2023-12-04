@@ -2490,7 +2490,7 @@ local function Console()
 		else
 			consoleOpen = false
 			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
-			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 			consoleText.Text = 'Enter a command..'
 			consoleBox.Text = ''
 			consoleBox:ReleaseFocus()
