@@ -17,7 +17,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
 local Knit = require(ReplicatedStorage.Packages.Knit)
-
 local TableGrills = {}
 TableGrills.__index = TableGrills
 
@@ -35,13 +34,17 @@ function TableGrills.new(tableGrill: Model)
 end
 
 function TableGrills:Initialize(tableGrill: Model)
+    local TableService = Knit.GetService("GrillService")
+
     tableGrill.PromptHolder.ProximityPrompt.Triggered:Connect(function(Player)
-        self:DisplayItem(tableGrill, "Raw Pork Belly", true)
+        tableGrill.PromptHolder.ProximityPrompt.Enabled = false
+        TableService.Client.Camera:Fire(Player, tableGrill)
+        print("fired")
     end)
 end
 
 function TableGrills:DisplayItem(Grill: Model, Item: string, Value: boolean)
-    if Value and Grill.Food:FindFirstChild(Item) then
+    if Value and Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item) then
         Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item).Transparency = 0
     else
         Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item).Transparency = 1

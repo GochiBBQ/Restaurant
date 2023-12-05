@@ -22,7 +22,9 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 -- Create Knit Service
 local GrillService = Knit.CreateService {
     Name = "GrillService";
-    Client = {};
+    Client = {
+        Camera = Knit:CreateSignal(),
+    };
     ActiveGrills = {};
 }
 
