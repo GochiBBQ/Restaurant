@@ -58,9 +58,6 @@ function OverheadService:KnitStart()
 			Clone.Name = "GochiOverhead"
 			Clone.Username.Text = Player.Name
 			Clone.Rank.Text = RankService:GetRole(Player)
-
-			self:InitGradients(Player)
-			self:InitBadges(Player)
 		end)
 	end)
 end
@@ -73,53 +70,6 @@ end
 
 function OverheadService.Client:Get(Player)
 	return self.Server:Get(Player)
-end
-
-function OverheadService:InitGradients(Player)
-	local PlayerProfile = Knit.Profiles[Player]
-
-	if Player.UserId == 106192999 then
-		self.Client.UpdateOverhead:Fire(Player, "Arjun")
-	elseif PlayerProfile.Data.CurrentNametag then
-		self.Client.UpdateOverhead:Fire(Player, PlayerProfile.Data.CurrentNametag)
-	end
-end
-
-function OverheadService:InitBadges(Player)
-	local Overhead = self:Get(Player)
-	local Badges = Overhead:WaitForChild("Badges")
-
-	if HeartID[Player.UserId] or RankService:GetRank(Player) >= 225 then
-		Badges.Heart.Visible = true
-	end
-
-	if Donator[Player.UserId] or RankService:GetRank(Player) >= 225 then
-		Badges.Money.Visible = true
-	end
-
-	if Influental[Player.UserId] or RankService:GetRank(Player) >= 225 then
-		Badges.Check.Visible = true
-	end
-
-	if RankService:GetRank(Player) >= 225 then
-		Badges.Crown.Visible = true
-	end
-
-	if RankService:GetRank(Player) >= 160 then
-		Badges.Hammer.Visible = true
-	end
-
-	if RankService:GetRank(Player) == 225 or RankService:GetRank(Player) >= 252 then
-		Badges.Gear.Visible = true
-	end
-
-	if
-		RankService:GetRank(Player) == 20
-		or RankService:GetRank(Player) == 225
-		or RankService:GetRank(Player) >= 252
-	then
-		Badges.Handshake.Visible = true
-	end
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

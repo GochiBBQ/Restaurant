@@ -3,7 +3,7 @@ local Server = script.Parent:WaitForChild("Server")
 local Packages = ReplicatedStorage.Packages
 
 local Knit = require(Packages.Knit)
-local Signal = require(Knit.Util.Signal)
+local Signal = require(Packages.Signal)
 
 Knit.Modules = Server.Modules
 Knit.Components = Server.Components
