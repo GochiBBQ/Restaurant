@@ -24,6 +24,7 @@ local PlayerService = game:GetService("Players")
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
+local ViewportEffects = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Viewport"))
 local spr = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("spr"))
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
@@ -82,17 +83,21 @@ end
 function InventoryController:RegisterButtonClick(Button: GuiButton)
     for Index, ExcessFrames in pairs(BackpackUI.Frame:GetChildren()) do
         if ExcessFrames.Name ~= Button.Parent.Name and ExcessFrames:IsA("Frame") then
-            spr.target(ExcessFrames, 0.8, 3, { Size = UDim2.fromScale(0.1, 0.8)})
+            spr.target(ExcessFrames, 0.8, 4, { Size = UDim2.fromScale(0.1, 0.8)})
+            spr.target(ExcessFrames.Hint, 0.8, 4, { TextTransparency = 1})
             self:UnequipTools()
         end
     end
 
     if ActiveTool ~= Button.Parent.Name then
         spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1)})
+        spr.target(Button.Parent.Hint, 0.8, 4, { TextTransparency = 0})
+        Button.Parent.Hint.Text = Button.Name
         self:EquipItem(Backpack:FindFirstChild(Button.Name))
         ActiveTool= Button.Parent.Name
     else
         spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.1, 0.8)})
+        spr.target(Button.Parent.Hint, 0.8, 4, { TextTransparency = 1})
         self:UnequipTools()
         ActiveTool = nil
     end
@@ -108,6 +113,36 @@ function InventoryController:KnitStart()
 			Buttons.MouseButton1Click:Connect(function()
                 self:RegisterButtonClick(Buttons)
 			end)
+
+            Buttons.MouseEnter:Connect(function()
+                if ActiveTool ~= Buttons.Parent.Name then
+                    Buttons.Parent.Hint.Text = Buttons.Name
+                    spr.target(Buttons.Parent.Hint, 0.8, 4, { TextTransparency = 0})
+                end
+            end)
+
+            Buttons.MouseLeave:Connect(function()
+                if ActiveTool ~= Buttons.Parent.Name then
+                    spr.target(Buttons.Parent.Hint, 0.8, 4, { TextTransparency = 1})
+                end
+            end)
+
+            -- viewport test
+            local ViewportFrame = Buttons.Parent.ViewportFrame
+            local Camera = Instance.new("Camera")
+            Camera.Parent = ViewportFrame
+            Camera.FieldOfView = -50
+
+            local ViewportModel = Knit.Static.ViewportModels:FindFirstChild(Buttons.Name):Clone()
+            ViewportModel.Parent = ViewportFrame
+            ViewportFrame.CurrentCamera = Camera
+
+            local PlayerViewport = ViewportEffects.new(ViewportFrame, Camera)
+            PlayerViewport:Calibrate()
+    
+            local CF, Size = ViewportModel:GetBoundingBox()
+            PlayerViewport:SetModel(ViewportModel)
+            Camera.CFrame = PlayerViewport:GetMinimumFitCFrame(CFrame.new()) * CFrame.fromEulerAnglesXYZ(0, 0, math.rad(15))
 		end
 	end
 
