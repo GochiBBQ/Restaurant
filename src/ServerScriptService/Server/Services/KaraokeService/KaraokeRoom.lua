@@ -12,7 +12,7 @@ function KaraokeRoom.new(roomSpace: Part)
     local self = setmetatable({}, KaraokeRoom)
 
     self.RoomSpace = roomSpace
-    self.Sound = workspace.Functionality.Karaoke.Music[roomSpace.Name]
+    self.Sound = workspace.Functionality.Activities.Karaoke.Music[roomSpace.Name]
     self.SelectedSound = nil
     self.PreviousId = nil
     self.Lyrics = nil

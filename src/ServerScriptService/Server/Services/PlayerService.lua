@@ -112,7 +112,6 @@ function PlayerService:KnitStart()
 			end
 		end
 	end
-
 	ContentProvider:PreloadAsync(PoseAnimations)
 end
 

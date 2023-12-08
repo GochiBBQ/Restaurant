@@ -40,7 +40,7 @@ function item:Place(ItemCFrame: CFrame)
     self:SetModel(self.Tool.Model:Clone())
 
 	self.Model.PrimaryPart.Anchored = true
-    self.Model.Parent = workspace.Placement.PlacedObjects
+    self.Model.Parent = workspace.Functionality.TableManagment.Placement.PlacedObjects
     self.Model:PivotTo(ItemCFrame)
 	--spr.target(self.Model.PrimaryPart, 0.5, 1.5, { CFrame = self.Model.PrimaryPart.CFrame + Vector3.new(0, 3, 0)})
 end
@@ -52,7 +52,7 @@ function item:Pickup(Player: Player)
 end
 
 function item:SetModel(model: Model)
-    model.Parent = workspace.Placement.PrePlacedObjects
+    model.Parent = workspace.Functionality.TableManagment.Placement.PrePlacedObjects
     for _, Part in ipairs(model:GetDescendants()) do
 		if Part:IsA("BasePart") then
 			Part.Anchored = true

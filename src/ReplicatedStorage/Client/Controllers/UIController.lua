@@ -91,6 +91,24 @@ function UIController:RegisterButtonClick(Button)
     end)
 end
 
+function UIController:RegisterButtonClick(Button: GuiButton)
+	local function CheckOpenedFrames()
+		for i, UIPages in pairs(self.Pages:GetChildren()) do
+			if UIPages.Visible then
+				spr.target(UIPages, 1, 4, { GroupTransparency = 1, Position = UDim2.fromScale(0.5, 0.55)})
+				task.wait(0.15)
+				UIPages.Visible = false
+
+				return true
+			end
+		end
+	end
+
+	Button.MouseButton1Click:Connect(function()
+		
+	end)
+end
+
 function UIController:NavigationMenu()
     for Index, MenuButtons in pairs(self.NavigationButtons:GetDescendants()) do
         if MenuButtons:IsA("TextButton") then
@@ -112,6 +130,7 @@ function UIController:KnitInit()
 	local playerGui = Knit.Player:WaitForChild("PlayerGui")
 	self.NavigationButtons = playerGui:WaitForChild("GochiUI"):WaitForChild("Navigation")
 	self.Pages = playerGui:WaitForChild("GochiUI"):WaitForChild("Pages")
+	self.Backpack = playerGui:WaitForChild("Backpack")
 
 	RankService = Knit.GetService("RankService")
 
@@ -137,6 +156,34 @@ function UIController:KnitInit()
 			frame.GroupTransparency = 1
 		end
 	end
+end
+
+function UIController:AdvertisementBoards()
+	local AdvertBoards = workspace.Functionality.Advertisements
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	local Distance = 15 -- How far in studs the player must be.
+
+	local function CheckDistance()
+		for i, AdvertBoard in pairs(AdvertBoards:GetChildren()) do
+			local Humanoid = Character:WaitForChild("HumanoidRootPart")
+			local Surface = AdvertBoard.SurfaceDisplay
+			local Frame = Surface.SurfaceGui.Frame
+	
+			if Humanoid then
+				if (AdvertBoard.SurfaceDisplay.Position - Humanoid.Position).Magnitude < Distance then
+					spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0.02, 0.01)})
+				else
+					spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0.02, 1)})
+				end
+			end
+		end
+	end
+
+	task.spawn(function()
+		while task.wait() do
+			CheckDistance()
+		end
+	end)
 end
 
 function UIController:TopbarMenu()
@@ -202,6 +249,7 @@ function UIController:KnitStart()
 		task.spawn(controller.Start, controller, Knit)
 	end
 
+	self:AdvertisementBoards()
 	self:NavigationMenu()
 	self:TopbarMenu()
 end

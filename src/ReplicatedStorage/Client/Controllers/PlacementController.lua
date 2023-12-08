@@ -16,7 +16,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
@@ -41,7 +40,7 @@ local PlacementService = nil
 -- Raycast Parameters
 local RaycastParams = RaycastParams.new()
 RaycastParams.FilterType = Enum.RaycastFilterType.Include
-RaycastParams.FilterDescendantsInstances = {Workspace.Placement.Surfaces, workspace.Functionality.TableGrills}
+RaycastParams.FilterDescendantsInstances = {workspace.Functionality.TableManagement.Placement.Surfaces, workspace.Functionality.TableManagement.Grills}
 RaycastParams.IgnoreWater = true
 
 -- ————————— ↢ ⭐️ ↣ —————————
@@ -105,7 +104,7 @@ function PlacementController:ToggleGhostMode()
             self.CanPlace = false
 
             if RaycastResult then
-                if RaycastResult.Instance.Parent == workspace.Placement.Surfaces then
+                if RaycastResult.Instance.Parent == workspace.Functionality.TableManagment.Placement.Surfaces then
                     self.CanPlace = true
                     self.Highlight.OutlineColor = Color3.fromRGB(128, 255, 82)
                     self.PlacementUi.ImageLabel.ImageColor3 = Color3.fromRGB(128, 255, 82)
@@ -115,7 +114,7 @@ function PlacementController:ToggleGhostMode()
                     self.PlacementUi.ImageLabel.ImageColor3 = Color3.fromRGB(255, 0, 0)
                 end
                 if not self.GhostModel.Parent then 
-                    self.GhostModel.Parent = workspace.Placement
+                    self.GhostModel.Parent = workspace.Functionality.TableManagment.Placement
                     self.PlacementUi.Adornee = self.GhostModel.PrimaryPart
                     trove:Add(self.PlacementUi)
                     trove:AttachToInstance(self.GhostModel.PrimaryPart)

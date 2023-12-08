@@ -1,15 +1,10 @@
 --[[
 
+█▀▀▄ █▀▀█ █▀▀▄ █▀▀█ █░░█ █▀▀▄ ▀▀█▀▀ ▀▀█ █▀▀█ █▀▀ █░█ 
+█░░█ █░░█ █░░█ █░░█ █░░█ █▀▀▄ ░░█░░ ▄▀░ █▄▄█ █░░ █▀▄ 
+▀░░▀ ▀▀▀▀ ▀▀▀░ ▀▀▀▀ ░▀▀▀ ▀▀▀░ ░░▀░░ ▀▀▀ ▀░░▀ ▀▀▀ ▀░▀
 
-                    __            __    __    _                __          
-   ____  ____  ____/ /___  __  __/ /_  / /_  (_)___  _________/ /___ _____ 
-  / __ \/ __ \/ __  / __ \/ / / / __ \/ __/ / / __ \/ ___/ __  / __ `/ __ \
- / / / / /_/ / /_/ / /_/ / /_/ / /_/ / /_  / / /_/ / /  / /_/ / /_/ / / / /
-/_/ /_/\____/\__,_/\____/\__,_/_.___/\__/_/ /\____/_/   \__,_/\__,_/_/ /_/ 
-                                       /___/                               
-
-
-Author: nodoubtjordan
+Author: nodoubtzack
 For: Gochí Restaurant 🥩
 https://www.roblox.com/groups/5874921/Goch#!/about
 
@@ -22,12 +17,10 @@ local PlayerService = game:GetService("Players")
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Variables
+local UIEffects = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("UIEffects"))
+local spr = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("spr"))
+
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local spr = require(ReplicatedStorage.Modules.spr)
-
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local trove = Trove.new()
-
 local LocalPlayer = PlayerService.LocalPlayer
 
 -- ————————— ↢ ⭐️ ↣ —————————
@@ -42,6 +35,10 @@ local UIController
 -- Client Functions
 function MenuController:KnitStart()
     UIController = Knit.GetController("UIController")
+end
+
+function MenuController:NavigationButtons()
+    
 end
 
 -- ————————— ↢ ⭐️ ↣ —————————

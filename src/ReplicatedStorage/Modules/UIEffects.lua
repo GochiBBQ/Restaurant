@@ -48,15 +48,19 @@ end
 function UIEffects:HideUIs()
 	local Knit = require(Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
 	local UIController = Knit.GetController("UIController")
-	local HUD = UIController.UI:WaitForChild("HUD")
-	spr.target(HUD, 1, 4, { Position = UDim2.fromScale(-0.1, 0.5) })
+	local Frame = UIController.NavigationButtons
+	local Radio = UIController.NavigationButtons.Parent.Radio
+	spr.target(Frame, 1, 4, { Position = UDim2.fromScale(-0.05, 0.5) })
+	spr.target(Radio, 1, 4, { Position = UDim2.fromScale(-0.2, 0.981) })
 end
 
 function UIEffects:ShowUIs()
 	local Knit = require(Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
 	local UIController = Knit.GetController("UIController")
-	local HUD = UIController.UI:WaitForChild("HUD")
-	spr.target(HUD, 1, 4, { Position = UDim2.fromScale(0, 0.5) })
+	local Frame = UIController.NavigationButtons
+	local Radio = UIController.NavigationButtons.Parent.Radio
+	spr.target(Frame, 1, 4, { Position = UDim2.fromScale(0.037, 0.5) })
+	spr.target(Radio, 1, 4, { Position = UDim2.fromScale(0.01, 0.981) })
 end
 
 return UIEffects

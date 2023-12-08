@@ -14,7 +14,7 @@ local KaraokeController = Knit.CreateController {
     Name = "KaraokeController";
 }
 
-local KaraokeDir = workspace.Functionality.Karaoke
+local KaraokeDir = workspace.Functionality.Activities.Karaoke
 
 function KaraokeController:KnitStart()
     local Player = Players.LocalPlayer

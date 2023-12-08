@@ -39,17 +39,36 @@ function TableGrills:Initialize(tableGrill: Model)
     tableGrill.PromptHolder.ProximityPrompt.Triggered:Connect(function(Player)
         tableGrill.PromptHolder.ProximityPrompt.Enabled = false
         TableService.Client.Camera:Fire(Player, tableGrill)
-        print("fired")
     end)
 end
 
-function TableGrills:DisplayItem(Grill: Model, Item: string, Value: boolean)
-    if Value and Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item) then
-        Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item).Transparency = 0
-    else
-        Grill.Primary.PrimaryModel.PrimaryModel.TableGrill.GrillingMeats:FindFirstChild(Item).Transparency = 1
-	end
-end
+    -- Tongs Animation (for after)
+	--[[
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	local Humanoid = Character:FindFirstChild("Humanoid")
+	local RightHand = Character:FindFirstChild("RightHand")
+	local LeftHand = Character:FindFirstChild("LeftHand")
+
+	local GrillingTongs = ReplicatedStorage:FindFirstChild("GrillingTongs"):Clone()
+	local TongsHandle = ReplicatedStorage:FindFirstChild("TongsHandle"):Clone()
+
+	task.wait(5)
+	TongsHandle.Part0 = RightHand
+	TongsHandle.Part1 = GrillingTongs
+	TongsHandle.Parent = RightHand
+	GrillingTongs.Parent = RightHand
+
+	GrillingTongs["Raw Pork Belly"].Transparency = 0
+	GrillingTongs.Transparency = 0
+
+	local Animation = Humanoid:LoadAnimation(ReplicatedStorage.GrillingAnimation)
+	Animation:Play()
+
+	Animation.Ended:Connect(function()
+		GrillingTongs.Transparency = 1
+		GrillingTongs["Raw Pork Belly"].Transparency = 1
+	end)
+	--]]
 
 -- ————————— ↢ ⭐️ ↣ —————————
 -- Return Module to Knit.

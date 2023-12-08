@@ -20,7 +20,7 @@ end
 function KaraokeService:KnitStart()
     local KaraokeRoom = require(script.KaraokeRoom)
 
-    for _, roomSpace in ipairs(workspace.Functionality.Karaoke.Spaces:GetChildren()) do
+    for _, roomSpace in ipairs(workspace.Functionality.Activities.Karaoke.Spaces:GetChildren()) do
         local karaokeRoom = KaraokeRoom.new(roomSpace)
 
         karaokeRoom.NewSong.Event:Connect(function()

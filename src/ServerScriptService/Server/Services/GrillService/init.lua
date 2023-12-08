@@ -33,7 +33,7 @@ local GrillService = Knit.CreateService {
 function GrillService:KnitStart()
     local TableGrill = require(script.TableGrills)
 
-    for _, Table in ipairs(workspace.Functionality.TableGrills:GetChildren()) do
+    for _, Table in ipairs(workspace.Functionality.TableManagement.Grills:GetChildren()) do
         local tableGrill = TableGrill.new(Table)
         self.ActiveGrills[Table.Name] = tableGrill
     end
