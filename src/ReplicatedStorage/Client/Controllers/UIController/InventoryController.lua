@@ -33,7 +33,7 @@ local InventoryController = Knit.CreateController {
 }
 
 local LocalPlayer = PlayerService.LocalPlayer
-local Backpack = LocalPlayer.Backpack
+local Backpack = LocalPlayer:WaitForChild("Backpack")
 local UIController
 local BackpackUI
 
