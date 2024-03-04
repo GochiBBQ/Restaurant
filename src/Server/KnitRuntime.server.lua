@@ -17,6 +17,6 @@ Knit.Signals = {
 Knit.AddServicesDeep(Server:WaitForChild("Services"))
 
 Knit.Start():andThen(function()
-	warn("🥢 Welcome back to Sakura Kitchen. The server services for Knit have successfully loaded.")
+	warn("🥩 Welcome back to Gochi. The server services for Knit have successfully loaded.")
 	warn("❗Errors will be highlighted in red and warnings in yellow. This will help determine issues on the server side.")
 end)

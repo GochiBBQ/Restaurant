@@ -19,7 +19,7 @@ local Services = setmetatable({}, {
 })
 
 --# Dependencies
-local spr = require(Services.StarterPlayer.StarterPlayerScripts.Client.Modules:WaitForChild('spr'))
+local spr = require(Services.StarterPlayer.StarterPlayerScripts.Modules:WaitForChild('spr'))
 
 --# Variables
 local player = Services.Players.LocalPlayer

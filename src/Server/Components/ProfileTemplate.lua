@@ -27,6 +27,7 @@ return {
 		Products = {},
 	},
 	
+	Donations = 0,
 	Quests = {},
 	NotepadText = ""
 }

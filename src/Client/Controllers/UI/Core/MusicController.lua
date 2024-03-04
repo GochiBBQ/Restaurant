@@ -10,38 +10,37 @@ https://www.roblox.com/groups/5874921/Goch#!/about
 
 ]]
 
--- ————————— ↢ ⭐️ ↣ —————————
+-- ————————— 🂡 —————————
 -- Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local PlayerService = game:GetService("Players")
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
--- ————————— ↢ ⭐️ ↣ —————————
--- Variables
+-- ————————— 🂡 —————————
+-- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local spr = require(Knit.Modules.spr)
 
+-- ————————— 🂡 —————————
+-- Variables
 local MusicPlayer = workspace.Music
+local UIController = nil
+local MusicService = nil
 
--- ————————— ↢ ⭐️ ↣ —————————
+-- ————————— 🂡 —————————
 -- Create Knit Controller
 local MusicController = Knit.CreateController {
     Name = "MusicController",
+    MuteDebounce = false,
+    CurrentVolume = 0
 }
 
-local UIController
-local MusicService
-
-MusicController.MuteDebounce = false
-MusicController.CurrentVolume = 1
-
--- ————————— ↢ ⭐️ ↣ —————————-
+-- ————————— 🂡 —————————
 -- Client Functions
-function MusicController:SongInformation(Promise: boolean, SongName: string, SongVolume: number)
+function MusicController:InformationLinkage(SongName: string, SongVolume: number)
     self.GochiRadio.Song.Text = SongName or "Loading..."
     self.CurrentVolume = SongVolume
 end
 
-function MusicController:RegisterMuteSong(MuteDebounce: boolean)
+function MusicController:RegisterMuteSong()
     if self.MuteDebounce then
         spr.target(self.GochiRadio.MuteButton.Muted, 1, 3, { ImageTransparency = 1})
         task.wait(0.25)
@@ -62,9 +61,11 @@ end
 function MusicController:KnitStart()
     UIController = Knit.GetController("UIController")
     MusicService = Knit.GetService("MusicService")
+    self.GochiRadio = UIController.UI.Parent:WaitForChild("Radio").GochiMusic
 
-    self.GochiRadio = UIController.Pages.Parent:WaitForChild("Radio").GochiMusic
-    self:SongInformation(MusicService:SongInformation():await())
+    MusicService:GetCurrentSong():andThen(function(SongName: string, SongVolume: number)
+        self:InformationLinkage(SongName, SongVolume)
+    end)
 
     MusicService.Update:Connect(function(SongName: string, SongVolume: number)
         self:SongInformation(true, SongName, SongVolume)
@@ -75,6 +76,6 @@ function MusicController:KnitStart()
     end)
 end
 
--- ————————— ↢ ⭐️ ↣ —————————
--- Return Controller to Knit.
+-- ————————— 🂡 —————————
+ -- Return Controller to Knit.
 return MusicController

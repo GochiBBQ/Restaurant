@@ -440,7 +440,7 @@ function Icon.new()
 			self.userToggled:Fire(false)
 			return true
 		end
-		for i, Frame in pairs(localPlayer.PlayerGui.SKUI.Pages:GetChildren()) do if Frame:GetAttribute("GuiShown") then return end end
+		for i, Frame in pairs(localPlayer.PlayerGui.GochiUI.Pages:GetChildren()) do if Frame:GetAttribute("GuiShown") then return end end
 
 		self:select()
 		self.userSelected:Fire()

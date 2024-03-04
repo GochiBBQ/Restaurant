@@ -2988,17 +2988,6 @@ local function Setup(Plugins,Config)
 		if not Normal then
 			addLog(sysTable.debugLogs,Status)
 		end
-		
-		local Knit = require(replicatedStorage:WaitForChild("Packages"):WaitForChild("Knit"))
-		-- ︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿︵‿︵︵‿︵‿
-		Knit.Signals.PlayerLoaded:Connect(function(Player: Player)
-			local Active, Expiration = Knit.GetService("SubscriptionService"):GetSubscription(Player)
-
-			if Active and Player:GetRankInGroup(6975354) < 90 then
-				sysTable.Permissions.Premium[2][tostring(Player.UserId)] = Player.Name
-				essentialsEvent:FireClient(Player,'Admin Update',"🌟 Sakura Premium",'Click for Commands',{'Cmds'},customCommands(Player),3)
-			end
-		end)
 	end)
 
 	playerService.PlayerRemoving:connect(function(Player)

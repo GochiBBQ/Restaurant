@@ -56,8 +56,8 @@ local Configuration = {
 	['Kick Reason'] = ('You have been kicked from the server.'), -- Displayed to people that are kicked.
 	['Ban Reason'] = ('You have been banned from the game.'), -- Displayed to people that are banned.
 	['Shutdown Reason'] = ('This server is shutting down..\nTry joining a different server!'), -- Displayed to people when the server is shut down.
-	['Server Message'] = ('🥢Sakura Announcement'), -- Displayed in the :sm command's title.
-	['Server Lock Reason'] = ('🥢This server is currently locked. This means that only staff members are able to access it at this time. Please try joining another server!'), -- Displayed to people being kicked that try to enter a locked server.
+	['Server Message'] = ('🥩 Gochi Announcement'), -- Displayed in the :sm command's title.
+	['Server Lock Reason'] = ('🥩 This server is currently locked. This means that only staff members are able to access it at this time. Please try joining another server!'), -- Displayed to people being kicked that try to enter a locked server.
 	['Trello'] = false, -- Use trello? HttpService must be enabled.
 	['Trello Board'] = (''), -- Trello board ID.
 	['Trello App Key'] = (''), -- Private trello application key.
@@ -66,10 +66,10 @@ local Configuration = {
 	['Donor Perks'] = true, -- Gives people who purchase an admin donation the ability to cape, put hats on, etc.
 	['Public Commands'] = false, -- Will people that are not admin be able to say :cmds, or !clean?
 	['Auto Clean'] = true, -- Will hats and gear automatically be cleaned up every so often?
-	['System Color'] = Color3.fromRGB(235, 127, 113), -- Color of the admin's guis.
+	['System Color'] = Color3.fromRGB(37, 37, 37), -- Color of the admin's guis.
 	['Tools Location'] = game:GetService("ServerStorage"), -- Where the :tools and :give command will get tools from.
 	['Command Confirmation'] = true, -- Validates certain commands like :Ban all, or :PBan all.
-	['Datastore Key'] = ('SakuraAdmin') -- What cape data, ban data, etc. is stored under. Changing will wipe it.
+	['Datastore Key'] = ('GochiAdmin') -- What cape data, ban data, etc. is stored under. Changing will wipe it.
 }
 
 --------------------------
