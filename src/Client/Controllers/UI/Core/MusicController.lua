@@ -10,22 +10,22 @@ https://www.roblox.com/groups/5874921/Goch#!/about
 
 ]]
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local spr = require(Knit.Modules.spr)
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
 -- Variables
 local MusicPlayer = workspace.Music
 local UIController = nil
 local MusicService = nil
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
 -- Create Knit Controller
 local MusicController = Knit.CreateController {
     Name = "MusicController",
@@ -33,7 +33,7 @@ local MusicController = Knit.CreateController {
     CurrentVolume = 0
 }
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
 -- Client Functions
 function MusicController:InformationLinkage(SongName: string, SongVolume: number)
     self.GochiRadio.Song.Text = SongName or "Loading..."
@@ -76,6 +76,6 @@ function MusicController:KnitStart()
     end)
 end
 
--- ————————— 🂡 —————————
+-- »»————————————　★　————————————-««
  -- Return Controller to Knit.
 return MusicController
