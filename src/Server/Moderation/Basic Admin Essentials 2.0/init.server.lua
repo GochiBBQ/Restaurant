@@ -23,26 +23,26 @@ local Configuration = {
 
 	['Group Configuration'] = {
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 90,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 7,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 1,
 		},
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 110,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 12,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 2,
 		},
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 150,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 17,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 3,
 		},
 		{
-			['Group ID'] = 6975354,
-			['Group Rank'] = 180,
+			['Group ID'] = 5874921,
+			['Group Rank'] = 20,
 			['Tolerance Type'] = '>=',
 			['Admin Level'] = 4,
 		},
@@ -66,7 +66,7 @@ local Configuration = {
 	['Donor Perks'] = true, -- Gives people who purchase an admin donation the ability to cape, put hats on, etc.
 	['Public Commands'] = false, -- Will people that are not admin be able to say :cmds, or !clean?
 	['Auto Clean'] = true, -- Will hats and gear automatically be cleaned up every so often?
-	['System Color'] = Color3.fromRGB(37, 37, 37), -- Color of the admin's guis.
+	['System Color'] = Color3.fromHex("716e80"), -- Color of the admin's guis.
 	['Tools Location'] = game:GetService("ServerStorage"), -- Where the :tools and :give command will get tools from.
 	['Command Confirmation'] = true, -- Validates certain commands like :Ban all, or :PBan all.
 	['Datastore Key'] = ('GochiAdmin') -- What cape data, ban data, etc. is stored under. Changing will wipe it.

@@ -5,7 +5,7 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "$ignoreUnknownInstances": true,
-      "$path": "src/Shared",
+      "$path": "src/ReplicatedStorage",
       "Packages": {
         "$path": "Packages"
       }

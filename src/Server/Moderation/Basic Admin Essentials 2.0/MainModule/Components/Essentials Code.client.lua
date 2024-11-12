@@ -1941,8 +1941,40 @@ local function Display(Type,Data)
 		notificationClone.Visible = true
 		notificationClone.Position = UDim2.new(0,0,-1,0)
 		notificationClone:TweenPosition(UDim2.new(0,0,0,0),'Out','Quint',0.3,true)
+		elseif Type == "Notification" then
+			if baseClip:FindFirstChild('Notification Clone') then
+				local toRemove = baseClip:FindFirstChild('Notification Clone')
+				toRemove:TweenPosition(UDim2.new(0,0,0,-toRemove.AbsoluteSize.Y),'Out','Quint',0.3,true,function(Stat)
+					if Stat == Enum.TweenStatus.Completed then
+						toRemove:Destroy()
+					end
+				end)
+			end
+	
+			local notificationTemplate = baseClip:WaitForChild('Notification Template')
+			local notificationClone = notificationTemplate:Clone()
+			notificationClone.Name = "Notification Clone"
+			local notificationButton = notificationClone:WaitForChild('TextButton')
+			local notificationTop = notificationClone:WaitForChild('Top')
+			local notificationBody = notificationClone:WaitForChild('Body')
+			local notificationTitleText = notificationTop:WaitForChild('Title')
+			local notificationBodyText = notificationBody:WaitForChild('To Name Later')
+	
+			notificationButton.MouseButton1Click:connect(function()
+				notificationClone:TweenPosition(UDim2.new(0,0,0,-notificationClone.AbsoluteSize.Y),'Out','Quint',0.3,true,function(Stat)
+					if Stat == Enum.TweenStatus.Completed then
+						notificationClone:Destroy()
+					end
+				end)
+			end)
+			notificationTitleText.Text = Data[1]
+			notificationBodyText.Text = Data[2]
+			notificationClone.Parent = baseClip
+			notificationClone.Visible = true
+			notificationClone.Position = UDim2.new(0,0,-1,0)
+			notificationClone:TweenPosition(UDim2.new(0,0,0,0),'Out','Quint',0.3,true)
+		end
 	end
-end
 
 local function pendNotif(Title,Desc,Data)
 	spawn(function()
@@ -2790,5 +2822,11 @@ essentialsEvent.OnClientEvent:connect(function(Starter,...)
 		end)
 	elseif Starter == "Notification" then
 		Display("Notification", {Data[1], Data[2]})
+	end
+end)
+
+replicatedStorage.CmdBar.Event:Connect(function()
+	if Player:GetAttribute("Staff") then
+		Console()
 	end
 end)

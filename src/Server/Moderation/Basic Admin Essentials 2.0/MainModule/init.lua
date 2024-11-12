@@ -46,6 +46,8 @@ local loadStringModule = require(Components:WaitForChild('Loadstring'))
 local F3X = Components:WaitForChild('F3X')
 local Segway = Components:WaitForChild('Handless Segway')
 
+local Session = require(game:GetService("ReplicatedStorage"):WaitForChild("Data").SessionData)
+
 local sysTable = {
 	adminVersion = "5.5.10.20.649P."..tostring(game.PlaceVersion),
 	Cache = {
@@ -53,14 +55,13 @@ local sysTable = {
 	},
 	Keys = {},
 	Debuggers = {
-
+		[106192999] = "alreadyfans",
 	},
 	Permissions = {
 		gameOwners = {4,{}},
 		superAdmins = {3,{}},
 		Admins = {2,{}},
 		Mods = {1,{}},
-		Premium = {0.5,{}},
 		Banned = {},
 	},
 	chatLogs = {},
@@ -68,6 +69,7 @@ local sysTable = {
 	errorLogs = {},
 	debugLogs = {},
 	joinLogs = {},
+	pmLogs = {},
 	HandToLogs = {},
 	donorCache = {},
 	donorID = 410700060,
@@ -190,11 +192,13 @@ local function returnPlayers(Player,Arg,Command)
 			end
 		end
 		local Reply = essentialsFunction:InvokeClient(Player,'Command Confirmation',Command,newConfirming)
+		local now = DateTime.now()
+		local timestamp = now:FormatUniversalTime("LT", "en-us")
 		if Reply then
-			addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = 'Confirmed "'..Command..' '..newConfirming..'"'})
+				addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = 'Confirmed "'..Command..' '..newConfirming..'"'})
 			return getPlayers(Player,Arg,returnPermission,false,Command)
 		else
-			addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = 'Cancelled "'..Command..' '..newConfirming..'"'})
+				addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = 'Cancelled "'..Command..' '..newConfirming..'"'})
 			return {}
 		end
 	else
@@ -326,6 +330,8 @@ end
 function Funcs.Kick(Args)
 	local Player = Args[1]
 	local playerPermissions = returnPermission(Player)
+	if #Args[3] < 3 then essentialsEvent:FireClient(Player, 'Hint', "An Error Occured", 'You must include a minimum of three characters of a players username.') return end
+
 	if Args[3] then
 		local Reason = sysTable.kickReason
 		if Args[4] then
@@ -364,41 +370,44 @@ function Funcs.Kick(Args)
 	end
 end
 
-function Funcs.TimedBan(Args)
-	local Player = Args[1]
-	local playerPermissions = returnPermission(Player)
-	local Victims = returnPlayers(Player,Args[3],Args[2])
-	local Command = Args[2]
-end
-
-
 function Funcs.Ban(Args)
 	local Player = Args[1]
 	local playerPermissions = returnPermission(Player)
-	local Victims = returnPlayers(Player,Args[3],Args[2])
+	local Victims = returnPlayers(Player, Args[3], Args[2])
 	local Command = Args[2]
 	if not Args[3] then return end
+	if #Args[3] < 3 then 
+		essentialsEvent:FireClient(Player, 'Hint', "Error", 'You must include a minimum of three characters of a player\'s username.') 
+		return 
+	end
+
 	if Command == "unban" then
-		for a,b in next,sysTable.Permissions.Banned do
-			if string.sub(b:lower(),1,#Args[3]) == Args[3] then
+		for a, b in next, sysTable.Permissions.Banned do
+			if b:lower() == Args[3]:lower() then
 				sysTable.Permissions.Banned[tostring(a)] = nil
 			end
 		end
 	elseif Command == "ban" then
 		if not Victims then
-			essentialsEvent:FireClient(Player,'Hint','Error',(Args[3] or 'nil')..' was not found.')
+			if not sysTable.Permissions.Banned[tostring(playerService:GetUserIdFromNameAsync(Args[3]))] then
+				sysTable.Permissions.Banned[tostring(playerService:GetUserIdFromNameAsync(Args[3]))] = Args[3]
+				pluginEvent:Fire("Ban Logs", {Player, "Banned "..Args[3]})
+			end
+
+			essentialsEvent:FireClient(Player, 'Hint', 'Error', 'Successfully offline banned '..Args[3]..'!')
 			return
 		end
-		for a,b in next,Victims do
+		for a, b in next, Victims do
 			local victimPermissions = returnPermission(b)
 			if not sysTable.Permissions.Banned[tostring(b.UserId)] and victimPermissions < playerPermissions then
 				sysTable.Permissions.Banned[tostring(b.UserId)] = b.Name
-				pluginEvent:Fire("Ban Logs",{Player,"Banned "..b.Name})
+				pluginEvent:Fire("Ban Logs", {Player, "Banned "..b.Name})
 				b:Kick('Basic Admin\n'..sysTable.banReason)
 			end
 		end
 	end
 end
+
 
 local function customCommands(Player)
 	local Permissions = returnPermission(Player)
@@ -466,7 +475,7 @@ local function cleanTableData(Table,toPlayer)
 		end
 
 		local Inserting
-		if tableData.Sender and tableData.Data then
+		if tableData.Time and tableData.Sender and tableData.Data then
 			if not tableData.Bypass then
 				local Cleaned,newData = cleanUserData(tableData.Data,toPlayer,toPlayer)
 
@@ -488,7 +497,8 @@ local function cleanTableData(Table,toPlayer)
 			end
 		end
 
-		Inserting = tostring(tableData.Sender)..': '..Inserting
+
+		Inserting = '<b>['..tableData.Time..' UTC]</b> ' ..tostring(tableData.Sender)..': '..Inserting
 
 		if Inserting then
 			table.insert(newLogTable,Inserting)
@@ -560,19 +570,17 @@ function Funcs.Display(Args)
 		for a,b in next,sysTable.Permissions do
 			if b[1] then
 				for c,d in next,b[2] do
-					if b[1] == 0.5 then
-						table.insert(Table,'🌟 Premium: '..d)
-					elseif b[1] == 1 then
-						table.insert(Table,'🛡️ Moderator: '..d)
+					if b[1] == 1 then
+						table.insert(Table,'[Mod]: '..d)
 					elseif b[1] == 2 then
-						table.insert(Table,'🛡️ Admin: '..d)
+						table.insert(Table,'[Admin]: '..d)
 					elseif b[1] == 3 then
-						table.insert(Table,'🛡️ Super Admin: '..d)
+						table.insert(Table,'[Superadmin]: '..d)
 					elseif b[1] == 4 then
 						if checkDebugger(c) then
-							table.insert(Table,'🛡️ Admin Creator: '..d)
+							table.insert(Table,'[Game Creator]: '..d)
 						else
-							table.insert(Table,'🛡️ Game Creator: '..d)
+							table.insert(Table,'[Game Creator]: '..d)
 						end
 					end
 				end
@@ -585,16 +593,16 @@ function Funcs.Display(Args)
 			local Perm = returnPermission(b)
 			if Perm > 0 then
 				if Perm == 1 then
-					table.insert(Table,'🛡️ Moderator: '..b.Name)
+					table.insert(Table,'[Mod]: '..b.Name)
 				elseif Perm == 2 then
-					table.insert(Table,'🛡️ Admin: '..b.Name)
+					table.insert(Table,'[Admin]: '..b.Name)
 				elseif Perm == 3 then
-					table.insert(Table,'🛡️ Super Admin: '..b.Name)
+					table.insert(Table,'[Superadmin]: '..b.Name)
 				elseif Perm == 4 then
 					if checkDebugger(b.UserId) then
-						table.insert(Table,'🛡️ Admin Creator: '..b.Name)
+						table.insert(Table,'[Game Creator]: '..b.Name)
 					else
-						table.insert(Table,'🛡️ Game Creator: '..b.Name)
+						table.insert(Table,'[Game Creator]: '..b.Name)
 					end
 				end
 			end
@@ -614,15 +622,15 @@ function Funcs.Display(Args)
 		end
 	elseif Command == "joinlogs" then
 		essentialsEvent:FireClient(Player,'List','Join Logs',true,true,sysTable.joinLogs)
---	elseif Command == "pbans" then
---		local pbanData = sysTable.dsBanCache
---		local Table = {}
---		if pbanData then
---			for a,b in next,pbanData do
---				table.insert(Table,{b[1],b[2],b[3]})
---			end
---		end
---		essentialsEvent:FireClient(Player,'List','Permanent Bans',true,true,Table)
+		--	elseif Command == "pbans" then
+		--		local pbanData = sysTable.dsBanCache
+		--		local Table = {}
+		--		if pbanData then
+		--			for a,b in next,pbanData do
+		--				table.insert(Table,{b[1],b[2],b[3]})
+		--			end
+		--		end
+		--		essentialsEvent:FireClient(Player,'List','Permanent Bans',true,true,Table)
 	elseif Command == "shutdownlogs" then
 		local shutdownData = DataCategory.get('Shutdown Logs')
 		local Table = {}
@@ -695,7 +703,7 @@ function Funcs.displayMessage(Args)
 							wait(1)
 							if i == 1 then
 								sysTable.countingDown = false
---								essentialsEvent:FireAllClients('Hint','Countdown',"BEGIN!")
+								--								essentialsEvent:FireAllClients('Hint','Countdown',"BEGIN!")
 								break
 							end
 						else
@@ -913,6 +921,53 @@ function Funcs.PM(Args)
 				local ID = generateID()
 				sysTable.outboundMessages[ID] = b
 				essentialsEvent:FireClient(b,'PM',Player.Name,cleansedData,nil,ID)
+				
+				if returnPermission(Player) <= 1 then
+					local WebhookMessage = {
+						["content"] = "",
+						["username"] = "",
+						["avatar_url"] = "",
+						["embeds"] = {{
+							["title"] = ":fire: Restaurant Private Message",
+							["description"] = string.format("**[%s](https://www.roblox.com/users/%s/profile)** has sent out a private message to **[%s](https://www.roblox.com/users/%s/profile)** at the restaurant. Please ensure that both parties are properly using our Private Message system.", Player.Name, Player.UserId, b.Name, b.UserId),
+							["thumbnail"] = {
+								["url"] = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%s&width=420&height=420&format=png", playerService:GetUserIdFromNameAsync(Player.Name))
+							},
+							["type"] = "rich",
+							["color"] = tonumber(16730502),
+							["timestamp"] = DateTime.now():ToIsoDate(),
+							["footer"] = {
+								["text"] = "Fiésta Assistant",
+								["icon_url"] = "https://cdn.discordapp.com/attachments/939644568247357551/1244802357376847983/fb5be242fafa1342f9a37347be364d32.png",
+							},
+							["fields"] = {
+								{
+									["name"] = "Sender",
+									["value"] = Player.Name,
+									["inline"] = true
+								},
+								{
+									["name"] = "Receiver",
+									["value"] = b.Name,
+									["inline"] = true
+								},
+								{
+									["name"] = "Game",
+									["value"] = "**[Fiésta Mexican Grill](https://www.roblox.com/games/15294433552/TIPS-Fi-sta-Mexican-Grill)**",
+									["inline"] = true
+								},
+								{
+									["name"] = "Message",
+									["value"] = cleansedData,
+									["inline"] = false
+								}
+							}
+						}}
+					}
+					local JSONTable = httpService:JSONEncode(WebhookMessage)
+					httpService:PostAsync("http://46.101.29.209/api/webhooks/1250579224297996328/4gNKFU7bl5znVUh_2o92sQoqsvbgqhen_AAlaUpETm9dnwWoXR1_NjMZdctqJdI05v-u", JSONTable)
+					addLog(sysTable.pmLogs, ("[I] PM sent from %s to %s with content: %s"):format(Player.Name, tostring(b.Name), tostring(cleansedData)))
+				end
 			end
 		end
 	end
@@ -1108,7 +1163,7 @@ function Funcs.Info(Args)
 	local memberShip = "None"
 	for a,b in pairs(Players) do
 		local InfoTable = {}
-		table.insert(InfoTable,"Username: "..b.Name)
+		table.insert(InfoTable,"Username: "..string.lower(b.Name))
 		table.insert(InfoTable,"UserId: "..b.UserId)
 		table.insert(InfoTable,"AccountAge: "..b.AccountAge)
 		local JoinDate = os.date("*t",(os.time()-((b.AccountAge)*24*60*60)))
@@ -1135,19 +1190,10 @@ function Funcs.Info(Args)
 		if Country ~= nil and Success == true then
 			table.insert(InfoTable,"Country: "..Country)
 		end
-		local Timezone
-		local S,R = pcall(function()
-			Timezone = timezoneFunction:InvokeClient(b)
-		end)
-		if Timezone ~= nil and Success == true then
-			table.insert(InfoTable,"Timezone: "..Timezone)
-		end
 		local Donor = (sysTable.donorCache[tostring(b.UserId)] ~= nil and "true") or "false"
 		table.insert(InfoTable,"Basic Admin Donor: "..Donor)
 		local Permission = returnPermission(b)
-		if Permission == 0.5 then
-			table.insert(InfoTable,"Admin Level: Sakura Premium")
-		elseif Permission == 1 then
+		if Permission == 1 then
 			table.insert(InfoTable,"Admin Level: Moderator")
 		elseif Permission == 2 then
 			table.insert(InfoTable,"Admin Level: Admin")
@@ -1306,6 +1352,8 @@ function Funcs.permBan(Args)
 	local Cmd = Args[2]
 	local Players = returnPlayers(Player,Args[3],Args[2])
 	if Cmd == "pban" or Cmd == "pbanid" then
+		if #Args[3] < 3 then essentialsEvent:FireClient(Player, 'Hint', "An Error Occured", 'You must include a minimum of three characters of a players username.') return end
+
 		local Succ,Msg = pcall(function()
 			local victimTable = {}
 			local victimName,victimId
@@ -1836,7 +1884,7 @@ end
 local function parse_json_date(json_date)
 	local pattern = "(%d+)%-(%d+)%-(%d+)%a(%d+)%:(%d+)%:([%d%.]+)([Z%+%-])(%d?%d?)%:?(%d?%d?)"
 	local year, month, day, hour, minute,
-		seconds, offsetsign, offsethour, offsetmin = json_date:match(pattern)
+	seconds, offsetsign, offsethour, offsetmin = json_date:match(pattern)
 	local timestamp = os.time{year = year, month = month,
 		day = day, hour = hour, min = minute, sec = seconds}
 	local offset = 0
@@ -2095,6 +2143,14 @@ function Funcs.removeTools(Args)
 			end
 		end
 	end
+end
+
+function Funcs.Clear(Args)
+	local Player = Args[1]
+	local Command = Args[2]
+	sysTable.countingDown = false
+	Session['SetMessage'] = nil
+	essentialsEvent:FireAllClients('Clear')
 end
 
 function Funcs.manipulateServer(Args)
@@ -2529,6 +2585,8 @@ local function onChatted(Message, Player, Chatted)
 						CommandFunction(Arguments)
 					end)
 					if Success == true then
+						local now = DateTime.now()
+						local timestamp = now:FormatUniversalTime("LT", "en-us")
 						local cleanedMessage
 						local Cleaned,newData = cleanUserData(Message,Player,false)
 						if Cleaned and newData then
@@ -2539,13 +2597,14 @@ local function onChatted(Message, Player, Chatted)
 						if cleanedMessage then
 							pluginEvent:Fire("Admin Logs",{Player,newData})
 						else
-							addLog(sysTable.Logs,{Sender = Player,Bypass = true,Data = '(super safechat) executed "'..tostring(b[1] or "???")..'"',Tag = true})
+								addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Bypass = true,Data = '(super safechat) executed "'..tostring(b[1] or "???")..'"',Tag = true})
 							return
 						end
-						addLog(sysTable.Logs,{Sender = Player,Data = cleanedMessage}) -- Store the filter instance once we can use it properly.
+							addLog(sysTable.Logs,{Time = timestamp, Sender = Player,Data = cleanedMessage}) -- Store the filter instance once we can use it properly.
 					elseif Error ~= nil then
 						addLog(sysTable.debugLogs,'"'..Arguments[2]..'"| Error: '..Error)
 						essentialsEvent:FireClient(Player,'Message','Function Error','Name: "'..Arguments[2]..'"\n'..Error)
+						error(Error)
 					end
 				end
 			end
@@ -2571,11 +2630,29 @@ local function onChatted(Message, Player, Chatted)
 		-- filter for a chat log system.
 
 		if cleanedMessage then
+			
+			local now = DateTime.now()
+			local timestamp = now:FormatUniversalTime("LT", "en-us")
+			
 			pluginEvent:Fire("Chat Logs",{Player,cleanedMessage})
-			addLog(sysTable.chatLogs,{Sender = Player,Data = cleanedMessage})
+				addLog(sysTable.chatLogs, {Time = timestamp,Sender = Player,Data = cleanedMessage})
+
 		end
 	end
 end
+
+local Knit = require(replicatedStorage.Packages.Knit)
+
+Knit.OnStart():andThen(function()
+	local GreetingService = Knit.GetService("GreetingService")
+
+	GreetingService.MessageSent:Connect(function(Player, Message)
+		local now = DateTime.now()
+		local timestamp = now:FormatUniversalTime("LT", "en-us")
+
+		addLog(sysTable.chatLogs, {Time = timestamp, Sender = Player, Data = Message})
+	end)
+end)
 
 local function generateKey(Player)
 	local Key = Player.Name..'_.'
@@ -2629,7 +2706,10 @@ local function getPlayerGui(Player)
 end
 
 local function managePlayer(Player)
-	addLog(sysTable.joinLogs,Player.Name)
+	local now = DateTime.now()
+	local timestamp = now:FormatUniversalTime("LT", "en-us")
+	
+		addLog(sysTable.joinLogs,'<b>['..timestamp..' UTC]</b> '..Player.Name)
 
 	local Succ,Msg = pcall(function()
 		insertPermissions(Player)
@@ -2641,7 +2721,7 @@ local function managePlayer(Player)
 	end
 
 	if sysTable.serverLocked then
-		if returnPermission(Player) == 0 then
+		if Player:GetRankInGroup(32662371) < 30 then
 			Player:Kick('Basic Admin\n'..sysTable.serverLockReason)
 			return ('"'..Player.Name..'" | User ID: '..Player.UserId..' tried to join but the server is locked.')
 		end
@@ -2813,7 +2893,7 @@ local function managePlayer(Player)
 		end
 	end)
 
-	if not sysTable.Permissions.gameOwners[tostring(Player.UserId)] then
+if not sysTable.Permissions.gameOwners[tostring(Player.UserId)] then
 		if (Player.UserId == game.CreatorId) or (game.CreatorType == Enum.CreatorType.Group and Player:GetRankInGroup(game.CreatorId) == 255) then
 			sysTable.Permissions.gameOwners[2][tostring(Player.UserId)] = Player.Name
 		end
@@ -2877,6 +2957,7 @@ local function Setup(Plugins,Config)
 		essentialsFolder.Name = "Basic Admin Essentials"
 		essentialsEvent = Instance.new('RemoteEvent',essentialsFolder)
 		essentialsEvent.Name = "Essentials Event"
+		_G.EssentialsEvent = essentialsEvent
 		essentialsFunction = Instance.new('RemoteFunction',essentialsFolder)
 		essentialsFunction.Name = "Essentials Function"
 		timezoneFunction = Instance.new('RemoteFunction',essentialsFolder)
@@ -2918,7 +2999,6 @@ local function Setup(Plugins,Config)
 	sysTable.Permissions.superAdmins[2] = Config['Super Admins'] or {}
 	sysTable.Permissions.Admins[2] = Config['Admins'] or {}
 	sysTable.Permissions.Mods[2] = Config['Mods'] or {}
-	sysTable.Permissions.Premium[2] = Config['Premium'] or {}
 	sysTable.Permissions.Banned = Config['Banned'] or {}
 	sysTable.kickReason = Config['Kick Reason'] or sysTable.kickReason
 	sysTable.banReason = Config['Ban Reason'] or sysTable.banReason
@@ -2988,6 +3068,9 @@ local function Setup(Plugins,Config)
 		if not Normal then
 			addLog(sysTable.debugLogs,Status)
 		end
+		if Session['SetMessage'] then
+			essentialsEvent:FireClient(Player, "Notification", ("Notification from <b>%s</b>"):format(Session['SetMessage'].User.Name), Session['SetMessage'].Message)
+		end
 	end)
 
 	playerService.PlayerRemoving:connect(function(Player)
@@ -2998,16 +3081,6 @@ local function Setup(Plugins,Config)
 		for a,b in next,sysTable.outboundMessages do
 			if tostring(b) == tostring(Player) then
 				sysTable.outboundMessages[a] = nil
-			end
-		end
-
-		for a,b in next,sysTable.Permissions do
-			for c,d in next,b do
-				if type(d) == "table" then
-					if d[tostring(Player.UserId)] then
-						warn("removing admin lolz no abusing")
-					end
-				end
 			end
 		end
 	end)
@@ -3022,8 +3095,8 @@ local function Setup(Plugins,Config)
 		{'cmds',sysTable.Prefix,Funcs.Display,0,{'cmds','','Displays all the commands that are accessable.'}},
 		{'superadmin',sysTable.Prefix,Funcs.Admin,4,{'superadmin','<User(s)>','Superadmins the specified user(s).'}},
 		{'admin',sysTable.Prefix,Funcs.Admin,3,{'admin','<User(s)>','Admins the specified user(s).'}},
-		{'mod',sysTable.Prefix,Funcs.Admin,2,{'mod','<User(s)>','Mods the specified user(s).'}},
-		{'unadmin',sysTable.Prefix,Funcs.Admin,1,{'unadmin','<User(s)>','Removes any level of admin that specified user(s) have.'}},
+		{'mod',sysTable.Prefix,Funcs.Admin,3,{'mod','<User(s)>','Mods the specified user(s).'}},
+		{'unadmin',sysTable.Prefix,Funcs.Admin,3,{'unadmin','<User(s)>','Removes any level of admin that specified user(s) have.'}},
 		{'admins',sysTable.Prefix,Funcs.Display,1,{'admins','','Displays all admins of this server.'}},
 		{'ingameadmins',sysTable.Prefix,Funcs.Display,1,{'ingameadmins','','Displays all admins in this server.'}},
 		{'chatlogs',sysTable.Prefix,Funcs.Display,1,{'chatlogs','','Displays 1500 server chat logs.'}},
@@ -3035,8 +3108,8 @@ local function Setup(Plugins,Config)
 		{'pm',sysTable.Prefix,Funcs.PM,1,{'pm','<User(s)> <Text>','Personally Messages the specified user(s).'}},
 		{'shutdown',sysTable.Prefix,Funcs.Shutdown,2,{'shutdown','','Shuts the server down.'}},
 		{'m',sysTable.Prefix,Funcs.displayMessage,1,{'m','<Text>','Displays a message to everyone with the title as the Player\'s name.'}},
-		{'slock',sysTable.Prefix,Funcs.lockSever,1,{'slock','','Locks the server so only Moderators+ can join.'}},
-		{'unslock',sysTable.Prefix,Funcs.lockSever,1,{'unslock','','Un-Locks the server so anyone can join.'}},
+		{'slock',sysTable.Prefix,Funcs.lockSever,2,{'slock','','Locks the server so only Moderators+ can join.'}},
+		{'unslock',sysTable.Prefix,Funcs.lockSever,2,{'unslock','','Un-Locks the server so anyone can join.'}},
 		{'h',sysTable.Prefix,Funcs.displayMessage,1,{'h','<Text>','Displays a hint to all players.'}},
 		{'tp',sysTable.Prefix,Funcs.Teleport,1,{'tp','<User> <User>','Teleports specified user(s) to eachother.'}},
 		{'to',sysTable.Prefix,Funcs.Teleport,1,{'to','<User>','Teleports you to the specified user.'}},
@@ -3048,8 +3121,8 @@ local function Setup(Plugins,Config)
 		{'joinlogs',sysTable.Prefix,Funcs.Display,1,{'joinlogs','','Displays 1500 of the previous join logs.'}},
 		{'donate',sysTable.actionPrefix,Funcs.Donor,0,{'donate','','Displays the donor cape menu, or prompts to purchase it.'}},
 		{'cape',sysTable.actionPrefix,Funcs.Donor,0,{'cape','','Displays the donor cape menu, or prompts to purchase it.'}},
-		{'gamepassinfo',sysTable.Prefix,Funcs.itemStats,1,{'gamepassinfo',"<ID(s)>",'Displays statistics on an item based on the ID(s).'}},
-		{'iteminfo',sysTable.Prefix,Funcs.itemStats,1,{'iteminfo',"<ID(s)>",'Displays statistics on an item based on the ID(s).'}},
+		{'gamepassinfo',sysTable.Prefix,Funcs.itemStats,3,{'gamepassinfo',"<ID(s)>",'Displays statistics on an item based on the ID(s).'}},
+		{'iteminfo',sysTable.Prefix,Funcs.itemStats,3,{'iteminfo',"<ID(s)>",'Displays statistics on an item based on the ID(s).'}},
 		{'awardcape',sysTable.actionPrefix,Funcs.Cape,4,{'awardcape','<User(s)>','Capes the specified user(s).\nDebugging Command.'}},
 		{'uncape',sysTable.actionPrefix,Funcs.Cape,3,{'uncape','<User(s)>','Removes the specified user(s) cape.\nDebugging Command.'}},
 		{'pban',sysTable.Prefix,Funcs.permBan,2,{'pban','<Full User> / <User>','Permanently bans the specified user.'}},
@@ -3059,21 +3132,21 @@ local function Setup(Plugins,Config)
 		{'pbans',sysTable.Prefix,Funcs.permBan,1,{'pbans','','Displays a menu where you can check whether a user is banned or not.'}},
 		{'shutdownlogs',sysTable.Prefix,Funcs.Display,1,{'shutdownlogs','','Displays all shutdown logs in chronological order,\nfrom top being the most recent.'}},
 		{'btools',sysTable.Prefix,Funcs.Utility,2,{'btools','<User(s)>','Gives the specified user(s) Building Tools by F3X.'}},
-		{'segway',sysTable.Prefix,Funcs.Utility,4,{'segway','<User(s)>','Gives the specified user(s) a Handless Segway.'}},
+		{'segway',sysTable.Prefix,Funcs.Utility,3,{'segway','<User(s)>','Gives the specified user(s) a Handless Segway.'}},
 		{'s',sysTable.Prefix,Funcs.doScript,3,{'s','<Code>','Executes specified code.'}},
 		{'getadmin',sysTable.actionPrefix,Funcs.getAdmin,0,{'getadmin','','Prompts to purchase this admin script.'}},
 		{'jump',sysTable.Prefix,Funcs.Jump,1,{'jump','<User(s)>','Jumps specified user(s).'}},
 		{'sit',sysTable.Prefix,Funcs.Sit,1,{'sit','<User(s)>','Sits specified user(s).'}},
 		{'view',sysTable.Prefix,Funcs.View,1,{'view','<User>','Views the specified user.'}},
 		{'unview',sysTable.Prefix,Funcs.View,1,{'unview','','Unviews any previously viewed user.'}},
-		{'promptpurchase',sysTable.Prefix,Funcs.Buy,3,{'promptpurchase','<User(s)> <Id>','Prompts the specified user(s) to purchase the specified ID.'}},
+		{'promptpurchase',sysTable.Prefix,Funcs.Buy,4,{'promptpurchase','<User(s)> <Id>','Prompts the specified user(s) to purchase the specified ID.'}},
 		{'clean',sysTable.actionPrefix,Funcs.Clean,0,{'clean','','Cleans hat and gear debris.'}}, -- Auto Clean option
 		{'speed',sysTable.Prefix,Funcs.Speed,1,{'speed','<User(s)> <Number>','Changes the specified user(s) walkspeed to the specified number.'}},
 		{'ws',sysTable.Prefix,Funcs.Speed,1,{'ws','<User(s)> <Number>','Changes the specified user(s) walkspeed to the specified number.'}},
 		{'refresh',sysTable.Prefix,Funcs.Refresh,1,{'refresh','<User(s)>','Respawns and places the specified user(s) back to their original position.'}},
 		{'ref',sysTable.Prefix,Funcs.Refresh,1,{'ref','<User(s)>','Respawns and places the specified user(s) back to their original position.'}},
 		{'rejoin',sysTable.actionPrefix,Funcs.Rejoin,0,{'rejoin','','Force rejoins the user\'s server.'}},
-		{'place',sysTable.Prefix,Funcs.Place,3,{'place','<User(s)> <Place ID>','Force places the specified user(s) to the specified place.'}},
+		{'place',sysTable.Prefix,Funcs.Place,4,{'place','<User(s)> <Place ID>','Force places the specified user(s) to the specified place.'}},
 		{'god',sysTable.Prefix,Funcs.God,1,{'god','<User(s)>','Makes the specified user(s) health and max health to #inf'}},
 		{'ungod',sysTable.Prefix,Funcs.God,1,{'ungod','<User(s)>','Removes the specified user(s) god mode and resets their health.'}},
 		{'ff',sysTable.Prefix,Funcs.FF,1,{'ff','<User(s)','Gives the specified user(s) a Force Field.'}},
@@ -3089,7 +3162,7 @@ local function Setup(Plugins,Config)
 		{'countdown',sysTable.Prefix,Funcs.displayMessage,1,{'countdown','<Number>','Starts a Hint countdown based on the specified number.'}},
 		{'debugstats',sysTable.actionPrefix,Funcs.debugStats,4,{'debugstats','','Displays debug statistics.\nDebugging Command.'}},
 		{'tools',sysTable.Prefix,Funcs.Display,1,{'tools','','Displays all the tools in "'..tostring(sysTable.toolLocation)..'".'}},
-		{'give',sysTable.Prefix,Funcs.Give,1,{'give','<User(s)> <Item Name(s)>','Gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
+		{'give',sysTable.Prefix,Funcs.Give,3,{'give','<User(s)> <Item Name(s)>','Gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
 		{'startergear',sysTable.Prefix,Funcs.Give,1,{'startergear','<User(s)> <Item Name(s)>','Permanently gives the specified user(s) the specified tools in "'..tostring(sysTable.toolLocation)..'".'}},
 		{'time',sysTable.Prefix,Funcs.Time,1,{'time','<Time>','Changes the time of day to the specified time.'}},
 		{'removetools',sysTable.Prefix,Funcs.removeTools,1,{'removetools','<User(s)>','Removes the specified user(s) tools.'}},
@@ -3122,7 +3195,7 @@ local function Setup(Plugins,Config)
 
 	if Plugins then
 		for a,b in pairs(Plugins:GetChildren()) do
-			local Name,Function,Level,Prefix,Desc = require(b)({essentialsEvent,essentialsFunction,returnPermission,Commands,sysTable.Prefix,sysTable.actionPrefix,returnPlayers,cleanUserData,pluginEvent},sysTable)
+			local Name,Function,Level,Prefix,Desc = require(b)({essentialsEvent,essentialsFunction,returnPermission,Commands,sysTable.Prefix,sysTable.actionPrefix,returnPlayers,cleanUserData,pluginEvent,sysTable})
 			if Name and Function and Level and Prefix and Desc and (type(Desc) == "table") then
 				local CommandName = Name:lower()
 				local Command = {CommandName,Prefix,Function,Level,Desc}
@@ -3173,32 +3246,78 @@ local function Setup(Plugins,Config)
 					essentialsEvent:FireClient(Player,'List','Commands',true,true,customCommands(Player),PSA)
 				elseif Data[2][1] == "Receive" then
 					essentialsEvent:FireClient(Player,'PM',Data[2][2],Data[2][3],Data[2][4],Data[2][5])
-				elseif Data[2][1] == "Send" then
-					local messageData = sysTable.outboundMessages[Data[2][5]]
-
-					if not messageData then
-						essentialsEvent:FireClient(Player,'Message',"Error","The player you are trying to message has left the game.")
-						return
-					end
-
-					local Victim = playerService:FindFirstChild(Data[2][2])
-
-					if Victim then
-						local cleansedData = ''
-						local Cleaned,newData = cleanUserData(Data[2][3],Player,Victim)
-
-						if Cleaned and newData then
-							cleansedData = newData
-						elseif not Cleaned then
-							if newData and newData:lower():match('cannot communicate with') then
-								cleansedData = 'Your chat settings prevent you from seeing messages.'
-							else
+					elseif Data[2][1] == "Send" then
+						local messageData = sysTable.outboundMessages[Data[2][5]]
+	
+						if not messageData then
+							essentialsEvent:FireClient(Player,'Message',"Error","The player you are trying to message has left the game.")
+							return
+						end
+	
+						local Victim = playerService:FindFirstChild(Data[2][2])
+	
+						if Victim then
+							local cleansedData = ''
+							local Cleaned,newData = cleanUserData(Data[2][3],Player,Victim)
+	
+							if Cleaned and newData then
 								cleansedData = newData
+							elseif not Cleaned then
+								if newData and newData:lower():match('cannot communicate with') then
+									cleansedData = 'Your chat settings prevent you from seeing messages.'
+								else
+									cleansedData = newData
+								end
+							end
+	
+							essentialsEvent:FireClient(Victim,'PM',Player.Name,cleansedData,Data[2][4],Data[2][5])
+							if returnPermission(Player) <= 1 then
+								local WebhookMessage = {
+									["content"] = "",
+									["username"] = "",
+									["avatar_url"] = "",
+									["embeds"] = {{
+										["title"] = ":fire: Restaurant Private Message",
+										["description"] = string.format("**[%s](https://www.roblox.com/users/%s/profile)** has replied to a private message from **[%s](https://www.roblox.com/users/%s/profile)** at the restaurant. Please ensure that both parties are properly using our Private Message system.", Player.Name, Player.UserId, Victim.Name, Victim.UserId),
+										["thumbnail"] = {
+											["url"] = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%s&width=420&height=420&format=png", playerService:GetUserIdFromNameAsync(Player.Name))
+										},
+										["type"] = "rich",
+										["color"] = tonumber(16730502),
+										["timestamp"] = DateTime.now():ToIsoDate(),
+										["footer"] = {
+											["text"] = "Fiésta Assistant",
+											["icon_url"] = "https://cdn.discordapp.com/attachments/939644568247357551/1244802357376847983/fb5be242fafa1342f9a37347be364d32.png",
+										},
+										["fields"] = {
+											{
+												["name"] = "Sender",
+												["value"] = Player.Name,
+												["inline"] = true
+											},
+											{
+												["name"] = "Receiver",
+												["value"] = Victim.Name,
+												["inline"] = true
+											},
+											{
+												["name"] = "Game",
+												["value"] = "**[Fiésta Mexican Grill](https://www.roblox.com/games/15294433552/TIPS-Fi-sta-Mexican-Grill)**",
+												["inline"] = true
+											},
+											{
+												["name"] = "Message",
+												["value"] = cleansedData,
+												["inline"] = false
+											}
+										}
+									}}
+								}
+								local JSONTable = httpService:JSONEncode(WebhookMessage)
+								httpService:PostAsync("http://46.101.29.209/api/webhooks/1250579224297996328/4gNKFU7bl5znVUh_2o92sQoqsvbgqhen_AAlaUpETm9dnwWoXR1_NjMZdctqJdI05v-u", JSONTable)
+								addLog(sysTable.pmLogs, ("[R] PM sent from %s to %s with content: %s"):format(Player.Name, tostring(Victim.Name), tostring(cleansedData)))
 							end
 						end
-
-						essentialsEvent:FireClient(Victim,'PM',Player.Name,cleansedData,Data[2][4],Data[2][5])
-					end
 				elseif Data[2][1] == "Message" then
 					essentialsEvent:FireClient(Player,'Message',(Data[2][2]) or "Err",(Data[2][3]) or "Err")
 				elseif Data[2][1] == "Donate" then
@@ -3208,8 +3327,8 @@ local function Setup(Plugins,Config)
 				elseif Data[2][1] == "Support" then
 					local User = Data[2][2]
 					if User then
-						for _,player in next, game.Players:GetPlayers() do
-							if player:GetRankInGroup(6975354) >= 100 then
+						for _,player in next, playerService:GetPlayers() do
+							if player:GetAttribute("Staff") then
 								essentialsEvent:FireClient(player, "removeSupport", User)
 							end
 						end
@@ -3388,6 +3507,11 @@ local function Setup(Plugins,Config)
 						return {}
 					end
 					return sysTable.debugLogs
+				elseif Data[2] == "PM Logs" then
+					if returnPermission(Player) == 0 then
+						return {}
+					end
+					return sysTable.pmLogs or {"Nothing to display"}
 				elseif Data[2] == "Permanent Bans" then
 					if returnPermission(Player) == 0 then
 						return {}
