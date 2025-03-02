@@ -154,12 +154,29 @@ function OverheadService:KnitStart()
             for _, Player in next, Players:GetPlayers() do
                 local badgeCount = player[Player] - 1
                 local nametag = PlayerCache[Player]
-    
+
                 if badgeCount then
+                    local function showBadge(badge)
+                        if badge and badge.Title then
+                            spr.target(badge, 1, 1, { BackgroundTransparency = 0 })
+                            spr.target(badge.Title, 1, 1, { TextTransparency = 0 })
+                            spr.target(badge.Title, 1, 1, { TextStrokeTransparency = 0.8 })
+                        end
+                    end
+
+                    local function hideAllBadges()
+                        for _, otherBadge in next, nametag.Main.Titles:GetChildren() do
+                            if otherBadge and otherBadge.Title then
+                                spr.target(otherBadge, 1, 1, { BackgroundTransparency = 1 })
+                                spr.target(otherBadge.Title, 1, 1, { TextTransparency = 1 })
+                                spr.target(otherBadge.Title, 1, 1, { TextStrokeTransparency = 1 })
+                            end
+                            task.wait()
+                        end
+                    end
+
                     if badgeCount == 1 then
-                        spr.target(nametag.Main.Titles['Top1'], 1, 1, { BackgroundTransparency = 0 })
-                        spr.target(nametag.Main.Titles['Top1'].Title, 1, 1, { TextTransparency = 0 })
-                        spr.target(nametag.Main.Titles['Top1'].Title, 1, 1, { TextStrokeTransparency = 0.8 })
+                        showBadge(nametag.Main.Titles['Top1'])
                     elseif badgeCount > 1 then
                         for index, badge in next, nametag.Main.Titles:GetChildren() do
                             if index - 1 == badgeCount then
@@ -167,21 +184,13 @@ function OverheadService:KnitStart()
                                     Times[Player] = 0
                                 end
                                 Times[Player] += 1
-                                for _, otherBadge in next, nametag.Main.Titles:GetChildren() do
-                                    spr.target(otherBadge, 1, 1, { BackgroundTransparency = 1 })
-                                    spr.target(otherBadge.Title, 1, 1, { TextTransparency = 1 })
-                                    spr.target(otherBadge.Title, 1, 1, { TextStrokeTransparency = 1 })
-                                    task.wait()
-                                end
-    
+                                hideAllBadges()
+
                                 if Times[Player] == #nametag.Main.Titles:GetChildren() then
                                     Times[Player] = 0
                                 end
 
-                                local currentBadge = nametag.Main.Titles[`Top{Times[Player]}`]
-                                spr.target(currentBadge, 1, 1, { BackgroundTransparency = 0 })
-                                spr.target(currentBadge.Title, 1, 1, { TextTransparency = 0 })
-                                spr.target(currentBadge.Title, 1, 1, { TextStrokeTransparency = 0.8 })
+                                showBadge(nametag.Main.Titles[`Top{Times[Player]}`])
                             end
                         end
                     end

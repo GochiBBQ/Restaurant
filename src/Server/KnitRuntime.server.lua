@@ -14,6 +14,7 @@ local Knit = require(Packages.Knit)
 local Signal = require(Packages.Signal)
 
 Knit.Modules = Server.Modules
+Knit.Classes = Server.Classes
 
 Knit.Data = ReplicatedStorage:WaitForChild("Data")
 Knit.Static = ReplicatedStorage:WaitForChild("Static")

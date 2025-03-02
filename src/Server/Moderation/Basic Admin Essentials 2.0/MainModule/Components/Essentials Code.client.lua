@@ -2501,7 +2501,6 @@ local function Console()
 		if not consoleOpen then
 			consoleOpen = true
 			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 			spawn(function()
 				for i,v in pairs(baseClip:GetChildren()) do
 					if v.Name == 'Hint Clone' then
@@ -2522,7 +2521,6 @@ local function Console()
 		else
 			consoleOpen = false
 			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
-			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 			consoleText.Text = 'Enter a command..'
 			consoleBox.Text = ''
 			consoleBox:ReleaseFocus()
@@ -2650,8 +2648,6 @@ function essentialsFunction.OnClientInvoke(Starter,...)
 				clientConfig[a] = b
 			end
 			
-			testService:Message("Basic Admin Essentials 2.0 | "..clientConfig.Version.." | Prefix: \""..clientConfig.Prefix.."\" | Act. Prefix: \""..clientConfig.actionPrefix.."\"")
-			
 			local adminTitle
 			if clientConfig.Permission == 1 then
 				adminTitle = "Moderator"
@@ -2661,10 +2657,9 @@ function essentialsFunction.OnClientInvoke(Starter,...)
 				adminTitle = "Super Admin"
 			elseif clientConfig.Permission == 4 then
 				adminTitle = "Creator Admin"
-				testService:Message("Basic Admin Essentials 2.0 | DP: "..tostring(clientConfig.donorEnabled).." | CD: "..tostring(clientConfig.Debugging))
 			end
 			if adminTitle then
-				pendNotif(adminTitle,'Click for Commands',{'Cmds'})
+				pendNotif(adminTitle,'Click for Commands.',{'Cmds'})
 			end
 
 			return clientConfig.Key

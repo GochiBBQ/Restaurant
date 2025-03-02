@@ -18,6 +18,7 @@ local Players = game:GetService('Players')
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local ViewportManager = require(Knit.Modules.ViewportManager)
 local spr = require(Knit.Modules.spr)
+local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
 
 -- ————————— 🂡 —————————
 -- Variables
@@ -127,8 +128,10 @@ function BackpackController:RegisterButtonClick(Button)
         if OldButton then
             OldButton.Parent.UIGradient.Enabled = false
             OldButton.Parent.UIStroke.UIGradient.Enabled = false
-            spr.target(OldButton.Parent, 0.8, 4, { BackgroundTransparency = 0.75 })
-            spr.target(OldButton.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })
+            -- spr.target(OldButton.Parent, 0.8, 4, { BackgroundTransparency = 0.75 })
+            AnimNation.target(OldButton.Parent, {s = 8, d = 0.8}, { BackgroundTransparency = 0.75 })
+            -- spr.target(OldButton.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })
+            AnimNation.target(OldButton.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.35, 1) })
             self:UnequipItem()
         end
     end
@@ -138,16 +141,20 @@ function BackpackController:RegisterButtonClick(Button)
         UISelect:Play()
         Button.Parent.UIGradient.Enabled = true
         Button.Parent.UIStroke.UIGradient.Enabled = true
-        spr.target(Button.Parent, 0.8, 4, { BackgroundTransparency = 0.3 })
-        spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.7, 1.3) })
+        -- spr.target(Button.Parent, 0.8, 4, { BackgroundTransparency = 0.3 })
+        -- spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.7, 1.3) })
+        AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { BackgroundTransparency = 0.3 })
+        AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.7, 1.3) })
         self:EquipItem(Player.Backpack:FindFirstChild(Button.Name))
         self.ActiveTool = Button.Parent.Name
     else
         -- If the same item is clicked again, deselect it
         Button.Parent.UIGradient.Enabled = false
         Button.Parent.UIStroke.UIGradient.Enabled = false
-        spr.target(Button.Parent, 0.8, 4, { BackgroundTransparency = 0.75 })
-        spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })
+        -- spr.target(Button.Parent, 0.8, 4, { BackgroundTransparency = 0.75 })
+        -- spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })
+        AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { BackgroundTransparency = 0.75 })
+        AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.35, 1) })
         self:UnequipItem()
         self.ActiveTool = nil
     end
@@ -331,12 +338,14 @@ function BackpackController:InitializeBackpackUI()
 
             Button.MouseEnter:Connect(function()
                 UIHover:Play()
-                spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.7, 1.3) })
+                -- spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.7, 1.3) })
+                AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.7, 1.3) })
             end)
 
             Button.MouseLeave:Connect(function()
                 if self.ActiveTool ~= Button.Parent.Name then
-                    spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })  
+                    -- spr.target(Button.Parent, 0.8, 4, { Size = UDim2.fromScale(0.35, 1) })  
+                    AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.35, 1) })
                 end
             end)
 

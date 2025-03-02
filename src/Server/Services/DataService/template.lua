@@ -62,7 +62,18 @@ local template = {
     },
 
     Settings = {
-
+        Settings = {
+            LowGraphicsMode = false,
+            MuteMusic = false,
+            ShowTips = true,
+            DisableEffects = false,
+        },
+        Gamepasses = {
+            Headless = false,
+            Korblox = false,
+            Walkspeed = false,
+            DisableUniform = false,
+        }
     },
 
     Gamepasses= {

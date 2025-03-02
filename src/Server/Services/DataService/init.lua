@@ -61,7 +61,7 @@ local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 ]]
 function DataService:LoadProfile(Player: Player)
 	-- Don't use `PlayerData{Player.UserId}`, existing data
-	local PlayerProfile: table = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev1`, "ForceLoad")
+	local PlayerProfile: table = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev2`, "ForceLoad")
 
 	if Knit.Profiles[Player] then
 		return
@@ -123,7 +123,6 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 	local Rank = RankService:GetRank(Player)
 
 	if Rank >= 7 then -- Management
-		Player.Team = Teams["Management"]
 		Player:SetAttribute("Staff", true)
 	elseif Rank <= 3 then
 		Player.Team = Teams["Customer"]
@@ -146,25 +145,19 @@ function DataService:UpdateSetting(Player: Player, Setting: string, Type: boolea
 	local Profile = Knit.Profiles[Player]
 
 	if Profile then
-		local Settings = Profile.Data.Settings
-		if GamepassService:CheckPass(Player, Setting) then
-			if Settings[Setting] ~= nil then
-				Profile.Data.Settings[Setting] = Type
-				self.Client.UpdateSettings:Fire(Player, Setting, Type)
-				self.SettingUpdated:Fire(Player, Setting, Type)
+		local Settings = Profile.Data.Settings['Settings']
+		if Settings[Setting] ~= nil then
+			Profile.Data.Settings['Settings'][Setting] = Type
+			self.Client.UpdateSettings:Fire(Player, Setting, Type)
+			self.SettingUpdated:Fire(Player, Setting, Type)
 
-				if Setting == "DisableTips" then
-					Player:SetAttribute("ShowTips", not Type)
-				end
-			else
-				Profile.Data.Settings[Setting] = Type
-				self.Client.UpdateSettings:Fire(Player, Setting, Type)
-				self.SettingUpdated:Fire(Player, Setting, Type)
+			if Setting == "ShowTips" then
+				Player:SetAttribute("ShowTips", Type)
 			end
 		else
-			Profile.Data.Settings[Setting] = false
-			self.Client.UpdateSettings:Fire(Player, Setting, false)
-			self.SettingUpdated:Fire(Player, Setting, false)
+			Profile.Data.Settings['Settings'][Setting] = Type
+			self.Client.UpdateSettings:Fire(Player, Setting, Type)
+			self.SettingUpdated:Fire(Player, Setting, Type)
 		end
 	end
 end
@@ -180,25 +173,21 @@ end
 	@within DataService
 ]]
 function DataService:GetSettings(Player)
-	repeat
+	while not Player:GetAttribute("Loaded") do
 		task.wait()
-	until Player:GetAttribute("Loaded")
-
-	local Profile = Knit.Profiles[Player]
-
-	if Profile then
-		local Settings = Profile.Data.Settings
-
-		for Setting, Toggle in pairs(Settings) do
-			if Setting == "DisableTips" then
-				Player:SetAttribute("ShowTips", not Toggle)
-            end
-		end
-
-		return Settings
 	end
 
-	return nil
+	local Profile = Knit.Profiles[Player]
+	if not Profile then
+		return nil
+	end
+
+	local Settings = Profile.Data.Settings['Settings']
+	if Settings.ShowTips ~= nil then
+		Player:SetAttribute("ShowTips", Settings.ShowTips)
+	end
+
+	return Settings
 end
 
 --[[
@@ -210,7 +199,7 @@ end
 ]]
 function DataService:KnitStart()
 	RankService = Knit.GetService("RankService")
-	-- GamepassService = Knit.GetService("GamepassService")
+	GamepassService = Knit.GetService("GamepassService")
 
 	RankService.UpdateRank:Connect(function(Player)
 		Player.leaderstats.Rank.Value = Player:GetRoleInGroup(5874921)
@@ -237,7 +226,7 @@ function DataService:KnitStart()
 	end
 
 	Players.PlayerAdded:Connect(function(Player)
-		if Player.AccountAge < 10 then
+		if Player.AccountAge < 10 and not game:GetService("RunService"):IsStudio() then
 			Player:Kick("Your account is less than 10 days old.")
 		end
 

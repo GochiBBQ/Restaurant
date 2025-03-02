@@ -1,0 +1,172 @@
+--[[
+
+Author: alreadyfans
+For: Gochi
+
+]]
+
+-- Class Init
+local Table = {}
+Table.__index = Table
+
+-- Services
+local ReplicatedStorage = game:GetService('ReplicatedStorage') --- @service ReplicatedStorage
+local Players = game:GetService("Players") --- @service Players
+
+-- Modules
+local Knit = require(ReplicatedStorage.Packages.Knit) --- @module Knit
+
+-- Variables
+local NotificationService
+
+local Tables = {}
+local TableCount = {
+    ["Indoor Seating"] = 0,
+    ["Outdoor Seating"] = 0,
+    ["Underwater Dining"] = 0
+}
+
+Knit.OnStart():andThen(function()
+    NotificationService = Knit.GetService("NotificationService")
+end)
+
+-- Functions
+function Table.new(tab: Instance, Category: string, Seats: number)
+    local self = setmetatable({}, Table)
+
+    self.Table = tab
+    self.Name = tab.Name
+    self.Category = Category
+    self.Seats = Seats
+
+    Tables[tab] = {
+        Table = self.Table,
+        Name = self.Name,
+        Seats = self.Seats,
+        Category = self.Category,
+        isOccupied = false,
+        Occupants = {}
+    }
+
+    TableCount[Category] = TableCount[Category] + 1
+
+    for _, object in pairs(tab:GetDescendants()) do
+        if object:IsA("Seat") then
+            object:GetPropertyChangedSignal("Occupant"):Connect(function()
+                if object.Occupant then
+                    local Player = Players:GetPlayerFromCharacter(object.Occupant.Parent)
+                    local Humanoid = object.Occupant
+
+                    local function denyPermission()
+                        NotificationService:CreateNotif(Player, "You do not have permission to sit at this table.")
+                        Humanoid.Sit = false
+                        Humanoid.Parent:MoveTo(object.Position + Vector3.new(0, 5, 0))
+                        task.delay(0.1, function()
+                            Humanoid.Jump = true
+                        end)
+                    end
+
+                    if not Tables[tab].isOccupied or not table.find(Tables[tab].Occupants, Player) then
+                        denyPermission()
+                    end
+                end
+            end)
+        end
+    end
+
+    return self
+end
+
+function Table:_getTableCount()
+    return TableCount
+end
+
+function Table:_checkOccupied(Table: Instance)
+    return Tables[Table].isOccupied, Tables[Table].Occupants
+end
+
+function Table:_setOccupied(Table: Instance, Occupants: {Player})
+    if #Occupants > Tables[Table].Seats then
+        return false, "Occupants exceeds table seat limit."
+    end
+
+    if Tables[Table].isOccupied then
+        return false, "Table is already occupied."
+    end
+
+    for _, Occupant in pairs(Occupants) do
+        if not Occupant:IsA("Player") then
+            return false, "Occupants must be players."
+        end
+    end
+
+    Tables[Table].isOccupied = true
+    Tables[Table].Occupants = Occupants
+    return true
+end
+
+function Table:_setUnoccupied(Table: Instance)
+
+    if not Tables[Table].isOccupied then
+        return false, "Table is not occupied."
+    end
+
+    Tables[Table].isOccupied = false
+    Tables[Table].Occupants = {}
+    return true
+end
+
+function Table:_addOccupant(Table: Instance, Occupant: Player)
+    if not Tables[Table].isOccupied then
+        return false, "Table is not occupied."
+    end
+
+    if #Tables[Table].Occupants >= Tables[Table].Seats then
+        return false, "Table is full."
+    end
+
+    table.insert(Tables[Table].Occupants, Occupant)
+    return true
+end
+
+function Table:_removeOccupant(Table: Instance, Occupant: Player)
+    if not Tables[Table].isOccupied then
+        return false, "Table is not occupied."
+    end
+
+    local index = table.find(Tables[Table].Occupants, Occupant)
+    if index then
+        table.remove(Tables[Table].Occupants, index)
+        return true
+    else
+        return false, "Occupant not found."
+    end
+end
+
+function Table:_getOccupants(Table: Instance)
+    return Tables[Table].Occupants
+end
+
+function Table:_getAvailableTables(Seats: number)
+
+    local availableTables = {
+        ["Indoor Seating"] = {},
+        ["Outdoor Seating"] = {},
+        ["Underwater Dining"] = {}
+    }
+    local seatsNumber = tonumber(Seats)
+
+    for tableInstance, tableData in pairs(Tables) do
+        if not tableData.isOccupied and tableData.Seats >= seatsNumber then
+            table.insert(availableTables[tableData.Category], tableInstance)
+        end
+    end
+
+    return availableTables
+end
+
+function Table:_getTableInfo(Table: Instance)
+    return Tables[Table]
+end
+
+return Table

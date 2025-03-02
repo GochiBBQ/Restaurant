@@ -5,7 +5,6 @@ For: Gochi
 
 ]]
 
--- ————————— 🂡 —————————
 -- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ContentProvider = game:GetService("ContentProvider")
@@ -15,14 +14,13 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local Teams = game:GetService("Teams")
 
--- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local UIEffects = require(Knit.Modules.UIEffects)
+local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
 local spr = require(Knit.Modules.spr)
 local Icon = require(Knit.Modules.Icon)
 
--- ————————— 🂡 —————————
 -- Variables
 
 local Player = Players.LocalPlayer
@@ -31,19 +29,18 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local UISelect = SoundService.UISelect
 local UIHover = SoundService.UIHover
 
+local ColorCorrection
 local CurrentFrame = nil
 local FrameOpen = false
 local RankService
 
 local Positions = {}
 
--- ————————— 🂡 —————————
 -- Create Knit Controller
 local UIController = Knit.CreateController {
     Name = "UIController",
 }
 
--- ————————— 🂡 —————————
 -- Client Functions
 
 --[[
@@ -79,7 +76,6 @@ end
 ]]
 function UIController:KnitStart()
     RankService = Knit.GetService("RankService")
-    
 
     Icon.modifyBaseTheme(
         {"IconSpotGradient", "Color", ColorSequence.new({
@@ -113,6 +109,9 @@ function UIController:KnitStart()
             self:InitCommandBar()
         end
 	end)
+
+    ColorCorrection = Instance.new("ColorCorrectionEffect")
+    ColorCorrection.Parent = Lighting
 end
 
 --[[
@@ -211,11 +210,13 @@ function UIController:InitCommandBar()
 end
 
 function UIController:HideHUD()
-    spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, -.1, 0)})
+    -- spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, -.1, 0)})
+    AnimNation.target(self.HUD, {s = 10, d = 0.5}, {Position = UDim2.new(0.5, 0, -.1, 0)})
 end
 
 function UIController:ShowHUD()
-    spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, 0.032, 0)})
+    -- spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, 0.032, 0)})
+    AnimNation.target(self.HUD, {s = 10, d = 0.5}, {Position = UDim2.new(0.5, 0, 0.032, 0)})
 end
 
 --[[
@@ -270,24 +271,25 @@ function UIController:Open(UI: GuiObject, Effects: boolean?)
         end
 
         if Effects then
-            spr.target(Lighting.Blur, 0.5, 1, {Size = 35})
-            spr.target(workspace.CurrentCamera, 0.5, 1, {FieldOfView = 90})
+            AnimNation.target(Lighting.Blur, {s = 3, d = 0.3}, {Size = 35})
+            AnimNation.target(workspace.CurrentCamera, {s = 3, d = 0.3}, {FieldOfView = 90})
+            AnimNation.target(ColorCorrection, {s = 3, d = 0.3}, {TintColor = Color3.fromRGB(60, 60, 60)})
         end
 
         UI.Visible = true
 
         for _, component in pairs(Components) do
             if component.Frame.Name == "Background" then
-                spr.target(component.Frame, 0.5, 3, {ImageTransparency = 0})
+                AnimNation.target(component.Frame, {s = 10, d = 0.3}, {ImageTransparency = 0})
             end
 
-            task.wait(0.025)
-
             component.Frame.Visible = true
-            spr.target(component.Frame, 0.5, 3, {Position = component.OriginalPosition})
+            AnimNation.target(component.Frame, {s = 10, d = 0.3}, {Position = component.OriginalPosition})
         end
 
         CurrentFrame = UI.Name
+
+        Player:SetAttribute("UIOpen", true)
     end
 end
 
@@ -317,44 +319,38 @@ function UIController:Close(UI: GuiObject, HUD: boolean?)
             end
         end
         
-        spr.target(Lighting.Blur, 0.5, 1, {Size = 0})
-        spr.target(workspace.CurrentCamera, 0.5, 1, {FieldOfView = 70})
-
-        local animations = {}
+        AnimNation.target(Lighting.Blur, {s = 3, d = 0.2}, {Size = 0})
+        AnimNation.target(workspace.CurrentCamera, {s = 3, d = 0.2}, {FieldOfView = 70})
+        AnimNation.target(ColorCorrection, {s = 3, d = 0.3}, {TintColor = Color3.fromRGB(255, 255, 255)})
 
         for _, component in pairs(Components) do
-            local animation
             if component.ClassName == "Frame" or component.ClassName == "ScrollingFrame" then
-                animation = spr.target(component.Frame, 0.5, 2, {Position = component.OriginalPosition + UDim2.fromScale(0, 0.2)})
+                AnimNation.target(component.Frame, {s = 8, d = 0.2}, {Position = component.OriginalPosition + UDim2.fromScale(0, 0.2)})
             elseif component.ClassName == "TextLabel" then
                 if component.Frame.Name == "Title" then
-                    animation = spr.target(component.Frame, 0.5, 2, {Position = UDim2.fromScale(0.033, 0.03)})
+                    AnimNation.target(component.Frame, {s = 8, d = 0.2}, {Position = UDim2.fromScale(0.033, 0.03)})
                 end
             elseif component.ClassName == "ImageButton" then
-                animation = spr.target(component.Frame, 0.5, 2, {Position = UDim2.fromScale(0.033, 0.03)})
+                AnimNation.target(component.Frame, {s = 8, d = 0.2}, {Position = UDim2.fromScale(0.033, 0.03)})
             elseif component.ClassName == "ImageLabel" then
                 if component.Frame.Name == "Background" then
-                    animation = spr.target(component.Frame, 0.5, 3, {ImageTransparency = 1})
+                    AnimNation.target(component.Frame, {s = 10, d = 0.2}, {ImageTransparency = 1})
                 end
             end
-
-            if animation then
-                table.insert(animations, animation)
-            end
-        end
-
-        for _, animation in pairs(animations) do
-            animation:Wait()
         end
 
         UI.Visible = false
 
         for _, component in pairs(Components) do
-            component.Frame.Position = component.OriginalPosition
-            component.Frame.Visible = component.Visible
+            if component.Frame.Name == "Background" then
+                AnimNation.target(component.Frame, {s = 10, d = 0.3}, {ImageTransparency = 1})
+            end
+
+            component.Frame.Visible = true
+            AnimNation.target(component.Frame, {s = 10, d = 0.3}, {Position = component.OriginalPosition})
         end
 
-        if HUD then
+        if HUD and CurrentFrame then
             local frame = self.HUD:FindFirstChild(CurrentFrame)
             if frame and frame:FindFirstChild("Background") then
                 frame.Background.Image = "rbxassetid://136725729762264"
@@ -363,6 +359,8 @@ function UIController:Close(UI: GuiObject, HUD: boolean?)
 
         CurrentFrame = nil
         FrameOpen = false
+
+        Player:SetAttribute("UIOpen", false)
     end
 end
 
@@ -381,12 +379,14 @@ function UIController:InitHUD()
             local originalSize = frame.Size
 
             frame.Background.MouseEnter:Connect(function()
-                spr.target(frame, 1, 3, {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + 10, originalSize.Y.Scale, originalSize.Y.Offset + 10)})
+                -- spr.target(frame, 1, 3, {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + 10, originalSize.Y.Scale, originalSize.Y.Offset + 10)})
+                AnimNation.target(frame, {s = 10, d = 1}, {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + 10, originalSize.Y.Scale, originalSize.Y.Offset + 10)})
                 UIHover:Play()
             end)
 
             frame.Background.MouseLeave:Connect(function()
-                spr.target(frame, 1, 3, {Size = originalSize})
+                -- spr.target(frame, 1, 3, {Size = originalSize})
+                AnimNation.target(frame, {s = 10, d = 1}, {Size = originalSize})
             end)
 
             frame.Background.MouseButton1Down:Connect(function()
@@ -450,9 +450,11 @@ function UIController:AdvertisementBoards()
 			if Humanoid then
 				local Magnitude = Player:DistanceFromCharacter(AdvertBoard.SurfaceDisplay.Position)
 				if Magnitude < Distance then
-					spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0, 0)})
+					-- spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0, 0)})
+                    AnimNation.target(Frame, {s = 5, d = 0.9}, {Position = UDim2.fromScale(0, 0)})
 				else
-					spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0, 1)})
+					-- spr.target(Frame, 0.9, 2, { Position = UDim2.fromScale(0, 1)})
+                    AnimNation.target(Frame, {s = 5, d = 0.9}, {Position = UDim2.fromScale(0, 1)})
 				end
 			end
 		end
@@ -463,7 +465,5 @@ function UIController:AdvertisementBoards()
 	end)
 end
 
-
--- ————————— 🂡 —————————
  -- Return Controller to Knit.
 return UIController
