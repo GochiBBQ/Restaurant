@@ -22,7 +22,7 @@ local NotificationService
 local Tables = {}
 local TableCount = {
     ["Indoor Seating"] = 0,
-    ["Outdoor Seating"] = 0,
+    ["Terrace Dining"] = 0,
     ["Underwater Dining"] = 0
 }
 

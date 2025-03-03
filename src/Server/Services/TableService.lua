@@ -28,7 +28,21 @@ local TableService = Knit.CreateService {
 local TableFolder = workspace:WaitForChild("Functionality"):WaitForChild("Tables")
 local Tables = {}
 
+local TabletAnimation = 'rbxassetid://116598436795374'
+
 -- Server Functions
+
+local function LoadAnimation(Character: Instance, Animation: Animation)
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	if Humanoid then
+		local Animator = Humanoid:FindFirstChildOfClass("Animator")
+		if Animator then
+			local AnimationTrack = Animator:LoadAnimation(Animation)
+			return AnimationTrack
+		end
+	end
+end
+
 function TableService:KnitStart()
     if not TableFolder then
         warn("TableService:KnitStart() - TableFolder not found.")
@@ -150,6 +164,15 @@ end
 
 function TableService.Client:GetInfo(Player: Player, Table: Instance)
     return self.Server:GetTableInfo(Table)
+end
+
+function TableService.Client:TabletInit(Player: Player, Tablet: Instance)
+    assert(Player:IsA("Player"), "Player must be a Player instance.")
+    assert(Tablet:IsA("Model"), "Tablet must be a Model instance.")
+    
+--[[ ## TODO:
+        Make animation play when tablet is prompted
+]]
 end
 
 -- Return Service to Knit.
