@@ -24,13 +24,14 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI = PlayerGui:WaitForChild("GochiUI")
 local TableUI = GochiUI:WaitForChild("TableManagement")
 
-local TableService
+local TableService, RankService
 local UIController
 
 -- Client Functions
 function TableController:KnitStart()
 
     TableService = Knit.GetService("TableService")
+    RankService = Knit.GetService("RankService")
     UIController = Knit.GetController("UIController")
 
     task.defer(function()
@@ -45,13 +46,31 @@ function TableController:InitRegisters()
 
     repeat task.wait() until #registers:GetChildren() > 0
 
+    -- TODO:
+    -- Fix register proximity prompt not working
+
     if registers then
         for _, register in ipairs(registers:GetChildren()) do
             if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
+
+                RankService:Get():andThen(function(Rank, Role)
+                    print(Rank)
+                    if Rank < 4 then
+                        register.Screen.ProximityPrompt.Enabled = false
+                    end
+                end)
+
                 register.Screen.ProximityPrompt.Triggered:Connect(function()
                     UIController:Open(TableUI.AreaSelection)
+                    TableService:TabletInit(register)
                 end)
             end
+
+            TableUI.AreaSelection:GetPropertyChangedSignal("Visible"):Connect(function()
+                if not TableUI.AreaSelection.Visible then
+                    TableService:TabletEnd(register)
+                end
+            end)
         end
     end
 end

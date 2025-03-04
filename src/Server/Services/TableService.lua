@@ -7,6 +7,7 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local ServerStorage = game:GetService("ServerStorage")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -28,7 +29,9 @@ local TableService = Knit.CreateService {
 local TableFolder = workspace:WaitForChild("Functionality"):WaitForChild("Tables")
 local Tables = {}
 
-local TabletAnimation = 'rbxassetid://116598436795374'
+local Animations = ServerStorage:WaitForChild("Animations")
+
+local ongoingAnimations = {}
 
 -- Server Functions
 
@@ -41,6 +44,26 @@ local function LoadAnimation(Character: Instance, Animation: Animation)
 			return AnimationTrack
 		end
 	end
+end
+
+local function LockPlayerToModel(Player: Player, State: boolean)
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+    local Humanoid = Character:FindFirstChild("Humanoid")
+
+    if not HumanoidRootPart or not Humanoid then return end
+
+    if State then
+        Humanoid.WalkSpeed = 0
+        Humanoid.JumpPower = 0
+        Humanoid.PlatformStand = true
+        HumanoidRootPart.Anchored = true
+    else
+        Humanoid.PlatformStand = false
+        HumanoidRootPart.Anchored = false
+        Humanoid.WalkSpeed = (Player:GetAttribute("Walkspeed") and 32) or 16
+        Humanoid.JumpPower = 50
+    end
 end
 
 function TableService:KnitStart()
@@ -170,9 +193,33 @@ function TableService.Client:TabletInit(Player: Player, Tablet: Instance)
     assert(Player:IsA("Player"), "Player must be a Player instance.")
     assert(Tablet:IsA("Model"), "Tablet must be a Model instance.")
     
---[[ ## TODO:
-        Make animation play when tablet is prompted
-]]
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+    local Animation = LoadAnimation(Character, Animations.TabletInit)
+
+    if ongoingAnimations[Player] then
+        ongoingAnimations[Player]:Stop()
+    end
+
+    ongoingAnimations[Player] = Animation
+    LockPlayerToModel(Player, true)
+    Animation:Play()
+end
+
+function TableService.Client:TabletEnd(Player: Player, Tablet: Instance)
+    assert(Player:IsA("Player"), "Player must be a Player instance.")
+    assert(Tablet:IsA("Model"), "Tablet must be a Model instance.")
+
+    if ongoingAnimations[Player] == nil then
+        return
+    end
+
+    if ongoingAnimations[Player] then
+        ongoingAnimations[Player]:Stop()
+        ongoingAnimations[Player] = nil
+    end
+
+    print(Tablet.Screen.ProximityPrompt.Enabled)
+    LockPlayerToModel(Player, false)
 end
 
 -- Return Service to Knit.
