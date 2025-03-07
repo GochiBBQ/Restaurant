@@ -12,7 +12,8 @@ local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local Table = require(Knit.Classes.Table) --- @module Table
-local Grill = require(Knit.Classes.Grill) --- @module Grill
+local Stove = require(Knit.Classes.Stove) --- @module Stove
+
 
 -- Create Knit Service
 local CookingService = Knit.CreateService {
