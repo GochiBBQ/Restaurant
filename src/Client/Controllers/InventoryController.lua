@@ -77,7 +77,7 @@ function InventoryController:OpenPage(Page: ScrollingFrame | Frame)
     assert(Page:IsA("ScrollingFrame") or Page:IsA("Frame"), "Page must be a Frame object")
 
     for _, page in pairs(Pages:GetChildren()) do
-        if page:IsA("ScrollingFrame") then
+        if page:IsA("ScrollingFrame") or page:IsA("Frame") then
             page.Visible = false
         end
     end

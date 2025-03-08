@@ -34,6 +34,8 @@ local CurrentFrame = nil
 local FrameOpen = false
 local RankService
 
+local HUDOpen = true
+
 local Positions = {}
 
 -- Create Knit Controller
@@ -210,24 +212,20 @@ function UIController:InitCommandBar()
 end
 
 function UIController:HideHUD()
-    -- spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, -.1, 0)})
-    AnimNation.target(self.HUD, {s = 10, d = 0.5}, {Position = UDim2.new(0.5, 0, -.1, 0)})
+    AnimNation.target(self.HUD, {s = 10, d = 0.5}, {Position = UDim2.new(0.5, 0, -.1, 0)}):AndThen(function()
+        self.HUD.Parent.CloseHUD.Visible = true
+    end)
 end
 
 function UIController:ShowHUD()
-    -- spr.target(self.HUD, 0.5, 3, {Position = UDim2.new(0.5, 0, 0.032, 0)})
     AnimNation.target(self.HUD, {s = 10, d = 0.5}, {Position = UDim2.new(0.5, 0, 0.032, 0)})
+    self.HUD.Parent.CloseHUD.Visible = false
 end
 
 --[[
     Opens a UI element with optional effects.
     This function waits until no other frame is open, then opens the specified UI element.
     It optionally applies visual effects to the UI components and the environment.
-
-    @function Open
-    @param UI GuiObject -- The UI element to open.
-    @param Effects boolean? -- Whether to apply visual effects (default is true).
-    @within UIController
 ]]
 function UIController:Open(UI: GuiObject, Effects: boolean?)
 
@@ -374,6 +372,12 @@ end
     @within UIController
 ]]
 function UIController:InitHUD()
+
+    self.HUD.Parent.CloseHUD.Background.MouseButton1Down:Connect(function()
+        self:ShowHUD()
+        HUDOpen = true
+    end)
+
     for _, frame in pairs(self.HUD:GetChildren()) do
         if frame:IsA("Frame") then
             local originalSize = frame.Size
@@ -390,6 +394,15 @@ function UIController:InitHUD()
             end)
 
             frame.Background.MouseButton1Down:Connect(function()
+
+                if frame.Name == "CloseHUD" then
+                    if HUDOpen then
+                        self:HideHUD()
+                        HUDOpen = false
+                    end
+                    return
+                end
+
                 if CurrentFrame and CurrentFrame == frame.Name then
                     self:Close(self.UI[CurrentFrame])
                     return
@@ -418,7 +431,7 @@ function UIController:InitHUD()
                 end
             end)
 
-			if self.UI[frame.Name]:FindFirstChild("Close") then
+			if frame.Name ~= "CloseHUD" and self.UI[frame.Name]:FindFirstChild("Close") then
 				self.UI[frame.Name].Close.MouseButton1Down:Connect(function()
 					self:Close(self.UI[frame.Name])
 				end)
