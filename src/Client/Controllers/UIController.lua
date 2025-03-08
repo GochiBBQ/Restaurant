@@ -271,9 +271,9 @@ function UIController:Open(UI: GuiObject, Effects: boolean?)
         end
 
         if Effects then
-            AnimNation.target(Lighting.Blur, {s = 3, d = 0.3}, {Size = 35})
-            AnimNation.target(workspace.CurrentCamera, {s = 3, d = 0.3}, {FieldOfView = 90})
-            AnimNation.target(ColorCorrection, {s = 3, d = 0.3}, {TintColor = Color3.fromRGB(60, 60, 60)})
+            AnimNation.target(Lighting.Blur, {s = 3}, {Size = 35})
+            AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 90})
+            AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(60, 60, 60)})
         end
 
         UI.Visible = true
@@ -319,9 +319,9 @@ function UIController:Close(UI: GuiObject, HUD: boolean?)
             end
         end
         
-        AnimNation.target(Lighting.Blur, {s = 3, d = 0.2}, {Size = 0})
-        AnimNation.target(workspace.CurrentCamera, {s = 3, d = 0.2}, {FieldOfView = 70})
-        AnimNation.target(ColorCorrection, {s = 3, d = 0.3}, {TintColor = Color3.fromRGB(255, 255, 255)})
+        AnimNation.target(Lighting.Blur, {s = 3}, {Size = 0})
+        AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 70})
+        AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(255, 255, 255)})
 
         for _, component in pairs(Components) do
             if component.ClassName == "Frame" or component.ClassName == "ScrollingFrame" then

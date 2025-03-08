@@ -13,23 +13,24 @@ local Players = game:GetService("Players")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
 -- Create Knit Controller
-local MenuController = Knit.CreateController {
-    Name = "MenuController",
+local InventoryController = Knit.CreateController {
+    Name = "InventoryController",
 }
 
 -- Variables
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local MenuUI = GochiUI:WaitForChild("Menu")
 
-local Buttons = MenuUI.Buttons
-local Pages = MenuUI.Pages
+local InventoryUI = GochiUI:WaitForChild("Inventory")
+
+local Buttons = InventoryUI.Buttons
+local Pages = InventoryUI.Pages
 
 local UIController
 
 -- Client Functions
-function MenuController:KnitStart()
+function InventoryController:KnitStart()
     UIController = Knit.GetController("UIController")
 
     for _, button in pairs(Buttons.List:GetChildren()) do
@@ -41,19 +42,19 @@ function MenuController:KnitStart()
         end
     end
 
-    MenuUI.Close.MouseButton1Click:Connect(function()
-        UIController:Close(MenuUI)
+    InventoryUI.Close.MouseButton1Click:Connect(function()
+        UIController:Close(InventoryUI)
     end)
     
-    MenuUI:GetPropertyChangedSignal("Visible"):Connect(function()
-        if not MenuUI.Visible then
-            self:SetState(Buttons.List.Beverages, true)
-            self:OpenPage(Pages.Beverages)
+    InventoryUI:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not InventoryUI.Visible then
+            self:SetState(Buttons.List.Nametags, true)
+            self:OpenPage(Pages.Nametags)
         end
     end)
 end
 
-function MenuController:SetState(Button: ImageButton, State: boolean)
+function InventoryController:SetState(Button: ImageButton, State: boolean)
     assert(Button:IsA("ImageButton"), "Button must be an ImageButton")
     assert(type(State) == "boolean", "State must be a boolean")
     
@@ -72,7 +73,7 @@ function MenuController:SetState(Button: ImageButton, State: boolean)
     end
 end
 
-function MenuController:OpenPage(Page: ScrollingFrame | Frame)
+function InventoryController:OpenPage(Page: ScrollingFrame | Frame)
     assert(Page:IsA("ScrollingFrame") or Page:IsA("Frame"), "Page must be a Frame object")
 
     for _, page in pairs(Pages:GetChildren()) do
@@ -84,4 +85,4 @@ function MenuController:OpenPage(Page: ScrollingFrame | Frame)
 end
 
  -- Return Controller to Knit.
-return MenuController
+return InventoryController
