@@ -24,7 +24,8 @@ local Player = Players.LocalPlayer
 
 local Skipped = false
 
-local TeamController, NotificationService, TeamService, UIController, RankService
+local NotificationService, TeamService, RankService, DataService
+local TeamController, UIController
 
 -- GUI assets
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -63,6 +64,7 @@ function LoadingController:KnitStart()
     TeamController = Knit.GetController("TeamController")
     TeamService = Knit.GetService("TeamService")
     RankService = Knit.GetService("RankService")
+    DataService = Knit.GetService("DataService")
     
     local Blur = Instance.new("BlurEffect")
     -- spr.target(Blur, 0.8, 1, { Size = 16 })
@@ -123,6 +125,7 @@ function LoadingController:KnitStart()
     LoadingUI.Parent.Enabled = false
 
     UIController:HideHUD()
+    GochiUI.Profiler.Visible = false
     GochiUI.Enabled = true
 
     UIController:Open(TeamUI, false)
@@ -134,6 +137,7 @@ function LoadingController:KnitStart()
         -- spr.target(Blur, 0.8, 1, { Size = 0 })
         AnimNation.target(Blur, {s = 3, d = 0.8}, { Size = 0 })
         UIController:ShowHUD()
+        GochiUI.Profiler.Visible = true
         PlayerGui:WaitForChild("Leaderboard").Enabled = true
         PlayerGui:WaitForChild("Backpack").Enabled = true
         PlayerGui:WaitForChild("TopbarStandard").Enabled = true
@@ -145,6 +149,16 @@ function LoadingController:KnitStart()
         Humanoid.WalkSpeed = (Player:GetAttribute("Walkspeed") and 32) or 16
         Humanoid.JumpPower = 50
         Humanoid.AutoRotate = true
+    end)
+
+    DataService:GetJoined():andThen(function(joinedBefore)
+        if not joinedBefore then
+            UIController:Open(GochiUI.GettingStarted)
+
+            GochiUI.GettingStarted.Close.MouseButton1Click:Connect(function()
+                UIController:Close(GochiUI.GettingStarted)
+            end)
+        end
     end)
 end
 

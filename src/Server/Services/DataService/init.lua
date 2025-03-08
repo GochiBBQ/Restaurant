@@ -190,6 +190,28 @@ function DataService:GetSettings(Player)
 	return Settings
 end
 
+function DataService:_getJoined(Player: Player)
+	while not Player:GetAttribute("Loaded") do
+		task.wait()
+	end
+
+	local Profile = Knit.Profiles[Player]
+	if not Profile then
+		return nil
+	end
+
+	if Profile.Data.JoinedBefore ~= nil then
+		if Profile.Data.JoinedBefore then
+			return true
+		else
+			return false
+		end
+	else
+		Profile.Data.JoinedBefore = true
+		return false
+	end
+end
+
 --[[
 	Starts the DataService by initializing the RankService, loading player profiles, and checking booster status.
 	Connects various player events to handle rank updates, profile loading, and booster status checks.
@@ -279,8 +301,12 @@ end
 	@param Player The player for whom the settings are being retrieved.
 	@within DataService.Client
 ]]
-function DataService.Client:Get(Player)
+function DataService.Client:Get(Player: Player)
 	return self.Server:GetSettings(Player)
+end
+
+function DataService.Client:GetJoined(Player: Player)
+	return self.Server:_getJoined(Player :: Player)
 end
 
 -- ————————— 🂡 —————————
