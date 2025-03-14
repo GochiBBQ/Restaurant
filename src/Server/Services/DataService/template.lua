@@ -4,8 +4,7 @@
 ]]
     
 local template = {
-    XP = 0,
-    Level = 0,
+    Points = 0,
 
     TipsReceived = 0,
     TipsGiven = 0,
@@ -39,7 +38,7 @@ local template = {
         }
     },
 
-    Gamepasses= {
+    Gamepasses = {
 
     },
 

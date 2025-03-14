@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
 
 -- Create Knit Controller
 local StoreController = Knit.CreateController {
@@ -52,6 +53,25 @@ function StoreController:KnitStart()
             self:OpenPage(Pages.Featured)
         end
     end)
+
+    for _, page in pairs(Pages:GetChildren()) do
+        if page:IsA("ScrollingFrame") then
+            for _, child in pairs(page:GetChildren()) do
+                if child:IsA("Frame") then
+
+                    -- Play gradient change background animation on mouse enter
+                    child.MouseEnter:Connect(function()
+                        AnimNation.target(child, {s = 8}, {BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0.85})
+                    end)
+
+                    -- Play gradient change background animation on mouse leave
+                    child.MouseLeave:Connect(function()
+                        AnimNation.target(child, {s = 8}, {BackgroundColor3 = Color3.fromRGB(102, 102, 102), BackgroundTransparency = 0.65})
+                    end)
+                end
+            end
+        end
+    end
 end
 
 function StoreController:SetState(Button: ImageButton, State: boolean)
