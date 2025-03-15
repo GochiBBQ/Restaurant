@@ -36,48 +36,52 @@ local RankService, CurrencyService
 
 -- Client Functions
 local function comma_value(amount)
-    local formatted = amount
-    while true do  
-      formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
-      if (k==0) then
-        break
-      end
+    local formatted = tostring(amount)
+    formatted = formatted:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+    if formatted:sub(1, 1) == "," then
+        formatted = formatted:sub(2)
     end
     return formatted
-  end
+end
 
 local function LerpNumber(StartNumber, EndNumber)
     local StartTime = tick()
     local Duration = 3 -- Default duration of 3 seconds
-    while true do
-        local CurrentTime = tick()
-        local ElapsedTime = CurrentTime - StartTime
-        if ElapsedTime > Duration then break end
+    local Connection
+    Connection = RunService.Heartbeat:Connect(function()
+        local ElapsedTime = tick() - StartTime
+        if ElapsedTime > Duration then
+            Profiler.Content.Coins.Text = string.format("<b>%s</b> Coins", comma_value(EndNumber))
+            Connection:Disconnect()
+            return
+        end
         local Alpha = ElapsedTime / Duration
         local CurrentValue = StartNumber + (EndNumber - StartNumber) * Alpha
-        Profiler.Content.Coins.Text = `<b>{comma_value(math.round(CurrentValue))}</b> Coins`
-        RunService.Stepped:Wait()
-    end
-    Profiler.Content.Coins.Text = `<b>{comma_value(EndNumber)}</b> Coins`
+        Profiler.Content.Coins.Text = string.format("<b>%s</b> Coins", comma_value(math.round(CurrentValue)))
+    end)
 end
 
 function CurrencyController:KnitStart()
-    RankService = Knit.GetService("RankService")
-    CurrencyService = Knit.GetService("CurrencyService")
+    local RankService = Knit.GetService("RankService")
+    local CurrencyService = Knit.GetService("CurrencyService")
 
     Profiler.Content.Username.Text = Player.Name
     Headshot.Image = content
 
     RankService:Get():andThen(function(Rank, Role)
         Profiler.Content.Rank.Text = Role
+    end):catch(function(err)
+        warn("Failed to get rank: " .. tostring(err))
     end)
 
     CurrencyService:GetCoins():andThen(function(Coins)
-        Profiler.Content.Coins.Text = `{comma_value(Coins)} Coins`
+        Profiler.Content.Coins.Text = string.format("%s Coins", comma_value(Coins))
+    end):catch(function(err)
+        warn("Failed to get coins: " .. tostring(err))
     end)
 
     CurrencyService.UpdateClient:Connect(function(Old, New)
-       LerpNumber(tonumber(Old), tonumber(New))
+        LerpNumber(tonumber(Old), tonumber(New))
     end)
 end
 
