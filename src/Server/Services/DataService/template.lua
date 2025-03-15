@@ -38,9 +38,7 @@ local template = {
         }
     },
 
-    Gamepasses = {
-
-    },
+    Gamepasses = {},
 
     Notepad = "",
 

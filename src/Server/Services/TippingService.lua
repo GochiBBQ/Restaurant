@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local TipUtil = require(ReplicatedStorage.Util.TipUtil) -- @module TipUtil
 
 -- Create Knit Service
 local TippingService = Knit.CreateService {
@@ -32,95 +33,77 @@ local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 local TopTippers = DataStoreService:GetOrderedDataStore("TopTippers")
 local TopReceivers = DataStoreService:GetOrderedDataStore("TopReceivers")
 
-local GamepassList = {}
-
-local AssetType = 34
-local Link = 'https://www.roproxy.com/users/inventory/list-json?assetTypeId=%s&cursor=%s&itemsPerPage=100&pageNumber=%s&sortOrder=Desc&userId=%s'
+local PassesToPlayers: { [number]: Player } = {}
 
 local RankService, NotificationService
 
 -- Server Functions
+
+function TippingService:HandlePlayer(Player: Player)
+    local Rank = RankService:GetRank(Player)
+
+    if Rank < 4 then return end
+
+    local Profile = Knit.Profiles[Player]
+
+    if Profile then
+        if #Profile.Data.Gamepasses < 1 then
+            local gamepasses = TipUtil:GetUserGamepasses(Player.UserId)
+
+            Profile.Data.Gamepasses = gamepasses
+
+            return
+        end
+
+        for _, passId in Profile.Data.Gamepasses do
+            PassesToPlayers[passId] = Player
+        end
+
+        if #Profile.Data.Gamepasses > 0 then
+            Player:SetAttribute("TipsEnabled", true)
+        else
+            Player:SetAttribute("TipsEnabled", false)
+        end
+    end
+end
 
 function TippingService:KnitStart()
     RankService = Knit.GetService("RankService")
     NotificationService = Knit.GetService("NotificationService")
 
     Players.PlayerAdded:Connect(function(Player)
-        Player:SetAttribute("ShowTips", true)
-        if RankService:GetRank(Player) >= 4 then
-            local Gamepasses = {}
-            local PageCursor
-    
-            local Data = HttpService:GetAsync(Link:format(AssetType, "", 1, Player.UserId))
-            local Decoded = HttpService:JSONDecode(Data)
-    
-            for _,v in ipairs(Decoded["Data"]["Items"]) do
-                if v["Creator"]["Id"] == Player.UserId then
-                    if v["Product"] ~= nil and v["Product"]["IsForSale"] == true then
-                        table.insert(Gamepasses, {
-                            v["Item"]["AssetId"],
-                            v["Product"]["PriceInRobux"],
-                        })
-                    end
-                end
-            end
-    
-            PageCursor = Decoded["Data"]["nextPageCursor"]
-            if PageCursor ~= nil then
-                repeat 
-                    Data = HttpService:GetAsync(Link:format(AssetType, PageCursor, 1, Player.UserId))
-                    Decoded = HttpService:JSONDecode(Data)
-    
-                    for _,v in ipairs(Decoded["Data"]["Items"]) do
-                        if v["Creator"]["Id"] == Player.UserId then
-                            if v["Product"] ~= nil and v["Product"]["IsForSale"] == true then
-                                table.insert(Gamepasses, {
-                                    v["Item"]["AssetId"],
-                                    v["Product"]["PriceInRobux"],
-                                })
-                            end
-                        end
-                    end
-    
-                    PageCursor = Decoded["Data"]["nextPageCursor"]
-                until PageCursor == nil
-            end
-            
-            --[[
-            item["Creator"]["Id"]
-            item["Item"]["AssetId"]
-            item["Product"]["PriceInRobux"]
-            
-            Data["Data"]["Items"]
-            ]]
+        self:HandlePlayer(Player)
+    end)
 
-            if #Gamepasses > 1 then
-                GamepassList[Player.UserId] = Gamepasses
-                Player:SetAttribute("TipsEnabled", true)
-            else
-                Player:SetAttribute("TipsEnabled", false)
+    for _, Player in Players:GetPlayers() do
+        self:HandlePlayer(Player)
+    end
+
+    Players.PlayerRemoving:Connect(function(Player)
+        for passId, passPlayer in pairs(PassesToPlayers) do
+            if passPlayer == Player then
+                PassesToPlayers[passId] = nil
             end
         end
     end)
 
-    MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(Player, GamepassID, wasPurchased)
-        if wasPurchased then
-            local ProductInfo = MarketplaceService:GetProductInfo(GamepassID, Enum.InfoType.GamePass)
-            if GamepassList[ProductInfo.Creator.Id] ~= nil and #GamepassList[ProductInfo.Creator.Id] > 0 then
-                local Price = ProductInfo.PriceInRobux
-                local CreatorId = ProductInfo.Creator.Id
-                NotificationService:CreateAnnouncement(`<b>{Player.Name}</b> has tipped <b>{ProductInfo.Creator.Name} {Price}</b> robux!`)
-                self:Update(TopTippers, Player.UserId, Price)
-                self:Update(TopReceivers, CreatorId, Price)
-                self:Log(Player, ProductInfo, Price)
-            end
-        end
+    MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, wasPurchased)
+        if not wasPurchased then return end
+
+        if not PassesToPlayers[gamePassId] then return end
+
+        local price = MarketplaceService:GetProductInfo(gamePassId, Enum.InfoType.GamePass).PriceInRobux
+
+        NotificationService:CreateAnnouncement(`<b>{player.Name}</b> has tipped <b>{PassesToPlayers[gamePassId].Name} {price}</b> robux!`)
+        self:Update(TopTippers, player.UserId, price)
+        self:Update(TopReceivers, PassesToPlayers[gamePassId].UserId, price)
+        self:Log(player, gamePassId, price)
     end)
 
 end
 
-function TippingService:Log(Player, ProductInfo, Price)
-    warn(Player, ProductInfo.Creator.Name, Price)
+function TippingService:Log(Player: Player, GamepassID: number, Price: number)
+    local ProductInfo = MarketplaceService:GetProductInfo(GamepassID, Enum.InfoType.GamePass)
 
     local info = {
         ["tipper"] = Player.Name,
@@ -139,10 +122,7 @@ function TippingService:Log(Player, ProductInfo, Price)
 
     })
 
-    warn(response)
-
     response = HttpService:JSONDecode(response.Body)
-    warn(response)
     if not response.success then
         warn(("Error with %d: %s"):format(Player.UserId, response.msg))
     end
@@ -152,18 +132,19 @@ function TippingService:Update(Datastore: DataStore, UserId: string, Amount: str
     Datastore:IncrementAsync(UserId, Amount)
 end
 
-function TippingService:Get(Player: Player, player: Player)
-    local Gamepasses = GamepassList[player.UserId]
-    if Gamepasses ~= nil then
-        return Gamepasses
-    else
-        return nil
+function TippingService:Get(player: Player)
+    local playerPasses = {}
+    for passId, passPlayer in pairs(PassesToPlayers) do
+        if passPlayer == player then
+            table.insert(playerPasses, passId)
+        end
     end
+    return playerPasses
 end
 
 -- Client Functions
-function TippingService.Client:GetTips(Player: Player, player: Player)
-    return self.Server:Get(Player :: Player, player :: Player)
+function TippingService.Client:GetTips(Initiator: Player, player: Player)
+    return self.Server:Get(player :: Player)
 end
 
  -- Return Service to Knit.

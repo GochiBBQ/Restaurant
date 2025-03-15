@@ -68,12 +68,9 @@ function TippingController:KnitStart()
                     if Character ~= nil then
                         local HumanoidRootPart = Character:WaitForChild('HumanoidRootPart')
                         local ProximityPrompt = HumanoidRootPart:FindFirstChild("TippingPrompt")
+
                         if ProximityPrompt then
-                            if player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips") then
-                                ProximityPrompt.Enabled = true
-                            else
-                                ProximityPrompt.Enabled = false
-                            end
+                            ProximityPrompt.Enabled = (player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips"))
                         else
                             ProximityPrompt = Instance.new("ProximityPrompt")
                             ProximityPrompt.Name = "TippingPrompt"
@@ -94,11 +91,7 @@ function TippingController:KnitStart()
                                 end
                             end)
 
-                            if player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips") then
-                                ProximityPrompt.Enabled = true
-                            else
-                                ProximityPrompt.Enabled = false
-                            end
+                            ProximityPrompt.Enabled = (player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips"))
                         end
                     end
                 end
@@ -115,41 +108,37 @@ function TippingController:UpdateTips(player: Player)
     end
 
     TippingService:GetTips(player):andThen(function(Tips)
-        if Tips ~= nil then
-            TipsContainer.ScrollingEnabled = true
-            TipsContainer.ScrollBarImageTransparency = 0
 
-            -- Sort tips by price in ascending order
-            table.sort(Tips, function(a, b)
-                return tonumber(a[2]) < tonumber(b[2])
+        if not Tips then return end
+        TipsContainer.ScrollingEnabled = true
+        TipsContainer.ScrollBarImageTransparency = 0
+
+        for _, Pass in Tips do
+            local Frame = TipsContainer.Template:Clone()
+            local price = MarketplaceService:GetProductInfo(Pass, Enum.InfoType.GamePass).PriceInRobux
+
+            if not price then return end
+
+            Frame.Purchase.Activated:Connect(function()
+                MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, Pass)
             end)
 
-            for i, v in ipairs(Tips) do
-                local Price = v[2]
-                local GamepassId = v[1]
+            Frame.Name = price
+            Frame.Value.Text = price
+            Frame.LayoutOrder = price
+            Frame.Parent = TipsContainer
+            Frame.Purchase.Position = UDim2.new(1, 2, 0.5, 0)
+            Frame.Visible = true
 
-                local Frame = TipsContainer.Template:Clone()
-                Frame.Name = Price
-                Frame.LayoutOrder = i
-                Frame.Value.Text = Price
-                Frame.Parent = TipsContainer
-                Frame.Purchase.Position = UDim2.new(1, 2, 0.5, 0)
-                Frame.Visible = true
+            Frame.Purchase.MouseEnter:Connect(function()
+                Frame.UIGradient.Enabled = true
+                Frame.UIStroke.UIGradient.Enabled = true
+            end)
 
-                Frame.Purchase.MouseEnter:Connect(function()
-                    Frame.UIGradient.Enabled = true
-                    Frame.UIStroke.UIGradient.Enabled = true
-                end)
-
-                Frame.Purchase.MouseLeave:Connect(function()
-                    Frame.UIGradient.Enabled = false
-                    Frame.UIStroke.UIGradient.Enabled = false
-                end)
-
-                Frame.Purchase.MouseButton1Click:Connect(function()
-                    MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, GamepassId)
-                end)
-            end
+            Frame.Purchase.MouseLeave:Connect(function()
+                Frame.UIGradient.Enabled = false
+                Frame.UIStroke.UIGradient.Enabled = false
+            end)
         end
     end)
     TipsContainer.Parent.Title.Text = `Would you like to tip <font weight ="Bold">{player.Name}</font> for your service today?`
