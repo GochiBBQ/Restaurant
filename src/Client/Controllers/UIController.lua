@@ -129,6 +129,7 @@ function UIController:InitGreetings()
 
     icon:setImage(17361522721)
 	icon:autoDeselect(false)
+    icon:setRight()
 
     self.UI["Greetings"].Main.Draggable = true
     
@@ -169,6 +170,7 @@ function UIController:InitNotepad()
 
     icon:setImage(17343409431)
 	icon:autoDeselect(false)
+    icon:setRight()
 
     self.UI["Notepad"].Draggable = true
     
