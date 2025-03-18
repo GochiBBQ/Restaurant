@@ -15,7 +15,8 @@ local Players = game:GetService("Players")
 -- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local spr = require(Knit.Modules.spr)
+local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
+-- local spr = require(Knit.Modules.spr)
 
 local Badges = require(ReplicatedStorage.Data.BadgesList)
 
@@ -38,15 +39,7 @@ local OverheadService = Knit.CreateService({
 
 -- ————————— 🂡 —————————
 -- Server Functions
---[[
-    Initializes the OverheadService and sets up player nametags with ranks and badges.
-    Connects to the PlayerAdded and PlayerRemoving events to manage nametags for players.
-    Caches nametags for reuse and updates them based on player attributes and ranks.
-    Handles the display of badges with animations and updates them periodically.
 
-    @function KnitStart
-    @within OverheadService
-]]
 function OverheadService:KnitStart()
 	RankService = Knit.GetService("RankService")
 
@@ -157,19 +150,25 @@ function OverheadService:KnitStart()
 
                 if badgeCount then
                     local function showBadge(badge)
-                        if badge and badge.Title then
-                            spr.target(badge, 1, 1, { BackgroundTransparency = 0 })
-                            spr.target(badge.Title, 1, 1, { TextTransparency = 0 })
-                            spr.target(badge.Title, 1, 1, { TextStrokeTransparency = 0.8 })
+                        if badge and badge:FindFirstChild("Title") then
+                            AnimNation.target(badge, {s = 8}, {BackgroundTransparency = 0})
+                            AnimNation.target(badge.Title, {s = 8}, {TextTransparency = 0})
+                            AnimNation.target(badge.Title, {s = 8}, {TextStrokeTransparency = 0.8})
+                            -- spr.target(badge, 1, 1, { BackgroundTransparency = 0 })
+                            -- spr.target(badge.Title, 1, 1, { TextTransparency = 0 })
+                            -- spr.target(badge.Title, 1, 1, { TextStrokeTransparency = 0.8 })
                         end
                     end
 
                     local function hideAllBadges()
                         for _, otherBadge in next, nametag.Main.Titles:GetChildren() do
-                            if otherBadge and otherBadge.Title then
-                                spr.target(otherBadge, 1, 1, { BackgroundTransparency = 1 })
-                                spr.target(otherBadge.Title, 1, 1, { TextTransparency = 1 })
-                                spr.target(otherBadge.Title, 1, 1, { TextStrokeTransparency = 1 })
+                            if otherBadge and otherBadge:FindFirstChild("Title") then
+                                AnimNation.target(otherBadge, {s = 8}, {BackgroundTransparency = 1})
+                                AnimNation.target(otherBadge.Title, {s = 8}, {TextTransparency = 1})
+                                AnimNation.target(otherBadge.Title, {s = 8}, {TextStrokeTransparency = 1})
+                                -- spr.target(otherBadge, 1, 1, { BackgroundTransparency = 1 })
+                                -- spr.target(otherBadge.Title, 1, 1, { TextTransparency = 1 })
+                                -- spr.target(otherBadge.Title, 1, 1, { TextStrokeTransparency = 1 })
                             end
                             task.wait()
                         end
