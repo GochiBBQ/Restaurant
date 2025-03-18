@@ -15,8 +15,7 @@ local Players = game:GetService("Players")
 -- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
--- local spr = require(Knit.Modules.spr)
+local spr = require(Knit.Modules.spr)
 
 local Badges = require(ReplicatedStorage.Data.BadgesList)
 
@@ -142,63 +141,50 @@ function OverheadService:KnitStart()
 		end
 	end)
 
-    task.spawn(function()
-        while true do
-            for _, Player in next, Players:GetPlayers() do
-                local badgeCount = player[Player] - 1
-                local nametag = PlayerCache[Player]
+	task.spawn(function()
+		while true do
+			for _, Player in ipairs(Players:GetPlayers()) do
+				local badgeCount = (player[Player] or 0) - 1
+				local nametag = PlayerCache[Player]
+	
+				if nametag and badgeCount >= 0 then
+					Times[Player] = Times[Player] or 0 -- Initialize if nil
+	
+					local titleCount = #nametag.Main.Titles:GetChildren()
+					if titleCount > 0 then
+						-- Get the previously active badge (if any)
+						local previousBadge = nametag.Main.Titles:FindFirstChild("Top" .. Times[Player])
+	
+						-- Cycle to the next badge
+						Times[Player] = (Times[Player] % titleCount) + 1
+						local newBadge = nametag.Main.Titles:FindFirstChild("Top" .. Times[Player])
+	
+						-- Fade out the previous badge (if exists) concurrently
+						if previousBadge then
+							task.spawn(function()
+								spr.target(previousBadge, 0.3, 0.3, { BackgroundTransparency = 1 })
+								spr.target(previousBadge.Title, 0.3, 0.3, { TextTransparency = 1 })
+								spr.target(previousBadge.Title, 0.3, 0.3, { TextStrokeTransparency = 1 })
+								task.wait(0.3) -- Add delay to ensure smooth transition
+							end)
+						end
+	
+						-- Fade in the new badge
+						if newBadge then
+							task.spawn(function()
+								task.wait(0.3) -- Add delay to ensure smooth transition
+								spr.target(newBadge, 0.3, 0.3, { BackgroundTransparency = 0 })
+								spr.target(newBadge.Title, 0.3, 0.3, { TextTransparency = 0 })
+								spr.target(newBadge.Title, 0.3, 0.3, { TextStrokeTransparency = 0.8 })
+							end)
+						end
+					end
+				end
+			end
+			task.wait(3) -- Shorter wait for a faster cycle
+		end
+	end)
 
-                if badgeCount then
-                    local function showBadge(badge)
-                        if badge and badge:FindFirstChild("Title") then
-                            AnimNation.target(badge, {s = 8}, {BackgroundTransparency = 0})
-                            AnimNation.target(badge.Title, {s = 8}, {TextTransparency = 0})
-                            AnimNation.target(badge.Title, {s = 8}, {TextStrokeTransparency = 0.8})
-                            -- spr.target(badge, 1, 1, { BackgroundTransparency = 0 })
-                            -- spr.target(badge.Title, 1, 1, { TextTransparency = 0 })
-                            -- spr.target(badge.Title, 1, 1, { TextStrokeTransparency = 0.8 })
-                        end
-                    end
-
-                    local function hideAllBadges()
-                        for _, otherBadge in next, nametag.Main.Titles:GetChildren() do
-                            if otherBadge and otherBadge:FindFirstChild("Title") then
-                                AnimNation.target(otherBadge, {s = 8}, {BackgroundTransparency = 1})
-                                AnimNation.target(otherBadge.Title, {s = 8}, {TextTransparency = 1})
-                                AnimNation.target(otherBadge.Title, {s = 8}, {TextStrokeTransparency = 1})
-                                -- spr.target(otherBadge, 1, 1, { BackgroundTransparency = 1 })
-                                -- spr.target(otherBadge.Title, 1, 1, { TextTransparency = 1 })
-                                -- spr.target(otherBadge.Title, 1, 1, { TextStrokeTransparency = 1 })
-                            end
-                            task.wait()
-                        end
-                    end
-
-                    if badgeCount == 1 then
-                        showBadge(nametag.Main.Titles['Top1'])
-                    elseif badgeCount > 1 then
-                        for index, badge in next, nametag.Main.Titles:GetChildren() do
-                            if index - 1 == badgeCount then
-                                if Times[Player] == #nametag.Main.Titles:GetChildren() - 1 then
-                                    Times[Player] = 0
-                                end
-                                Times[Player] += 1
-                                hideAllBadges()
-
-                                if Times[Player] == #nametag.Main.Titles:GetChildren() then
-                                    Times[Player] = 0
-                                end
-
-                                showBadge(nametag.Main.Titles[`Top{Times[Player]}`])
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(5)
-        end
-    end)
-    
 end
 
 -- ————————— 🂡 —————————

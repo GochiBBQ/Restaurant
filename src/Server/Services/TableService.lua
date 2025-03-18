@@ -46,18 +46,20 @@ local function LoadAnimation(Character: Instance, Animation: Animation)
 	end
 end
 
-local function LockPlayerToModel(Player: Player, State: boolean)
+local function LockPlayerToModel(Player: Player, Model: Model, State: boolean)
     local Character = Player.Character or Player.CharacterAdded:Wait()
     local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
     local Humanoid = Character:FindFirstChild("Humanoid")
+    local ModelRoot = Model:FindFirstChild("HumanoidRootPart")
 
-    if not HumanoidRootPart or not Humanoid then return end
+    if not HumanoidRootPart or not Humanoid or not ModelRoot then return end
 
     if State then
         Humanoid.WalkSpeed = 0
         Humanoid.JumpPower = 0
         Humanoid.PlatformStand = true
         HumanoidRootPart.Anchored = true
+        HumanoidRootPart.CFrame = ModelRoot.CFrame
     else
         Humanoid.PlatformStand = false
         HumanoidRootPart.Anchored = false
@@ -201,7 +203,7 @@ function TableService.Client:TabletInit(Player: Player, Tablet: Instance)
     end
 
     ongoingAnimations[Player] = Animation
-    LockPlayerToModel(Player, true)
+    LockPlayerToModel(Player, Tablet, true)
     Animation:Play()
 end
 
@@ -218,8 +220,7 @@ function TableService.Client:TabletEnd(Player: Player, Tablet: Instance)
         ongoingAnimations[Player] = nil
     end
 
-    print(Tablet.Screen.ProximityPrompt.Enabled)
-    LockPlayerToModel(Player, false)
+    LockPlayerToModel(Player, Tablet, false)
 end
 
 -- Return Service to Knit.
