@@ -8,6 +8,7 @@ For: Gochi
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Players = game:GetService("Players")
+local RunService = game:GetService('RunService')
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -33,6 +34,7 @@ local UIController
 local uiOpen = false
 local activeRegister = nil
 
+local selectedOption = nil
 
 -- Client Functions
 function TableController:KnitStart()
@@ -149,7 +151,7 @@ function TableController:InitRegisters()
 
     RankService:Get():andThen(function(Rank)
 
-        if Rank < 4 then
+        if Rank < 4 and not RunService:IsStudio() then
             for _, register in ipairs(registers:GetChildren()) do
                 if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
                     register.Screen.ProximityPrompt:Destroy()
@@ -366,12 +368,18 @@ function TableController:AreaSelected(Area: string)
             GuestSelection.Visible = false
             panelContent.Visible = true
 
+            --[[ TODO:
+                - Submit logic that handles different cases
+            ]]
+            
+
             if #Occupants > 0 then
                 PartyExists(tableData)
+                selectedOption = 'Existing'
             else
                 NewParty()
+                selectedOption = 'New'
             end
-
         end)
     end)
 end

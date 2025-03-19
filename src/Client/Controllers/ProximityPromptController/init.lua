@@ -76,8 +76,25 @@ local ProximityPromptController = Knit.CreateController({
 	Name = "ProximityPromptController",
 })
 
--- Client Functions
+--[[ 
+    Initializes the ProximityPromptController and sets up the necessary connections.
+
+    Parameters:
+        None
+    
+    Returns:
+        - nil - No return value
+]]
 function ProximityPromptController:KnitStart()
+	--[[ 
+        Retrieves or creates the ScreenGui for proximity prompts.
+
+        Parameters:
+            None
+        
+        Returns:
+            - Instance - The ScreenGui instance
+    ]]
 	local function getScreenGui()
 		local screenGui = PlayerGui:FindFirstChild("ProximityPrompts")
 		if screenGui == nil then
@@ -89,6 +106,16 @@ function ProximityPromptController:KnitStart()
 		return screenGui
 	end
 
+
+	--[[ 
+        Sets up a circular progress bar for a given UI element.
+
+        Parameters:
+            - bar (Instance): The UI element representing the progress bar
+        
+        Returns:
+            - nil - No return value
+    ]]
 	local function setUpCircularProgressBar(bar)
 		local leftGradient = bar.LeftGradient.ProgressBarImage.UIGradient
 		local rightGradient = bar.RightGradient.ProgressBarImage.UIGradient
@@ -101,6 +128,17 @@ function ProximityPromptController:KnitStart()
 		end)
 	end
 
+	--[[ 
+        Creates a proximity prompt UI and sets up its behavior.
+
+        Parameters:
+            - prompt (Instance): The ProximityPrompt instance
+            - inputType (Enum.ProximityPromptInputType): The input type for the prompt
+            - gui (Instance): The parent GUI for the prompt
+        
+        Returns:
+            - function - A cleanup function to remove the prompt UI
+    ]]
 	local function createPrompt(prompt, inputType, gui)
 		local tweensForButtonHoldBegin = {}
 		local tweensForButtonHoldEnd = {}
@@ -141,46 +179,10 @@ function ProximityPromptController:KnitStart()
 		frame.ImageTransparency = 1
 		-- TODO consolidate this with the other tweens for image labels, theres some duplication
 		-- TODO make these functions somehow consolidate the properties objects?
-		table.insert(
-			tweensForButtonHoldBegin,
-			TweenService:Create(
-				frame,
-				tweenInfoFast,
-				{ Size = UDim2.fromScale(0.5, 1), BackgroundTransparency = 1, ImageTransparency = 1 }
-			)
-		)
-		table.insert(
-			tweensForButtonHoldEnd,
-			TweenService:Create(
-				frame,
-				tweenInfoFast,
-				{
-					Size = UDim2.fromScale(1, 1),
-					BackgroundTransparency = backgroundTransparency,
-					ImageTransparency = imageTransparency,
-				}
-			)
-		)
-		table.insert(
-			tweensForFadeOut,
-			TweenService:Create(
-				frame,
-				tweenInfoFast,
-				{ Size = UDim2.fromScale(0.5, 1), BackgroundTransparency = 1, ImageTransparency = 1 }
-			)
-		)
-		table.insert(
-			tweensForFadeIn,
-			TweenService:Create(
-				frame,
-				tweenInfoFast,
-				{
-					Size = UDim2.fromScale(1, 1),
-					BackgroundTransparency = backgroundTransparency,
-					ImageTransparency = imageTransparency,
-				}
-			)
-		)
+		table.insert(tweensForButtonHoldBegin, TweenService:Create(frame, tweenInfoFast, { Size = UDim2.fromScale(0.5, 1), BackgroundTransparency = 1, ImageTransparency = 1 }))
+		table.insert(tweensForButtonHoldEnd, TweenService:Create(frame, tweenInfoFast, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = backgroundTransparency, ImageTransparency = imageTransparency }))
+		table.insert(tweensForFadeOut, TweenService:Create(frame, tweenInfoFast, { Size = UDim2.fromScale(0.5, 1), BackgroundTransparency = 1, ImageTransparency = 1 }))
+		table.insert(tweensForFadeIn, TweenService:Create(frame, tweenInfoFast, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = backgroundTransparency, ImageTransparency = imageTransparency }))
 
 		local function setupUIStrokeTweens(uiStroke)
 			local transparency = uiStroke.Transparency
@@ -197,30 +199,10 @@ function ProximityPromptController:KnitStart()
 		local function setupGUIObjectTweens(guiObject)
 			local guiObjectBackgroundTransparency = guiObject.BackgroundTransparency
 			guiObject.BackgroundTransparency = 1
-			table.insert(
-				tweensForButtonHoldBegin,
-				TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = 1 })
-			)
-			table.insert(
-				tweensForButtonHoldEnd,
-				TweenService:Create(
-					guiObject,
-					tweenInfoFast,
-					{ BackgroundTransparency = guiObjectBackgroundTransparency }
-				)
-			)
-			table.insert(
-				tweensForFadeOut,
-				TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = 1 })
-			)
-			table.insert(
-				tweensForFadeIn,
-				TweenService:Create(
-					guiObject,
-					tweenInfoFast,
-					{ BackgroundTransparency = guiObjectBackgroundTransparency }
-				)
-			)
+			table.insert(tweensForButtonHoldBegin, TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = 1 }))
+			table.insert(tweensForButtonHoldEnd, TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = guiObjectBackgroundTransparency }))
+			table.insert(tweensForFadeOut, TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = 1 }))
+			table.insert(tweensForFadeIn, TweenService:Create(guiObject, tweenInfoFast, { BackgroundTransparency = guiObjectBackgroundTransparency }))
 		end
 
 		local function setupTextLabelTweens(textLabel)
@@ -228,48 +210,19 @@ function ProximityPromptController:KnitStart()
 			local textStrokeTransparency = textLabel.TextStrokeTransparency
 			textLabel.TextTransparency = 1
 			textLabel.TextStrokeTransparency = 1
-			table.insert(
-				tweensForButtonHoldBegin,
-				TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = 1, TextStrokeTransparency = 1 })
-			)
-			table.insert(
-				tweensForButtonHoldEnd,
-				TweenService:Create(
-					textLabel,
-					tweenInfoFast,
-					{ TextTransparency = textTransparency, TextStrokeTransparency = textStrokeTransparency }
-				)
-			)
-			table.insert(
-				tweensForFadeOut,
-				TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = 1, TextStrokeTransparency = 1 })
-			)
-			table.insert(
-				tweensForFadeIn,
-				TweenService:Create(
-					textLabel,
-					tweenInfoFast,
-					{ TextTransparency = textTransparency, TextStrokeTransparency = textStrokeTransparency }
-				)
-			)
+			table.insert(tweensForButtonHoldBegin, TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = 1, TextStrokeTransparency = 1 }))
+			table.insert(tweensForButtonHoldEnd, TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = textTransparency, TextStrokeTransparency = textStrokeTransparency }))
+			table.insert(tweensForFadeOut, TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = 1, TextStrokeTransparency = 1 }))
+			table.insert(tweensForFadeIn, TweenService:Create(textLabel, tweenInfoFast, { TextTransparency = textTransparency, TextStrokeTransparency = textStrokeTransparency }))
 		end
 
 		local function setupImageLabelTweens(imageLabel)
 			local imageTransparency = imageLabel.ImageTransparency
 			imageLabel.ImageTransparency = 1
-			table.insert(
-				tweensForButtonHoldBegin,
-				TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = 1 })
-			)
-			table.insert(
-				tweensForButtonHoldEnd,
-				TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = imageTransparency })
-			)
+			table.insert(tweensForButtonHoldBegin, TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = 1 }))
+			table.insert(tweensForButtonHoldEnd, TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = imageTransparency }))
 			table.insert(tweensForFadeOut, TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = 1 }))
-			table.insert(
-				tweensForFadeIn,
-				TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = imageTransparency })
-			)
+			table.insert(tweensForFadeIn, TweenService:Create(imageLabel, tweenInfoFast, { ImageTransparency = imageTransparency }))
 		end
 
 		local function setupUnexpectedChildTweens(child)
@@ -679,6 +632,15 @@ function ProximityPromptController:KnitStart()
 		return cleanup
 	end
 
+	--[[ 
+        Handles the loading of the ProximityPromptController and sets up event connections.
+
+        Parameters:
+            None
+        
+        Returns:
+            - nil - No return value
+    ]]
 	local function onLoad()
 
 		LocalPlayer:GetAttributeChangedSignal("UIOpen"):Connect(function()

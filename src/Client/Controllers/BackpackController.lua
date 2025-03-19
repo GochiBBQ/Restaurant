@@ -51,14 +51,14 @@ local BackpackController = Knit.CreateController {
 
 -- ————————— 🂡 —————————
 -- Client Functions
---[[
+--[[ 
     Equips the specified tool to the player's character.
-    Waits for the player's character to be available if not already present.
-    Finds the humanoid component of the character and equips the tool if it is not already equipped.
 
-    @function EquipItem
-    @param Tool The tool instance to be equipped.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool instance to be equipped.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:EquipItem(Tool)
     local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -69,12 +69,14 @@ function BackpackController:EquipItem(Tool)
     end
 end
 
---[[
+--[[ 
     Unequips the currently equipped item from the player's character.
-    Waits for the player's character to be added if it doesn't exist, then finds the humanoid component and unequips any tools the humanoid is holding.
 
-    @function UnequipItem
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:UnequipItem()
     local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -85,13 +87,14 @@ function BackpackController:UnequipItem()
     end
 end
 
---[[
+--[[ 
     Handles the key press event for the backpack controller.
-    Checks if the pressed key matches any key in the input keys, and if so, triggers the corresponding button click in the backpack UI.
 
-    @function OnKeyPress
-    @param Input The input object containing information about the key press event.
-    @within BackpackController
+    Parameters:
+        - Input (InputObject): The input object containing information about the key press event.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:OnKeyPress(Input)
     local KeyBind = Input.KeyCode.Name
@@ -112,14 +115,14 @@ function BackpackController:OnKeyPress(Input)
     end
 end
 
---[[
+--[[ 
     Handles the button click event for the backpack UI.
-    Deselects the previously selected item, if any, and selects the new item.
-    If the same item is clicked again, it deselects the item.
 
-    @function RegisterButtonClick
-    @param Button The button that was clicked.
-    @within BackpackController
+    Parameters:
+        - Button (Instance): The button that was clicked.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:RegisterButtonClick(Button)
     -- Deselect previously selected item
@@ -160,14 +163,14 @@ function BackpackController:RegisterButtonClick(Button)
     end
 end
 
---[[
+--[[ 
     Assigns a number to the given tool if it hasn't been assigned already.
-    Iterates through numbers 0 to 9 and assigns the first available number to the tool.
-    Updates the UI button with the assigned number.
 
-    @function AssignNumberToTool
-    @param Tool The tool to which a number will be assigned.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool to which a number will be assigned.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:AssignNumberToTool(Tool)
     if toolToNumber[Tool] then return end
@@ -182,13 +185,14 @@ function BackpackController:AssignNumberToTool(Tool)
     end
 end
 
---[[
+--[[ 
     Removes the number associated with a given tool from the tool-to-number mapping.
-    If the tool has an associated number, it clears the assigned number and updates the UI.
 
-    @function RemoveNumberFromTool
-    @param Tool The tool from which to remove the associated number.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool from which to remove the associated number.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:RemoveNumberFromTool(Tool)
     local number = toolToNumber[Tool]
@@ -199,15 +203,15 @@ function BackpackController:RemoveNumberFromTool(Tool)
     end
 end
 
---[[
+--[[ 
     Updates the UI button in the backpack with the given tool and number.
-    Finds the corresponding button in the player's backpack UI, sets its name to the tool's name,
-    creates a viewport frame to display the tool, and adjusts the camera to fit the tool model.
 
-    @function UpdateUIButton
-    @param Tool Instance -- The tool instance to display in the backpack UI.
-    @param number number -- The slot number in the backpack UI to update.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool instance to display in the backpack UI.
+        - number (number): The slot number in the backpack UI to update.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:UpdateUIButton(Tool, number)
     local Button = PlayerGui:WaitForChild("Backpack").Frame[tostring(number)]:FindFirstChildOfClass("ImageButton")
@@ -232,14 +236,15 @@ function BackpackController:UpdateUIButton(Tool, number)
     end
 end
 
---[[
+--[[ 
     Clears the UI button in the backpack interface.
-    This function clears the name of the button and removes any associated tool model and camera from the viewport frame.
 
-    @function ClearUIButton
-    @param number number -- The index of the button to clear.
-    @param Tool Tool -- The tool associated with the button (optional).
-    @within BackpackController
+    Parameters:
+        - number (number): The index of the button to clear.
+        - Tool (Instance): The tool associated with the button (optional).
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:ClearUIButton(number, Tool)
     local Button = PlayerGui:WaitForChild("Backpack").Frame[tostring(number)]:FindFirstChildOfClass("ImageButton")
@@ -258,25 +263,27 @@ function BackpackController:ClearUIButton(number, Tool)
     end
 end
 
---[[
+--[[ 
     Handles the event when a tool is added to the backpack.
-    Assigns a unique number to the newly added tool.
 
-    @function OnToolAdded
-    @param Tool The tool that was added to the backpack.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool that was added to the backpack.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:OnToolAdded(Tool)
     self:AssignNumberToTool(Tool)
 end
 
---[[
+--[[ 
     Handles the removal of a tool from the player's backpack.
-    Checks if the tool is still present in the character's model, and if not, removes the associated number from the tool.
 
-    @function OnToolRemoved
-    @param Tool The tool instance that was removed.
-    @within BackpackController
+    Parameters:
+        - Tool (Instance): The tool instance that was removed.
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:OnToolRemoved(Tool)
     local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -286,12 +293,14 @@ function BackpackController:OnToolRemoved(Tool)
     end
 end
 
---[[
+--[[ 
     Clears the inventory by iterating through the slots and removing the tools assigned to each slot.
-    It also clears the UI button associated with each slot and resets the assigned numbers and tool-to-number mappings.
 
-    @function ClearInventory
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:ClearInventory()
     for i = 0, 9 do
@@ -312,12 +321,14 @@ function BackpackController:ClearInventory()
 
 end
 
---[[
+--[[ 
     Updates the UI for the backpack.
-    Iterates through the assigned numbers and updates the corresponding UI button for each tool.
 
-    @function UpdateUI
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:UpdateUI()
     for number, tool in pairs(assignedNumbers) do
@@ -325,12 +336,14 @@ function BackpackController:UpdateUI()
     end
 end
 
---[[
+--[[ 
     Initializes the backpack UI.
-    Iterates through all descendants of the Backpack frame in the PlayerGui, and for each ImageButton found, connects mouse enter, mouse leave, and mouse button down events to functions that play a hover sound, animate the button size, and register button clicks.
 
-    @function InitializeBackpackUI
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:InitializeBackpackUI()
     for _, Button in pairs(PlayerGui:WaitForChild("Backpack").Frame:GetDescendants()) do
@@ -356,12 +369,14 @@ function BackpackController:InitializeBackpackUI()
     end
 end
 
---[[
+--[[ 
     Resets the connections for the player's backpack.
-    Connects the ChildAdded and ChildRemoved events of the player's backpack to handle tools being added or removed.
 
-    @function ResetConnections
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:ResetConnections()
     Player.Backpack.ChildAdded:Connect(function(Tool)
@@ -373,13 +388,14 @@ function BackpackController:ResetConnections()
     end)
 end
 
---[[
+--[[ 
     Initializes the BackpackController when Knit starts.
-    Disables the default Roblox backpack UI, initializes the custom backpack UI, clears the inventory, and resets connections.
-    Connects input events to handle key presses and sets up the backpack tools when the player's character is added.
 
-    @function KnitStart
-    @within BackpackController
+    Parameters:
+        - None
+    
+    Returns:
+        - nil - This function does not return a value.
 ]]
 function BackpackController:KnitStart()
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
