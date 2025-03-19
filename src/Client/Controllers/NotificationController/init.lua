@@ -11,7 +11,6 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local spr  = require(Knit.Modules.spr)
 local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
 
 -- Create Knit Controller
@@ -38,6 +37,7 @@ function NotificationController:KnitStart()
     NotificationService.Notification:Connect(function(message)
         self:CreateAnnouncement(message)
     end)
+    
 end
 
 function NotificationController:TweenExistingAnnouncements()

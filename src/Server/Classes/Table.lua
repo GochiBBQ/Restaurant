@@ -21,7 +21,7 @@ local NotificationService
 
 local Tables = {}
 local TableCount = {
-    ["Indoor Seating"] = 0,
+    ["Indoor Dining"] = 0,
     ["Terrace Dining"] = 0,
     ["Underwater Dining"] = 0
 }
@@ -45,6 +45,7 @@ function Table.new(tab: Instance, Category: string, Seats: number)
         Seats = self.Seats,
         Category = self.Category,
         isOccupied = false,
+        Server = nil,
         Occupants = {}
     }
 
@@ -59,8 +60,6 @@ function Table.new(tab: Instance, Category: string, Seats: number)
 
                     local function denyPermission()
                         NotificationService:CreateNotif(Player, "You do not have permission to sit at this table.")
-                        Humanoid.Sit = false
-                        Humanoid.Parent:MoveTo(object.Position + Vector3.new(0, 5, 0))
                         task.delay(0.1, function()
                             Humanoid.Jump = true
                         end)
@@ -81,6 +80,25 @@ function Table:_getTableCount()
     return TableCount
 end
 
+function Table:_claimTable(Server: Player, Area: string, Seats: number)
+    local availableTables = Table:_getAvailableTables(Area, Seats)
+
+    if #availableTables == 0 then
+        return false, "No available tables in this area."
+    end
+
+    local tableInstance = availableTables[1]
+    local tableData = Tables[tableInstance]
+
+    if not tableData then
+        return false, "Table data not found."
+    end
+
+    tableData.Server = Server
+
+    return true, tableData
+end
+
 function Table:_checkOccupied(Table: Instance)
     return Tables[Table].isOccupied, Tables[Table].Occupants
 end
@@ -88,6 +106,10 @@ end
 function Table:_setOccupied(Table: Instance, Occupants: {Player})
     if #Occupants > Tables[Table].Seats then
         return false, "Occupants exceeds table seat limit."
+    end
+
+    if Tables[Table].Server then
+        return false, "Table is already claimed by another server."
     end
 
     if Tables[Table].isOccupied then
@@ -112,6 +134,7 @@ function Table:_setUnoccupied(Table: Instance)
     end
 
     Tables[Table].isOccupied = false
+    Tables[Table].Server = nil
     Tables[Table].Occupants = {}
     return true
 end
@@ -147,18 +170,18 @@ function Table:_getOccupants(Table: Instance)
     return Tables[Table].Occupants
 end
 
-function Table:_getAvailableTables(Seats: number)
+function Table:_getServer(Table: Instance)
+    return Tables[Table].Server
+end
 
-    local availableTables = {
-        ["Indoor Seating"] = {},
-        ["Outdoor Seating"] = {},
-        ["Underwater Dining"] = {}
-    }
+function Table:_getAvailableTables(Area: string, Seats: number)
+
+    local availableTables = {}
     local seatsNumber = tonumber(Seats)
 
     for tableInstance, tableData in pairs(Tables) do
-        if not tableData.isOccupied and tableData.Seats >= seatsNumber then
-            table.insert(availableTables[tableData.Category], tableInstance)
+        if tableData.Category == Area and not tableData.isOccupied and not tableData.Server and tableData.Seats >= seatsNumber then
+            table.insert(availableTables, tableInstance)
         end
     end
 

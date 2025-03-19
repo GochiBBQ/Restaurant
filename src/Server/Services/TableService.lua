@@ -91,6 +91,10 @@ function TableService:GetTableCount()
     return Table:_getTableCount()
 end
 
+function TableService:ClaimTable(Server, Area, Seats)
+    return Table:_claimTable(Server, Area, Seats)
+end
+
 function TableService:SetTableOccupied(tableInstance, occupants)
     local tableObj = Tables[tableInstance]
     if tableObj then
@@ -187,6 +191,14 @@ function TableService.Client:GetAvailable(Player: Player, Seats: number)
     return self.Server:GetAvailableTables(Seats)
 end
 
+function TableService.Client:GetCount(Player: Player)
+    return self.Server:GetTableCount()
+end
+
+function TableService.Client:Claim(Server: Player, Area: string, Seats: number)
+    return self.Server:ClaimTable(Server, Area, Seats)
+end
+
 function TableService.Client:GetInfo(Player: Player, Table: Instance)
     return self.Server:GetTableInfo(Table)
 end
@@ -201,6 +213,8 @@ function TableService.Client:TabletInit(Player: Player, Tablet: Instance)
     if ongoingAnimations[Player] then
         ongoingAnimations[Player]:Stop()
     end
+
+    Tablet:SetAttribute("InUse", true)
 
     ongoingAnimations[Player] = Animation
     LockPlayerToModel(Player, Tablet, true)
@@ -220,6 +234,7 @@ function TableService.Client:TabletEnd(Player: Player, Tablet: Instance)
         ongoingAnimations[Player] = nil
     end
 
+    Tablet:SetAttribute("InUse", false)
     LockPlayerToModel(Player, Tablet, false)
 end
 

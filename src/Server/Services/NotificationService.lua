@@ -20,7 +20,7 @@ local NotificationService = Knit.CreateService {
 }
 
 -- Server Functions
-function NotificationService:CreateNotif(Player: Player, Message: string)
+function NotificationService:_createNotif(Player: Player, Message: string)
     self.Client.Notification:Fire(Player, Message)
 end
 
@@ -29,8 +29,12 @@ function NotificationService:CreateAnnouncement(Message: string)
 end
 
 -- Client Functions
-function NotificationService.Client:Announcement(Message: string)
+function NotificationService.Client:Announcement(Initiator: Player, Message: string)
     self.Server:CreateAnnouncement(Message)
+end
+
+function NotificationService.Client:CreateNotif(Initiator: Player, Target: Player, Message: string)
+    self.Server:_createNotif(Target, Message)
 end
 
  -- Return Service to Knit.
