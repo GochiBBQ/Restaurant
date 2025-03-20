@@ -59,7 +59,7 @@ function Table.new(tab: Instance, Category: string, Seats: number)
                     local Humanoid = object.Occupant
 
                     local function denyPermission()
-                        NotificationService:CreateNotif(Player, "You do not have permission to sit at this table.")
+                        NotificationService:_createNotif(Player, "You do not have permission to sit at this table.")
                         task.delay(0.1, function()
                             Humanoid.Jump = true
                         end)
