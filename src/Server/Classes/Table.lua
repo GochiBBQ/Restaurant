@@ -87,6 +87,12 @@ function Table:_claimTable(Server: Player, Area: string, Seats: number)
         return false, "No available tables in this area."
     end
 
+    table.sort(availableTables, function(a, b)
+        local diffA = math.abs(Tables[a].Seats - Seats)
+        local diffB = math.abs(Tables[b].Seats - Seats)
+        return diffA < diffB
+    end)
+
     local tableInstance = availableTables[1]
     local tableData = Tables[tableInstance]
 
@@ -103,12 +109,12 @@ function Table:_checkOccupied(Table: Instance)
     return Tables[Table].isOccupied, Tables[Table].Occupants
 end
 
-function Table:_setOccupied(Table: Instance, Occupants: {Player})
+function Table:_setOccupied(Server: Player, Table: Instance, Occupants: {Player})
     if #Occupants > Tables[Table].Seats then
         return false, "Occupants exceeds table seat limit."
     end
 
-    if Tables[Table].Server then
+    if Tables[Table].Server ~= Server then
         return false, "Table is already claimed by another server."
     end
 
@@ -124,6 +130,7 @@ function Table:_setOccupied(Table: Instance, Occupants: {Player})
 
     Tables[Table].isOccupied = true
     Tables[Table].Occupants = Occupants
+
     return true
 end
 

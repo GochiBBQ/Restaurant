@@ -95,10 +95,10 @@ function TableService:ClaimTable(Server, Area, Seats)
     return Table:_claimTable(Server, Area, Seats)
 end
 
-function TableService:SetTableOccupied(tableInstance, occupants)
+function TableService:SetTableOccupied(Server, tableInstance, occupants)
     local tableObj = Tables[tableInstance]
     if tableObj then
-        local result = tableObj:_setOccupied(tableInstance, occupants)
+        local result = tableObj:_setOccupied(Server, tableInstance, occupants)
         if result == nil then
             self.Client.TableOccupied:Fire(tableInstance, occupants)
         end
@@ -167,8 +167,8 @@ function TableService:GetTableInfo(tableInstance)
 end
 
 -- Client Functions
-function TableService.Client:SetOccupied(Player: Player, Table: Instance, Occupants: {Player})
-    return self.Server:SetTableOccupied(Table, Occupants)
+function TableService.Client:SetOccupied(Server: Player, Table: Instance, Occupants: {Player})
+    return self.Server:SetTableOccupied(Server, Table, Occupants)
 end
 
 function TableService.Client:SetUnoccupied(Player: Player, Table: Instance)

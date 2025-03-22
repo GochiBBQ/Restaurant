@@ -163,6 +163,9 @@ function OverheadService:CreateBadges(Player: Player)
 end
 
 function OverheadService:CreateGradient(Player: Player, Gradient: string)
+
+	repeat task.wait() until Player:GetAttribute("Loaded") and self.Overheads[Player]
+
 	local Overhead = self.Overheads[Player]
 	local Frame = Overhead:WaitForChild("Main")
 
@@ -242,8 +245,6 @@ end
 function OverheadService:TweenFunction(Player: Player)
 	local Overhead = self.Overheads[Player]:WaitForChild("Main")
 	local result = self:CreateBadges(Player)
-
-	print(`Result: {result}`)
 
 	if result then
 		local Badges = Overhead:WaitForChild("Titles")

@@ -5,7 +5,6 @@ For: Gochi
 
 ]]
 
--- ————————— 🂡 —————————
 -- Services
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreService = game:GetService("DataStoreService")
@@ -14,14 +13,12 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Teams = game:GetService("Teams")
 
--- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local ProfileService = require(Knit.Modules.ProfileService)
 local template = require(script.template)
 
--- ————————— 🂡 —————————
 -- Create Knit Service
 local DataService = Knit.CreateService({
 	Name = "DataService",
@@ -33,7 +30,6 @@ local DataService = Knit.CreateService({
 	DataKey = "_PlayerData",
 })
 
--- ————————— 🂡 —————————
 -- Variables
 
 local ProfileStore = ProfileService.GetProfileStore(DataService.DataKey, template)
@@ -55,20 +51,20 @@ function DataService:LoadProfile(Player: Player)
 		return
 	end
 
-	-- ————————— 🂡 —————————
+	
 	-- Check if profile was loaded
 	if PlayerProfile ~= nil then
 		PlayerProfile:AddUserId(Player.UserId)
 		PlayerProfile:Reconcile()
 
-		-- ————————— 🂡 —————————
+		
 		-- Listen for changes to profile on other servers
 		PlayerProfile:ListenToRelease(function()
 			Knit.Profiles[Player] = nil
 			Player:Kick("The same account was launched onto a different device. Please only play with one device.")
 		end)
 
-		-- ————————— 🂡 —————————
+		
 		-- Check if player does exist before assigning profile
 		if Player:IsDescendantOf(Players) then
 			Knit.Profiles[Player] = PlayerProfile
@@ -87,7 +83,7 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 	Player:SetAttribute("Loaded", true)
 	Player:SetAttribute("AFK", false)
 
-	-- ————————— 🂡 —————————
+	
 	-- Create Leaderboards
 	local Leaderstats = Instance.new("Folder")
 	Leaderstats.Name = "leaderstats"
@@ -98,7 +94,7 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 	Rank.Parent = Leaderstats
 	Rank.Name = "Rank"
 
-	-- ————————— 🂡 —————————
+	
 	-- Organize Teams
 	local Rank = RankService:GetRank(Player)
 
@@ -157,15 +153,17 @@ function DataService:_getJoined(Player: Player)
 		return nil
 	end
 
-	if Profile.Data.JoinedBefore ~= nil then
-		if Profile.Data.JoinedBefore then
-			return true
-		else
-			return false
-		end
-	else
-		Profile.Data.JoinedBefore = true
+	if Profile.Data.JoinedBefore == nil then
 		return false
+	else
+		local JoinedBefore = Profile.Data.JoinedBefore
+
+		if JoinedBefore == false then
+			Profile.Data.JoinedBefore = true
+			return false
+		else
+			return true
+		end
 	end
 end
 
@@ -229,7 +227,7 @@ function DataService:KnitStart()
 	end)
 end
 
--- ————————— 🂡 —————————
+
 -- Client Functions
 function DataService.Client:Update(Player: Player, Setting: string, Type: boolean)
 	self.Server:UpdateSetting(Player, Setting, Type)
@@ -243,6 +241,6 @@ function DataService.Client:GetJoined(Player: Player)
 	return self.Server:_getJoined(Player :: Player)
 end
 
--- ————————— 🂡 —————————
+
 -- Return Service to Knit.
 return DataService

@@ -7,6 +7,7 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local NotificationService = game:GetService("NotificationService")
 local Players = game:GetService("Players")
 local RunService = game:GetService('RunService')
 
@@ -28,7 +29,7 @@ local Panel = GochiUI:WaitForChild("TableManagementPanel")
 
 local Content = TableUI:WaitForChild("Content")
 
-local TableService, RankService, NotificationService
+local TableService, RankService, NotificationService, NavigationService
 local UIController
 
 local uiOpen = false
@@ -42,6 +43,7 @@ function TableController:KnitStart()
     TableService = Knit.GetService("TableService")
     RankService = Knit.GetService("RankService")
     NotificationService = Knit.GetService("NotificationService")
+    NavigationService = Knit.GetService("NavigationService")
     UIController = Knit.GetController("UIController")
 
     local Functionality = workspace:WaitForChild("Functionality")
@@ -195,6 +197,10 @@ function TableController:InitRegisters()
 end
 
 function TableController:AreaSelected(Area: string)
+
+    local PlayersToAdd = {}
+    local ExistingPlayers = {}
+
     UIController:Close(TableUI)
     UIController:Open(Panel)
 
@@ -215,7 +221,7 @@ function TableController:AreaSelected(Area: string)
         AnimNation.target(GuestSelection.OrderOptions.Confirm, {s = 20}, {Size = originalSize})
     end)
 
-    local function HandleParty(OrderOptions, PartyView, PlayerInput, ExistingPlayers, PlayersToAdd)
+    local function HandleParty(OrderOptions, PartyView, PlayerInput)
         OrderOptions.AddButton.Activated:Connect(function()
             if OrderOptions.PlayerInput.TextLabel.Text == "" then
                 OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
@@ -228,6 +234,12 @@ function TableController:AreaSelected(Area: string)
 
             if not PlayerToAdd then
                 OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
+                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+                return
+            end
+
+            if PlayerToAdd == Player then
+                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
                 task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
                 return
             end
@@ -307,9 +319,6 @@ function TableController:AreaSelected(Area: string)
         local PartyView = panelContent:WaitForChild("PartyView")
         local PlayerInput = OrderOptions.PlayerInput.TextLabel
 
-        local ExistingPlayers = {}
-        local PlayersToAdd = {}
-
         local Occupants = tableData.Occupants or {}
 
         for _, occupant in ipairs(Occupants) do
@@ -327,7 +336,7 @@ function TableController:AreaSelected(Area: string)
             table.insert(ExistingPlayers, occupant)
         end
 
-        HandleParty(OrderOptions, PartyView, PlayerInput, ExistingPlayers, PlayersToAdd)
+        HandleParty(OrderOptions, PartyView, PlayerInput)
     end
 
     local function NewParty()
@@ -336,15 +345,13 @@ function TableController:AreaSelected(Area: string)
         local PartyView = panelContent:WaitForChild("PartyView")
         local PlayerInput = OrderOptions.PlayerInput.TextLabel
 
-        local PlayersToAdd = {}
-
-        HandleParty(OrderOptions, PartyView, PlayerInput, {}, PlayersToAdd)
+        HandleParty(OrderOptions, PartyView, PlayerInput)
     end
 
     GuestSelection.OrderOptions.Confirm.Activated:Connect(function()
         local Guests = GuestSelection.OrderOptions.GuestInput.TextLabel.Text
 
-        if Guests == "" or tonumber(Guests) == nil or tonumber(Guests) > 8 or tonumber(Guests) < 1 then
+        if Guests == "" or tonumber(Guests) == nil or tonumber(Guests) > 9 or tonumber(Guests) < 1 then
             GuestSelection.OrderOptions.GuestInput.TextLabel.Text = ""
             GuestSelection.OrderOptions.GuestInput.TextLabel.PlaceholderText = "Invalid Entry"
 
@@ -366,12 +373,7 @@ function TableController:AreaSelected(Area: string)
             panelContent.Title.Text = `Your party is assigned to Table <b>{Name}</b>`
 
             GuestSelection.Visible = false
-            panelContent.Visible = true
-
-            --[[ TODO:
-                - Submit logic that handles different cases
-            ]]
-            
+            panelContent.Visible = true       
 
             if #Occupants > 0 then
                 PartyExists(tableData)
@@ -380,6 +382,49 @@ function TableController:AreaSelected(Area: string)
                 NewParty()
                 selectedOption = 'New'
             end
+
+            --[[ TODO:
+                - Submit logic that handles different cases
+            ]]
+            panelContent.OrderOptions.Confirm.Activated:Connect(function()
+
+                if #PlayersToAdd == 0 then
+                    NotificationService:CreateNotif(Player, "Please add at least one player to your party.")
+                    return
+                end
+
+                if selectedOption == 'Existing' then
+                    print("Existing ", PlayersToAdd, ExistingPlayers)
+                elseif selectedOption == 'New' then
+                    TableService:SetOccupied(tableData.Table, PlayersToAdd):andThen(function(success)
+                        if success then
+                            NavigationService:Beam(tableData.Table):andThen(function(success)
+                                if success then
+                                    UIController:Close(Panel)
+                                    TableService:TabletEnd(activeRegister)
+                                    activeRegister = nil
+                                    NotificationService:CreateNotif(Player, `Please take your guests to Table <b>{Name}</b> using the arrows.`)
+
+                                    for _, occupant in pairs(PlayersToAdd) do
+                                        if occupant:IsA("Player") then
+                                            NavigationService:Beam(tableData.Table):andThen(function(success)
+                                                if success then
+                                                    NotificationService:CreateNotif(occupant, `Please follow your server to Table <b>{Name}</b>.`)
+                                                end
+                                            end):catch(function(err)
+                                                warn("Error: ", err)
+                                            end)
+                                        end
+                                    end
+                                end
+                            end):catch(function(err)
+                                warn("Error: ", err)
+                            end)
+                            -- add server path logic here
+                        end
+                    end)
+                end
+            end)
         end)
     end)
 end
