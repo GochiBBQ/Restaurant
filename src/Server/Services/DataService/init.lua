@@ -46,26 +46,14 @@ local GamepassService
 local url = "http://138.197.80.59:3001"
 local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
--- ————————— 🂡 —————————
 -- Server Functions
---[[
-	Loads the player's profile data from the ProfileStore and assigns it to the player.
-	If the profile is already loaded, it returns immediately. Otherwise, it loads the profile,
-	reconciles it, and sets up listeners for profile changes on other servers. If the player
-	is still in the game, it assigns the profile to the player and fires the PlayerLoaded signal.
-	If the profile cannot be loaded, the player is kicked from the game.
-
-	@function LoadProfile
-	@param Player Player -- The player whose profile is being loaded.
-	@within DataService
-]]
 function DataService:LoadProfile(Player: Player)
-	-- Don't use `PlayerData{Player.UserId}`, existing data
-	local PlayerProfile: table = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev2`, "ForceLoad")
+
+	local PlayerProfile: table = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev3`, "ForceLoad")
 
 	if Knit.Profiles[Player] then
 		return
-	end -- A profile exists already, return
+	end
 
 	-- ————————— 🂡 —————————
 	-- Check if profile was loaded
@@ -95,14 +83,6 @@ function DataService:LoadProfile(Player: Player)
 	end
 end
 
---[[
-	Creates data for a player, including setting initial attributes, creating leaderboards, and organizing teams based on the player's rank.
-
-	@function CreateData
-	@param Player Player -- The player for whom the data is being created.
-	@param Profile Instance -- The profile instance associated with the player.
-	@within DataService
-]]
 function DataService:CreateData(Player: Player, Profile: Instance)
 	Player:SetAttribute("Loaded", true)
 	Player:SetAttribute("AFK", false)
@@ -129,18 +109,6 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 	end
 end
 
---[[
-	Updates a player's setting in their profile.
-	Checks if the player has the required game pass for the setting, updates the setting in the player's profile,
-	and fires relevant events to notify clients and other services. If the setting is "DisableTips", it also updates
-	the player's "ShowTips" attribute accordingly.
-
-	@function UpdateSetting
-	@param Player Player -- The player whose setting is being updated.
-	@param Setting string -- The name of the setting to update.
-	@param Type boolean -- The new value for the setting.
-	@within DataService
-]]
 function DataService:UpdateSetting(Player: Player, Setting: string, Type: boolean)
 	local Profile = Knit.Profiles[Player]
 
@@ -162,16 +130,6 @@ function DataService:UpdateSetting(Player: Player, Setting: string, Type: boolea
 	end
 end
 
---[[
-	Retrieves the settings for a given player.
-	Waits until the player's "Loaded" attribute is true, then fetches the player's profile from Knit.
-	If the profile exists, it iterates through the settings and updates the player's "ShowTips" attribute based on the "DisableTips" setting.
-	Returns the settings table if the profile is found, otherwise returns nil.
-
-	@function GetSettings
-	@param Player The player whose settings are being retrieved.
-	@within DataService
-]]
 function DataService:GetSettings(Player)
 	while not Player:GetAttribute("Loaded") do
 		task.wait()
@@ -191,9 +149,8 @@ function DataService:GetSettings(Player)
 end
 
 function DataService:_getJoined(Player: Player)
-	while not Player:GetAttribute("Loaded") do
-		task.wait()
-	end
+	
+	repeat task.wait() until Player:GetAttribute("Loaded")
 
 	local Profile = Knit.Profiles[Player]
 	if not Profile then
@@ -212,13 +169,6 @@ function DataService:_getJoined(Player: Player)
 	end
 end
 
---[[
-	Starts the DataService by initializing the RankService, loading player profiles, and checking booster status.
-	Connects various player events to handle rank updates, profile loading, and booster status checks.
-
-	@function KnitStart
-	@within DataService
-]]
 function DataService:KnitStart()
 	RankService = Knit.GetService("RankService")
 	GamepassService = Knit.GetService("GamepassService")
@@ -281,26 +231,10 @@ end
 
 -- ————————— 🂡 —————————
 -- Client Functions
---[[
-	Updates a player's setting on the server.
-
-	@function Update
-	@within DataService.Client
-	@param Player Player -- The player whose setting is being updated.
-	@param Setting string -- The name of the setting to update.
-	@param Type boolean -- The new value of the setting.
-]]
 function DataService.Client:Update(Player: Player, Setting: string, Type: boolean)
 	self.Server:UpdateSetting(Player, Setting, Type)
 end
 
---[[
-	Retrieves the settings for a given player by calling the Server's GetSettings method.
-
-	@function Get
-	@param Player The player for whom the settings are being retrieved.
-	@within DataService.Client
-]]
 function DataService.Client:Get(Player: Player)
 	return self.Server:GetSettings(Player)
 end

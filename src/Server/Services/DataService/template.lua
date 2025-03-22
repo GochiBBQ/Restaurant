@@ -56,11 +56,11 @@ local template = {
         Particles = {},
         Tricks = {},
 
-        EquippedItems = {
-            Nametag = nil,
-            Trail = nil,
-            Particle = nil,
-            Trick = nil,
+        Equipped = {
+            Nametags = nil,
+            Trails = nil,
+            Particles = nil,
+            Tricks = nil,
         },
     },
     
