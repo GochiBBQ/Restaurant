@@ -1,8 +1,6 @@
 --[[
-
 Author: alreadyfans
 For: Gochi
-
 ]]
 
 -- Services
@@ -12,9 +10,11 @@ local Teams = game:GetService("Teams")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove)
 
 -- Variables
 local RankService
+local playerTroveMap = {}
 
 -- Create Knit Service
 local TeamService = Knit.CreateService {
@@ -28,20 +28,18 @@ local TeamService = Knit.CreateService {
 -- Server Functions
 function TeamService:KnitStart()
     RankService = Knit.GetService("RankService")
+
+    -- Handle cleanup when players leave
+    Players.PlayerRemoving:Connect(function(player)
+        if playerTroveMap[player] then
+            playerTroveMap[player]:Destroy()
+            playerTroveMap[player] = nil
+        end
+    end)
 end
 
 -- Client Functions
---[[ 
-    Handles the selection of a team by a player.
-    Sets the player's team, rank, and role attributes, and assigns the player to the team.
-    Fires an event to notify all clients about the team assignment.
-
-    @function TeamSelected
-    @param player Player -- The player who selected the team
-    @param team string -- The name of the team selected by the player
-    @within TeamService
-]]
-function TeamService.Client:TeamSelected(player : Player, team : string)
+function TeamService.Client:TeamSelected(player: Player, team: string)
     local role = RankService:GetRole(player) or "Unknown"
     local rank = RankService:GetRank(player) or 0
 
@@ -51,14 +49,22 @@ function TeamService.Client:TeamSelected(player : Player, team : string)
     player:SetAttribute("Role", role)
 
     -- Assign player to the team if it exists
-    if Teams:FindFirstChild(team) then
-        player.Team = Teams[team]
+    local teamObj = Teams:FindFirstChild(team)
+    if teamObj then
+        player.Team = teamObj
     else
         warn("Invalid team selected: " .. team)
         return
     end
 
-    -- Notify all clients about the team assignment
+    -- Setup or reset Trove per player
+    if not playerTroveMap[player] then
+        playerTroveMap[player] = Trove.new()
+    else
+        playerTroveMap[player]:Clean()
+    end
+
+    -- Fire signal to all clients
     self.AssignTeam:FireAll(player, team, rank, role)
 end
 

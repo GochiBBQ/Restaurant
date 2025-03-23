@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local GreetingController = Knit.CreateController {
@@ -36,25 +37,18 @@ local defaultMessages = {
 	conclusionMessage = "Thanks for dining at Gochí! Please note that tips are available if you so choose, and we hope to see you again!",
 }
 
-
 local GreetingService
 
 -- UI Elements
 local GreetingUI = PlayerGui:WaitForChild("GochiUI"):WaitForChild("Greetings")
-
 local ScrollingFrame = GreetingUI.Main.ScrollingFrame
 
 -- Client Functions
---[[
-    Initializes the GreetingController by setting up the GreetingService and configuring the GreetingUI.
-    Makes the main GreetingUI draggable, active, and selectable.
-    Connects to the GreetingService's Update event to update greeting messages in the UI.
-    Calls Save, Edit, and Send methods for additional functionality.
-
-    @function KnitStart
-    @within GreetingController
-]]
 function GreetingController:KnitStart()
+    self._trove = Trove.new()
+    self._saveTrove = Trove.new()
+    self._editTrove = Trove.new()
+    self._sendTrove = Trove.new()
 
     GreetingService = Knit.GetService("GreetingService")
 
@@ -62,7 +56,7 @@ function GreetingController:KnitStart()
     GreetingUI.Main.Active = true
     GreetingUI.Main.Selectable = true
 
-    GreetingService.Update:Connect(function(messages)
+    self._trove:Connect(GreetingService.Update, function(messages)
         for _, frame in pairs(ScrollingFrame:GetChildren()) do
             if frame:IsA("Frame") then
                 frame.Greeting.Text = messages[frame.Name] or defaultMessages[frame.Name]
@@ -75,58 +69,33 @@ function GreetingController:KnitStart()
     self:Send()
 end
 
---[[
-    Saves the current state of the greeting frames.
-    Iterates through all children of the ScrollingFrame, and for each frame, connects the Save button's click event to a function that hides the Save button, shows the Edit button, makes the greeting text non-editable, sets a default message if the greeting text is empty, and calls the GreetingService to save the message.
-
-    @function Save
-    @within GreetingController
-]]
-local saveConnections = {}
-
 function GreetingController:Save()
+    self._saveTrove:Clean()
     for _, frame in pairs(ScrollingFrame:GetChildren()) do
         if frame:IsA("Frame") then
-            if saveConnections[frame] then
-                saveConnections[frame]:Disconnect()
-            end
-            saveConnections[frame] = frame['Save'].MouseButton1Click:Connect(function()
-
+            self._saveTrove:Connect(frame['Save'].MouseButton1Click, function()
                 frame['Save'].Visible = false
                 frame['Edit'].Visible = true
-
                 frame.Greeting.TextEditable = false
 
                 local messageType = frame.Name
-
                 if frame.Greeting.Text == "" then
                     frame.Greeting.Text = defaultMessages[messageType]
                 end
 
                 GreetingService:ClientSave(messageType, frame.Greeting.Text)
-
             end)
         end
     end
 end
 
---[[
-    @function Edit
-    @within GreetingController
-]]
-local editConnections = {}
-
 function GreetingController:Edit()
+    self._editTrove:Clean()
     for _, frame in pairs(ScrollingFrame:GetChildren()) do
         if frame:IsA("Frame") then
-            if editConnections[frame] then
-                editConnections[frame]:Disconnect()
-            end
-            editConnections[frame] = frame['Edit'].MouseButton1Click:Connect(function()
-                
+            self._editTrove:Connect(frame['Edit'].MouseButton1Click, function()
                 frame['Save'].Visible = true
                 frame['Edit'].Visible = false
-
                 frame.Greeting.TextEditable = true
                 frame.Greeting.ClearTextOnFocus = false
             end)
@@ -134,24 +103,12 @@ function GreetingController:Edit()
     end
 end
 
---[[
-    Sends a greeting message when a button is clicked.
-    Iterates through all frames in the ScrollingFrame, connects the MouseButton1Click event of the 'Send' button to a function that sends a greeting message if not on cooldown.
-    Sets the greeting text to a default message if it is empty, sends the message using GreetingService, and handles the cooldown period.
-    Also connects to the GreetingService.SendMessage event to display formatted messages in the TextChatService.
-
-    @function Send
-    @within GreetingController
-]]
-local sendConnections = {}
-
 function GreetingController:Send()
+    self._sendTrove:Clean()
+
     for _, frame in pairs(ScrollingFrame:GetChildren()) do
         if frame:IsA("Frame") then
-            if sendConnections[frame] then
-                sendConnections[frame]:Disconnect()
-            end
-            sendConnections[frame] = frame['Send'].MouseButton1Click:Connect(function()
+            self._sendTrove:Connect(frame['Send'].MouseButton1Click, function()
                 if not self.OnCooldown then
                     self.OnCooldown = true
 
@@ -173,7 +130,7 @@ function GreetingController:Send()
 
     if not self.sendMessageConnected then
         self.sendMessageConnected = true
-        GreetingService.SendMessage:Connect(function(senderPlayer, message)
+        self._sendTrove:Connect(GreetingService.SendMessage, function(senderPlayer, message)
             local Name = senderPlayer.Name
             local Color = senderPlayer.TeamColor.Color
 
@@ -182,7 +139,6 @@ function GreetingController:Send()
             end
 
             local rgbColor = string.format("%d, %d, %d", Color.R * 255, Color.G * 255, Color.B * 255)
-
             local formattedMessage = string.format('<font color="rgb(%s)">%s:</font> %s', rgbColor, Name, message)
 
             TextChatService:WaitForChild('TextChannels').RBXGeneral:DisplaySystemMessage(formattedMessage)
@@ -190,4 +146,5 @@ function GreetingController:Send()
     end
 end
 
+-- Return Controller to Knit.
 return GreetingController

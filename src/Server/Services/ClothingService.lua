@@ -5,35 +5,30 @@ For: Gochi
 
 ]]
 
--- ————————— 🂡 —————————
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
--- ————————— 🂡 —————————
 -- Create Knit Service
 local ClothingService = Knit.CreateService {
     Name = "ClothingService",
     Client = {},
 }
 
--- ————————— 🂡 —————————
--- Server Functions
---[[
-    Starts the ClothingService by setting up event listeners for player and character additions.
-    Handles the addition and removal of character descendants, specifically Humanoids and WrapLayers,
-    to manage the enabling and disabling of layered clothing.
+-- Trove instances per player for cleanup
+local playerTrove = {}
 
-    @function KnitStart
-    @within ClothingService
-]]
+-- Server Functions
 function ClothingService:KnitStart()
-    local function onCharacterAdded(character: Model)
+    local function onCharacterAdded(player: Player, character: Model)
+        local trove = playerTrove[player] or Trove.new()
+        playerTrove[player] = trove
+
         local patch
         local humanoid: Humanoid?
         local wrapLayers: { [WrapLayer]: MeshPart } = {}
@@ -62,7 +57,6 @@ function ClothingService:KnitStart()
 
             task.delay(1, function()
                 if patch ~= thread then return end
-
                 if humanoid and humanoid:GetState().Name == "Dead" then return end
 
                 local extents = character:GetExtentsSize()
@@ -93,16 +87,28 @@ function ClothingService:KnitStart()
             task.spawn(onDescendantAdded, desc)
         end
 
-        character.DescendantAdded:Connect(onDescendantAdded)
-        character.DescendantRemoving:Connect(onDescendantRemoving)
+        trove:Connect(character.DescendantAdded, onDescendantAdded)
+        trove:Connect(character.DescendantRemoving, onDescendantRemoving)
     end
 
     local function onPlayerAdded(player: Player)
-        local character = player.Character
-        if character and character:IsDescendantOf(workspace) then
-            task.spawn(onCharacterAdded, character)
+        local trove = Trove.new()
+        playerTrove[player] = trove
+
+        if player.Character and player.Character:IsDescendantOf(workspace) then
+            task.spawn(onCharacterAdded, player, player.Character)
         end
-        player.CharacterAdded:Connect(onCharacterAdded)
+
+        trove:Connect(player.CharacterAdded, function(char)
+            onCharacterAdded(player, char)
+        end)
+
+        trove:Connect(player.AncestryChanged, function(_, parent)
+            if not parent then
+                trove:Destroy()
+                playerTrove[player] = nil
+            end
+        end)
     end
 
     for _, player in pairs(Players:GetPlayers()) do
@@ -110,7 +116,13 @@ function ClothingService:KnitStart()
     end
 
     Players.PlayerAdded:Connect(onPlayerAdded)
+    Players.PlayerRemoving:Connect(function(player)
+        if playerTrove[player] then
+            playerTrove[player]:Destroy()
+            playerTrove[player] = nil
+        end
+    end)
 end
--- ————————— 🂡 —————————
- -- Return Service to Knit.
+
+-- Return Service to Knit.
 return ClothingService

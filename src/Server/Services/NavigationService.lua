@@ -35,6 +35,9 @@ function NavigationService:KnitStart()
 end
 
 function NavigationService:InitBeam(Player: Player, Model: Instance)
+
+    print("InitBeam")
+
     local result = self.Client.Init:Fire(Player, Model)
 
     if result == nil then

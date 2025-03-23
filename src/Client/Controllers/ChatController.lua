@@ -12,11 +12,11 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local ChatController = Knit.CreateController {
     Name = "ChatController",
-
 }
 
 -- Variables
@@ -40,6 +40,9 @@ local BoosterTag = {
     Prefix = "BOOSTER"
 }
 
+-- Trove Instance
+ChatController._trove = Trove.new()
+
 -- Client Functions
 function ChatController:KnitStart()
     self:CheckBubble()
@@ -47,7 +50,7 @@ function ChatController:KnitStart()
 end
 
 function ChatController:CheckBubble()
-    TextChatService.OnBubbleAdded = function(message: TextChatMessage, adornee: Instance)
+    local handler = function(message: TextChatMessage, adornee: Instance)
         local chatProperties = Instance.new("BubbleChatMessageProperties")
 
         if message.TextSource then
@@ -63,11 +66,18 @@ function ChatController:CheckBubble()
 
         return chatProperties
     end
+
+    TextChatService.OnBubbleAdded = handler
+    self._trove:Add(function()
+        -- Clear the callback if Trove is cleaned
+        if TextChatService.OnBubbleAdded == handler then
+            TextChatService.OnBubbleAdded = nil
+        end
+    end)
 end
 
 function ChatController:CheckText()
-    TextChatService.OnIncomingMessage = function(message: TextChatMessage)
-
+    local handler = function(message: TextChatMessage)
         if message.Metadata == "Roblox.Team.Success.NowInTeam" then
             local override = Instance.new("TextChatMessageProperties")
             override.Text = " "
@@ -80,20 +90,20 @@ function ChatController:CheckText()
             local PlayerId = message.TextSource.UserId
             local Player = Players:GetPlayerByUserId(PlayerId)
 
-            properties.PrefixText = (message.PrefixText:gsub(Player.DisplayName, Player.Name))
+            if Player then
+                properties.PrefixText = (message.PrefixText:gsub(Player.DisplayName, Player.Name))
 
-            if Player:GetAttribute("VIP") then
-                properties.PrefixText = string.format(PrefixToFormat, PremiumTag.PrefixColor:ToHex(), PremiumTag.Prefix, Player.Name)
-                properties.Text = string.format(ChatMessageToFormat, PremiumTag.PrefixColor:ToHex(), message.Text)
-            end
+                if Player:GetAttribute("VIP") then
+                    properties.PrefixText = string.format(PrefixToFormat, PremiumTag.PrefixColor:ToHex(), PremiumTag.Prefix, Player.Name)
+                    properties.Text = string.format(ChatMessageToFormat, PremiumTag.PrefixColor:ToHex(), message.Text)
+                end
 
-            -- if Player:GetAttribute("Booster") then
-            --     properties.PrefixText = string.format(PrefixToFormat, BoosterTag.PrefixColor:ToHex(), BoosterTag.Prefix, Player.Name)
-            --     properties.Text = string.format(ChatMessageToFormat, BoosterTag.PrefixColor:ToHex(), message.Text)
-            -- end
+                -- if Player:GetAttribute("Booster") then
+                --     properties.PrefixText = string.format(PrefixToFormat, BoosterTag.PrefixColor:ToHex(), BoosterTag.Prefix, Player.Name)
+                --     properties.Text = string.format(ChatMessageToFormat, BoosterTag.PrefixColor:ToHex(), message.Text)
+                -- end
 
-            if Tags[PlayerId] then
-                if Tags[PlayerId].MessageColor then
+                if Tags[PlayerId] and Tags[PlayerId].MessageColor then
                     properties.Text = string.format(ChatMessageToFormat, Tags[PlayerId].MessageColor:ToHex(), message.Text)
                 end
             end
@@ -101,7 +111,15 @@ function ChatController:CheckText()
 
         return properties
     end
+
+    TextChatService.OnIncomingMessage = handler
+    self._trove:Add(function()
+        -- Clear the callback if Trove is cleaned
+        if TextChatService.OnIncomingMessage == handler then
+            TextChatService.OnIncomingMessage = nil
+        end
+    end)
 end
 
- -- Return Controller to Knit.
+-- Return Controller to Knit.
 return ChatController

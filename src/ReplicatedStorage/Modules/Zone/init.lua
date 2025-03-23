@@ -176,7 +176,7 @@ end
 
 
 -- PRIVATE METHODS
-function Zone:_calculateRegion(tableOfParts, dontRound)
+function Zone:_calculateRegion(tableOfParts, dontRound, radiusOffset)
 	local bounds = {["Min"] = {}, ["Max"] = {}}
 	for boundType, details in pairs(bounds) do
 		details.Values = {}
@@ -238,6 +238,13 @@ function Zone:_calculateRegion(tableOfParts, dontRound)
 	end
 	local boundMin = Vector3.new(unpack(minBound))
 	local boundMax = Vector3.new(unpack(maxBound))
+	
+	-- Apply radius offset if provided
+	if radiusOffset then
+		boundMin -= Vector3.new(radiusOffset, radiusOffset, radiusOffset)
+		boundMax += Vector3.new(radiusOffset, radiusOffset, radiusOffset)
+	end
+	
 	local region = Region3.new(boundMin, boundMax)
 	return region, boundMin, boundMax
 end
@@ -362,7 +369,7 @@ function Zone:_update()
 		end
 	end
 	
-	local region, boundMin, boundMax = self:_calculateRegion(zoneParts)
+	local region, boundMin, boundMax = self:_calculateRegion(zoneParts, false, 5) -- Add a radius offset of 5
 	local exactRegion, _, _ = self:_calculateRegion(zoneParts, true)
 	self.region = region
 	self.exactRegion = exactRegion

@@ -135,12 +135,10 @@ function TableService:RemoveOccupantFromTable(tableInstance, occupant)
     local tableObj = Tables[tableInstance]
     if tableObj then
         local result = tableObj:_removeOccupant(tableInstance, occupant)
-        if result == "Occupant removed." then
-            self.Client.OccupantRemoved:Fire(tableInstance, occupant)
-        end
+
         return result
     else
-        return "Table not found."
+        return false
     end
 end
 
@@ -158,6 +156,19 @@ function TableService:GetAvailableTables(Seats)
 end
 
 function TableService:GetTableInfo(tableInstance)
+
+    print(tableInstance)
+
+    -- If tableInstance is a string, find the corresponding Instance
+    if typeof(tableInstance) == "string" then
+        for instance, _ in pairs(Tables) do
+            if instance.Name == tableInstance then
+                tableInstance = instance
+                break
+            end
+        end
+    end
+
     local tableObj = Tables[tableInstance]
     if tableObj then
         return tableObj:_getTableInfo(tableInstance)
@@ -180,6 +191,7 @@ function TableService.Client:AddOccupant(Player: Player, Table: Instance, Occupa
 end
 
 function TableService.Client:RemoveOccupant(Player: Player, Table: Instance, Occupant: Player)
+    print(Table, Occupant)
     return self.Server:RemoveOccupantFromTable(Table, Occupant)
 end
 
@@ -199,7 +211,7 @@ function TableService.Client:Claim(Server: Player, Area: string, Seats: number)
     return self.Server:ClaimTable(Server, Area, Seats)
 end
 
-function TableService.Client:GetInfo(Player: Player, Table: Instance)
+function TableService.Client:GetInfo(Player: Player, Table: Instance | string)
     return self.Server:GetTableInfo(Table)
 end
 

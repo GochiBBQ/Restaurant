@@ -17,6 +17,7 @@ local Teams = game:GetService("Teams")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local ProfileService = require(Knit.Modules.ProfileService)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 local template = require(script.template)
 
 -- Create Knit Service
@@ -31,10 +32,10 @@ local DataService = Knit.CreateService({
 })
 
 -- Variables
-
 local ProfileStore = ProfileService.GetProfileStore(DataService.DataKey, template)
 
 Knit.Profiles = {}
+local PlayerTroves = {}
 
 local RankService
 local GamepassService
@@ -44,32 +45,36 @@ local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
 -- Server Functions
 function DataService:LoadProfile(Player: Player)
+	local PlayerProfile = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev3`, "ForceLoad")
 
-	local PlayerProfile: table = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev3`, "ForceLoad")
+	if Knit.Profiles[Player] then return end
 
-	if Knit.Profiles[Player] then
-		return
-	end
-
-	
-	-- Check if profile was loaded
 	if PlayerProfile ~= nil then
 		PlayerProfile:AddUserId(Player.UserId)
 		PlayerProfile:Reconcile()
 
-		
-		-- Listen for changes to profile on other servers
 		PlayerProfile:ListenToRelease(function()
 			Knit.Profiles[Player] = nil
 			Player:Kick("The same account was launched onto a different device. Please only play with one device.")
 		end)
 
-		
-		-- Check if player does exist before assigning profile
 		if Player:IsDescendantOf(Players) then
 			Knit.Profiles[Player] = PlayerProfile
 			Knit.Signals.PlayerLoaded:Fire(Player)
 			self:CreateData(Player, PlayerProfile)
+
+			local trove = Trove.new()
+			PlayerTroves[Player] = trove
+
+			trove:Connect(Player.AncestryChanged, function(_, parent)
+				if not parent then
+					local Profile = Knit.Profiles[Player]
+					if Profile then Profile:Release() end
+					trove:Destroy()
+					PlayerTroves[Player] = nil
+				end
+			end)
+
 			return PlayerProfile
 		else
 			PlayerProfile:Release()
@@ -83,7 +88,6 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 	Player:SetAttribute("Loaded", true)
 	Player:SetAttribute("AFK", false)
 
-	
 	-- Create Leaderboards
 	local Leaderstats = Instance.new("Folder")
 	Leaderstats.Name = "leaderstats"
@@ -91,14 +95,13 @@ function DataService:CreateData(Player: Player, Profile: Instance)
 
 	local Rank = Instance.new("StringValue")
 	Rank.Value = Player:GetRoleInGroup(5874921)
-	Rank.Parent = Leaderstats
 	Rank.Name = "Rank"
+	Rank.Parent = Leaderstats
 
-	
 	-- Organize Teams
 	local Rank = RankService:GetRank(Player)
 
-	if Rank >= 7 then -- Management
+	if Rank >= 7 then
 		Player:SetAttribute("Staff", true)
 	elseif Rank <= 3 then
 		Player.Team = Teams["Customer"]
@@ -111,17 +114,16 @@ function DataService:UpdateSetting(Player: Player, Setting: string, Type: boolea
 	if Profile then
 		local Settings = Profile.Data.Settings['Settings']
 		if Settings[Setting] ~= nil then
-			Profile.Data.Settings['Settings'][Setting] = Type
-			self.Client.UpdateSettings:Fire(Player, Setting, Type)
-			self.SettingUpdated:Fire(Player, Setting, Type)
-
-			if Setting == "ShowTips" then
-				Player:SetAttribute("ShowTips", Type)
-			end
+			Settings[Setting] = Type
 		else
-			Profile.Data.Settings['Settings'][Setting] = Type
-			self.Client.UpdateSettings:Fire(Player, Setting, Type)
-			self.SettingUpdated:Fire(Player, Setting, Type)
+			Settings[Setting] = Type
+		end
+
+		self.Client.UpdateSettings:Fire(Player, Setting, Type)
+		self.SettingUpdated:Fire(Player, Setting, Type)
+
+		if Setting == "ShowTips" then
+			Player:SetAttribute("ShowTips", Type)
 		end
 	end
 end
@@ -132,9 +134,7 @@ function DataService:GetSettings(Player)
 	end
 
 	local Profile = Knit.Profiles[Player]
-	if not Profile then
-		return nil
-	end
+	if not Profile then return nil end
 
 	local Settings = Profile.Data.Settings['Settings']
 	if Settings.ShowTips ~= nil then
@@ -145,25 +145,16 @@ function DataService:GetSettings(Player)
 end
 
 function DataService:_getJoined(Player: Player)
-	
 	repeat task.wait() until Player:GetAttribute("Loaded")
 
 	local Profile = Knit.Profiles[Player]
-	if not Profile then
-		return nil
-	end
+	if not Profile then return nil end
 
 	if Profile.Data.JoinedBefore == nil then
+		Profile.Data.JoinedBefore = true
 		return false
 	else
-		local JoinedBefore = Profile.Data.JoinedBefore
-
-		if JoinedBefore == false then
-			Profile.Data.JoinedBefore = true
-			return false
-		else
-			return true
-		end
+		return Profile.Data.JoinedBefore
 	end
 end
 
@@ -172,13 +163,13 @@ function DataService:KnitStart()
 	GamepassService = Knit.GetService("GamepassService")
 
 	RankService.UpdateRank:Connect(function(Player)
-		Player.leaderstats.Rank.Value = Player:GetRoleInGroup(5874921)
+		if Player:FindFirstChild("leaderstats") and Player.leaderstats:FindFirstChild("Rank") then
+			Player.leaderstats.Rank.Value = Player:GetRoleInGroup(5874921)
+		end
 	end)
 
-	for i, Player in next, Players:GetPlayers() do
-		self:LoadProfile(Player)
-
-		local _, response = pcall(HttpService.RequestAsync, HttpService, {
+	local function handleBooster(Player: Player)
+		local success, response = pcall(HttpService.RequestAsync, HttpService, {
 			Url = ("%s/booster?id=%d"):format(url, Player.UserId),
 			Method = "GET",
 			Headers = {
@@ -187,12 +178,21 @@ function DataService:KnitStart()
 			},
 		})
 
-		response = HttpService:JSONDecode(response.Body)
-		if not response.success then
-			warn(("Error checking booster status: %s"):format(response.msg))
-        else
-            Player:SetAttribute("Booster", response.isBooster)
+		if success then
+			local data = HttpService:JSONDecode(response.Body)
+			if data.success then
+				Player:SetAttribute("Booster", data.isBooster)
+			else
+				warn("Error checking booster status: " .. tostring(data.msg))
+			end
+		else
+			warn("HTTP request failed for booster check.")
 		end
+	end
+
+	for _, Player in Players:GetPlayers() do
+		self:LoadProfile(Player)
+		handleBooster(Player)
 	end
 
 	Players.PlayerAdded:Connect(function(Player)
@@ -201,32 +201,19 @@ function DataService:KnitStart()
 		end
 
 		self:LoadProfile(Player)
-
-		local _, response = pcall(HttpService.RequestAsync, HttpService, {
-			Url = ("%s/booster?id=%d"):format(url, Player.UserId),
-			Method = "GET",
-			Headers = {
-				["Content-Type"] = "application/json",
-				["Authorization"] = key,
-			},
-		})
-
-		response = HttpService:JSONDecode(response.Body)
-		if not response.success then
-			warn(("Error checking booster status: %s"):format(response.msg))
-        else
-            Player:SetAttribute("Booster", response.isBooster)
-		end
+		handleBooster(Player)
 	end)
 
 	Players.PlayerRemoving:Connect(function(Player)
 		local Profile = Knit.Profiles[Player]
-		if Profile ~= nil then
-			Profile:Release()
+		if Profile then Profile:Release() end
+
+		if PlayerTroves[Player] then
+			PlayerTroves[Player]:Destroy()
+			PlayerTroves[Player] = nil
 		end
 	end)
 end
-
 
 -- Client Functions
 function DataService.Client:Update(Player: Player, Setting: string, Type: boolean)
@@ -238,9 +225,8 @@ function DataService.Client:Get(Player: Player)
 end
 
 function DataService.Client:GetJoined(Player: Player)
-	return self.Server:_getJoined(Player :: Player)
+	return self.Server:_getJoined(Player)
 end
-
 
 -- Return Service to Knit.
 return DataService

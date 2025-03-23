@@ -16,6 +16,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local spr = require(Knit.Modules.spr)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local TippingController = Knit.CreateController {
@@ -35,113 +36,118 @@ local TipsContainer = TippingUI:WaitForChild("Content"):WaitForChild("List")
 local TippingService, RankService, NotificationService
 local UIController
 
+-- Trove instance
+local trove = Trove.new()
+
 -- Client Functions
 function TippingController:KnitStart()
-    TippingService, RankService = Knit.GetService("TippingService"), Knit.GetService("RankService")
-    UIController = Knit.GetController("UIController")
+	TippingService = Knit.GetService("TippingService")
+	RankService = Knit.GetService("RankService")
+	UIController = Knit.GetController("UIController")
 
-    Players.PlayerAdded:Connect(function(Player)
-        self.IngamePlayers[Player] = {Rank = Player:GetRankInGroup(5874921)}
-    end)
+	trove:Connect(Players.PlayerAdded, function(player)
+		self.IngamePlayers[player] = { Rank = player:GetRankInGroup(5874921) }
+	end)
 
-    Players.PlayerRemoving:Connect(function(Player)
-        self.IngamePlayers[Player] = nil
-    end)
+	trove:Connect(Players.PlayerRemoving, function(player)
+		self.IngamePlayers[player] = nil
+	end)
 
-    for _, Player in pairs(Players:GetPlayers()) do
-        if self.IngamePlayers[Player] == nil then
-            self.IngamePlayers[Player] = {Rank = Player:GetRankInGroup(5874921)}
-        end
-    end
+	for _, player in ipairs(Players:GetPlayers()) do
+		if not self.IngamePlayers[player] then
+			self.IngamePlayers[player] = { Rank = player:GetRankInGroup(5874921) }
+		end
+	end
 
-    TippingUI.Content.Close.MouseButton1Click:Connect(function()
-        UIController:Close(TippingUI)
-    end)
+	trove:Connect(TippingUI.Content.Close.MouseButton1Click, function()
+		UIController:Close(TippingUI)
+	end)
 
-    RunService:BindToRenderStep("TippingPrompts", 0, function()
-        local CurrentPlayers = Players:GetPlayers()
+	RunService:BindToRenderStep("TippingPrompts", Enum.RenderPriority.Last.Value, function()
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player and player:GetAttribute("Loaded") and self.IngamePlayers[player] then
+				if self.IngamePlayers[player].Rank >= 4 and player ~= Player then
+					local character = player.Character or player.CharacterAdded:Wait()
+					local root = character:FindFirstChild("HumanoidRootPart")
 
-        for _, player in ipairs(CurrentPlayers) do
-            if player and player:GetAttribute("Loaded") and self.IngamePlayers[player] ~= nil then
-                if self.IngamePlayers[player].Rank >= 4 and player ~= Player then
-                    local Character = player.Character or player.CharacterAdded:Wait()
-                    if Character ~= nil then
-                        local HumanoidRootPart = Character:WaitForChild('HumanoidRootPart')
-                        local ProximityPrompt = HumanoidRootPart:FindFirstChild("TippingPrompt")
+					if root then
+						local prompt = root:FindFirstChild("TippingPrompt")
+						if not prompt then
+							prompt = Instance.new("ProximityPrompt")
+							prompt.Name = "TippingPrompt"
+							prompt.Style = Enum.ProximityPromptStyle.Custom
+							prompt:SetAttribute("Theme", "Default")
+							prompt.RequiresLineOfSight = false
+							prompt.ObjectText = "Tip"
+							prompt.ActionText = player.Name
+							prompt.MaxActivationDistance = 10
+							prompt.Parent = root
 
-                        if ProximityPrompt then
-                            ProximityPrompt.Enabled = (player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips"))
-                        else
-                            ProximityPrompt = Instance.new("ProximityPrompt")
-                            ProximityPrompt.Name = "TippingPrompt"
+							trove:Connect(prompt.Triggered, function()
+								if not TippingUI.Visible then
+									self:UpdateTips(player)
+									UIController:Open(TippingUI)
+								end
+							end)
+						end
 
-                            ProximityPrompt.Style = Enum.ProximityPromptStyle.Custom
-                            ProximityPrompt:SetAttribute("Theme", "Default")
-                            ProximityPrompt.RequiresLineOfSight = false
-                            ProximityPrompt.ObjectText = "Tip"
-                            ProximityPrompt.ActionText = player.Name
-                            ProximityPrompt.MaxActivationDistance = 10
-
-                            ProximityPrompt.Parent = Character:WaitForChild("HumanoidRootPart")
-
-                            ProximityPrompt.Triggered:Connect(function()
-                                if not TippingUI.Visible then
-                                    self:UpdateTips(player)
-                                    UIController:Open(TippingUI)
-                                end
-                            end)
-
-                            ProximityPrompt.Enabled = (player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips"))
-                        end
-                    end
-                end
-            end
-        end
-    end)
+						prompt.Enabled = player:GetAttribute("TipsEnabled") and Player:GetAttribute("ShowTips")
+					end
+				end
+			end
+		end
+	end)
 end
 
 function TippingController:UpdateTips(player: Player)
-    for _, v in ipairs(TipsContainer:GetChildren()) do
-        if v.ClassName ~= "UIListLayout" and v.ClassName ~= "UIPadding" and v.Name ~= "Template" and v.Name ~= "Zend" then
-            v:Destroy()
-        end
-    end
+	for _, v in ipairs(TipsContainer:GetChildren()) do
+		if v:IsA("Frame") and v.Name ~= "Template" and v.Name ~= "Zend" then
+			v:Destroy()
+		end
+	end
 
-    TippingService:GetTips(player):andThen(function(Tips)
+	TippingService:GetTips(player):andThen(function(Tips)
+		if not Tips then return end
 
-        if not Tips then return end
-        TipsContainer.ScrollingEnabled = true
-        TipsContainer.ScrollBarImageTransparency = 0
+		TipsContainer.ScrollingEnabled = true
+		TipsContainer.ScrollBarImageTransparency = 0
 
-        for _, Pass in Tips do
-            local Frame = TipsContainer.Template:Clone()
-            local price = MarketplaceService:GetProductInfo(Pass, Enum.InfoType.GamePass).PriceInRobux
+		for _, passId in Tips do
+			local frame = TipsContainer.Template:Clone()
+			local success, info = pcall(function()
+				return MarketplaceService:GetProductInfo(passId, Enum.InfoType.GamePass)
+			end)
 
-            if not price then return end
+			if not success or not info or not info.PriceInRobux then
+				continue
+			end
 
-            Frame.Purchase.Activated:Connect(function()
-                MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, Pass)
-            end)
+			local price = info.PriceInRobux
 
-            Frame.Name = price
-            Frame.Value.Text = price
-            Frame.LayoutOrder = price
-            Frame.Parent = TipsContainer
-            Frame.Purchase.Position = UDim2.new(1, 2, 0.5, 0)
-            Frame.Visible = true
+			frame.Name = tostring(price)
+			frame.Value.Text = tostring(price)
+			frame.LayoutOrder = price
+			frame.Visible = true
+			frame.Parent = TipsContainer
+			frame.Purchase.Position = UDim2.new(1, 2, 0.5, 0)
 
-            Frame.Purchase.MouseEnter:Connect(function()
-                Frame.UIGradient.Enabled = true
-                Frame.UIStroke.UIGradient.Enabled = true
-            end)
+			trove:Connect(frame.Purchase.Activated, function()
+				MarketplaceService:PromptGamePassPurchase(Player, passId)
+			end)
 
-            Frame.Purchase.MouseLeave:Connect(function()
-                Frame.UIGradient.Enabled = false
-                Frame.UIStroke.UIGradient.Enabled = false
-            end)
-        end
-    end)
-    TipsContainer.Parent.Title.Text = `Would you like to tip <font weight ="Bold">{player.Name}</font> for your service today?`
+			trove:Connect(frame.Purchase.MouseEnter, function()
+				frame.UIGradient.Enabled = true
+				frame.UIStroke.UIGradient.Enabled = true
+			end)
+
+			trove:Connect(frame.Purchase.MouseLeave, function()
+				frame.UIGradient.Enabled = false
+				frame.UIStroke.UIGradient.Enabled = false
+			end)
+		end
+	end)
+
+	TipsContainer.Parent.Title.Text = `Would you like to tip <font weight ="Bold">{player.Name}</font> for your service today?`
 end
 
 -- Return Controller to Knit.

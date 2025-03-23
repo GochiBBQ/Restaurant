@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local CurrencyController = Knit.CreateController {
@@ -34,6 +35,9 @@ local content, isReady = Players:GetUserThumbnailAsync(Player.UserId, thumbType,
 
 local RankService, CurrencyService
 
+-- Trove Instance
+CurrencyController._trove = Trove.new()
+
 -- Client Functions
 local function comma_value(amount)
     local formatted = tostring(amount)
@@ -46,8 +50,9 @@ end
 
 local function LerpNumber(StartNumber, EndNumber)
     local StartTime = tick()
-    local Duration = 3 -- Default duration of 3 seconds
+    local Duration = 3
     local Connection
+
     Connection = RunService.Heartbeat:Connect(function()
         local ElapsedTime = tick() - StartTime
         if ElapsedTime > Duration then
@@ -59,11 +64,13 @@ local function LerpNumber(StartNumber, EndNumber)
         local CurrentValue = StartNumber + (EndNumber - StartNumber) * Alpha
         Profiler.Content.Coins.Text = string.format("<b>%s</b> Coins", comma_value(math.round(CurrentValue)))
     end)
+
+    CurrencyController._trove:Add(Connection)
 end
 
 function CurrencyController:KnitStart()
-    local RankService = Knit.GetService("RankService")
-    local CurrencyService = Knit.GetService("CurrencyService")
+    RankService = Knit.GetService("RankService")
+    CurrencyService = Knit.GetService("CurrencyService")
 
     Profiler.Content.Username.Text = Player.Name
     Headshot.Image = content
@@ -80,10 +87,12 @@ function CurrencyController:KnitStart()
         warn("Failed to get coins: " .. tostring(err))
     end)
 
-    CurrencyService.UpdateClient:Connect(function(Old, New)
+    local updateConn = CurrencyService.UpdateClient:Connect(function(Old, New)
         LerpNumber(tonumber(Old), tonumber(New))
     end)
+
+    self._trove:Add(updateConn)
 end
 
- -- Return Controller to Knit.
+-- Return Controller to Knit.
 return CurrencyController

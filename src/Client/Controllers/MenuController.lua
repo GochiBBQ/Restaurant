@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local MenuController = Knit.CreateController {
@@ -30,58 +31,56 @@ local UIController
 
 -- Client Functions
 function MenuController:KnitStart()
+    self._trove = Trove.new()
     UIController = Knit.GetController("UIController")
 
-    for _, button in pairs(Buttons.List:GetChildren()) do
+    for _, button in ipairs(Buttons.List:GetChildren()) do
         if button:IsA("ImageButton") then
-            button.MouseButton1Click:Connect(function()
-                self:SetState(button, true)
+            self._trove:Connect(button.MouseButton1Click, function()
+                self:SetState(button)
                 self:OpenPage(Pages[button.Name])
             end)
         end
     end
 
-    MenuUI.Close.MouseButton1Click:Connect(function()
+    self._trove:Connect(MenuUI.Close.MouseButton1Click, function()
         UIController:Close(MenuUI)
     end)
-    
-    MenuUI:GetPropertyChangedSignal("Visible"):Connect(function()
+
+    self._trove:Connect(MenuUI:GetPropertyChangedSignal("Visible"), function()
         if not MenuUI.Visible then
-            self:SetState(Buttons.List.Beverages, true)
+            self:SetState(Buttons.List.Beverages)
             self:OpenPage(Pages.Beverages)
         end
     end)
 end
 
-function MenuController:SetState(Button: ImageButton, State: boolean)
-    assert(Button:IsA("ImageButton"), "Button must be an ImageButton")
-    assert(type(State) == "boolean", "State must be a boolean")
-    
-
-    if State then
-        for _, button in pairs(Buttons.List:GetChildren()) do
-            if button:IsA("ImageButton") then
-                if button ~= Button then
-                    button.ImageTransparency = 1
-                    button.TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                end
-                Button.ImageTransparency = 0
-                Button.TextLabel.TextColor3 = Color3.fromRGB(30, 30, 30)
-            end
+function MenuController:SetState(selectedButton: ImageButton)
+    for _, button in ipairs(Buttons.List:GetChildren()) do
+        if button:IsA("ImageButton") then
+            local isSelected = button == selectedButton
+            button.ImageTransparency = isSelected and 0 or 1
+            button.TextLabel.TextColor3 = isSelected
+                and Color3.fromRGB(30, 30, 30)
+                or Color3.fromRGB(255, 255, 255)
         end
     end
 end
 
-function MenuController:OpenPage(Page: ScrollingFrame | Frame)
-    assert(Page:IsA("ScrollingFrame") or Page:IsA("Frame"), "Page must be a Frame object")
-
-    for _, page in pairs(Pages:GetChildren()) do
+function MenuController:OpenPage(pageToShow: ScrollingFrame | Frame)
+    for _, page in ipairs(Pages:GetChildren()) do
         if page:IsA("ScrollingFrame") or page:IsA("Frame") then
-            page.Visible = false
+            page.Visible = page == pageToShow
         end
     end
-    Page.Visible = true
 end
 
- -- Return Controller to Knit.
+function MenuController:Cleanup()
+    if self._trove then
+        self._trove:Destroy()
+        self._trove = nil
+    end
+end
+
+-- Return Controller to Knit.
 return MenuController

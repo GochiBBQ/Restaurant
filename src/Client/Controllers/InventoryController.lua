@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local InventoryController = Knit.CreateController {
@@ -31,22 +32,23 @@ local UIController
 
 -- Client Functions
 function InventoryController:KnitStart()
+    self._trove = Trove.new()
     UIController = Knit.GetController("UIController")
 
     for _, button in pairs(Buttons.List:GetChildren()) do
         if button:IsA("ImageButton") then
-            button.MouseButton1Click:Connect(function()
+            self._trove:Connect(button.MouseButton1Click, function()
                 self:SetState(button, true)
                 self:OpenPage(Pages[button.Name])
             end)
         end
     end
 
-    InventoryUI.Close.MouseButton1Click:Connect(function()
+    self._trove:Connect(InventoryUI.Close.MouseButton1Click, function()
         UIController:Close(InventoryUI)
     end)
-    
-    InventoryUI:GetPropertyChangedSignal("Visible"):Connect(function()
+
+    self._trove:Connect(InventoryUI:GetPropertyChangedSignal("Visible"), function()
         if not InventoryUI.Visible then
             self:SetState(Buttons.List.Nametags, true)
             self:OpenPage(Pages.Nametags)
@@ -57,7 +59,6 @@ end
 function InventoryController:SetState(Button: ImageButton, State: boolean)
     assert(Button:IsA("ImageButton"), "Button must be an ImageButton")
     assert(type(State) == "boolean", "State must be a boolean")
-    
 
     if State then
         for _, button in pairs(Buttons.List:GetChildren()) do
@@ -84,5 +85,5 @@ function InventoryController:OpenPage(Page: ScrollingFrame | Frame)
     Page.Visible = true
 end
 
- -- Return Controller to Knit.
+-- Return Controller to Knit.
 return InventoryController

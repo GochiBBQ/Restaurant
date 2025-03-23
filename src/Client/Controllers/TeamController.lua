@@ -16,7 +16,7 @@ local Players = game:GetService('Players')
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local spr = require(Knit.Modules.spr)
+local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Variables
 local LocalPlayer = Players.LocalPlayer
@@ -47,6 +47,9 @@ local TeamController = Knit.CreateController {
     TeamSelected = Signal.new(),
 }
 
+-- Trove instance for cleanup
+local trove = Trove.new()
+
 -- Knit Start
 function TeamController:KnitStart()
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
@@ -56,34 +59,32 @@ function TeamController:KnitStart()
     UIController = Knit.GetController('UIController')
     LoadingController = Knit.GetController('LoadingController')
 
-    TeamService.AssignTeam:Connect(function(player, team, rank, role)
+    trove:Connect(TeamService.AssignTeam, function(player, team, rank, role)
         self:HandleLeaderboard(player, team, rank, role)
     end)
 
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    trove:Connect(UserInputService.InputBegan, function(input, gameProcessed)
         self:ToggleLeaderboard(input, gameProcessed)
     end)
 
     self:Check()
     self:InitializePlayers()
 
-    Players.PlayerAdded:Connect(function(player)
+    trove:Connect(Players.PlayerAdded, function(player)
         self:InitializePlayer(player)
     end)
 
-    Players.PlayerRemoving:Connect(function(player)
+    trove:Connect(Players.PlayerRemoving, function(player)
         self:RemovePlayer(player)
     end)
 end
 
--- Initialize all players in the game
 function TeamController:InitializePlayers()
     for _, player in pairs(Players:GetPlayers()) do
         self:InitializePlayer(player)
     end
 end
 
--- Initialize a single player
 function TeamController:InitializePlayer(player)
     local team = player:GetAttribute('Team')
     local rank = player:GetAttribute('Rank')
@@ -92,20 +93,18 @@ function TeamController:InitializePlayer(player)
     if team and rank and role then
         self:HandleLeaderboard(player, team, rank, role)
     else
-        -- Listen for attribute changes if the attributes are not ready yet
-        player:GetAttributeChangedSignal('Team'):Connect(function()
+        trove:Connect(player:GetAttributeChangedSignal('Team'), function()
             self:UpdatePlayerAttributes(player)
         end)
-        player:GetAttributeChangedSignal('Rank'):Connect(function()
+        trove:Connect(player:GetAttributeChangedSignal('Rank'), function()
             self:UpdatePlayerAttributes(player)
         end)
-        player:GetAttributeChangedSignal('Role'):Connect(function()
+        trove:Connect(player:GetAttributeChangedSignal('Role'), function()
             self:UpdatePlayerAttributes(player)
         end)
     end
 end
 
--- Update player attributes and refresh their leaderboard entry
 function TeamController:UpdatePlayerAttributes(player)
     local team = player:GetAttribute('Team')
     local rank = player:GetAttribute('Rank')
@@ -116,7 +115,6 @@ function TeamController:UpdatePlayerAttributes(player)
     end
 end
 
--- Remove a player from the leaderboard
 function TeamController:RemovePlayer(player)
     if ShownPlayers[player] then
         ShownPlayers[player]:Destroy()
@@ -124,9 +122,7 @@ function TeamController:RemovePlayer(player)
     end
 end
 
--- Check player's rank and set allowed teams
 function TeamController:Check()
-    -- Default setup
     table.insert(AllowedTeams, 'Customer')
     TeamUI.List['Customer'].Interactable = true
     TeamUI.List['Chef'].Select.Label.Text = 'Locked'
@@ -156,33 +152,32 @@ function TeamController:Check()
         end
     end)
 
-    -- Add button interaction for team selection
     for _, frame in pairs(TeamUI.List:GetChildren()) do
         if frame:IsA("Frame") then
             local originalSize = frame['Select'].Size
 
-            frame['Select'].MouseButton1Click:Connect(function()
+            trove:Connect(frame['Select'].MouseButton1Click, function()
                 UISelect:Play()
                 if table.find(AllowedTeams, frame.Name) then
                     self:ButtonSelected(frame.Name)
                 end
             end)
 
-            frame['Select'].MouseEnter:Connect(function()
-                -- spr.target(frame.Select, 1, 3, {Size = UDim2.new(originalSize.X.Scale + 0.025, originalSize.X.Offset, originalSize.Y.Scale + 0.015, originalSize.Y.Offset)})
-                AnimNation.target(frame.Select, {s = 10, d = 1}, {Size = UDim2.new(originalSize.X.Scale + 0.025, originalSize.X.Offset, originalSize.Y.Scale + 0.015, originalSize.Y.Offset)})
+            trove:Connect(frame['Select'].MouseEnter, function()
+                AnimNation.target(frame.Select, {s = 10, d = 1}, {
+                    Size = UDim2.new(originalSize.X.Scale + 0.025, originalSize.X.Offset,
+                                     originalSize.Y.Scale + 0.015, originalSize.Y.Offset)
+                })
                 UIHover:Play()
             end)
 
-            frame['Select'].MouseLeave:Connect(function()
-                -- spr.target(frame.Select, 1, 3, {Size = originalSize})
+            trove:Connect(frame['Select'].MouseLeave, function()
                 AnimNation.target(frame.Select, {s = 10, d = 1}, {Size = originalSize})
             end)
         end
     end
 end
 
--- Handle leaderboard
 function TeamController:HandleLeaderboard(player: Player, Team: string, Rank: number, Role: string)
     self:RemovePlayer(player)
 
@@ -208,19 +203,11 @@ function TeamController:HandleLeaderboard(player: Player, Team: string, Rank: nu
     ShownPlayers[player] = clone
 end
 
--- Handles the selection of a team button in the UI
 function TeamController:ButtonSelected(Team: string)
-    -- unselected background: rbxassetid://90244196390560
-    -- selected background: rbxassetid://92560465279538
-
-    -- unselected button: rbxassetid://134624810349389
-    -- selected button: rbxassetid://134713465405556
-
     if table.find(AllowedTeams, Team) then
         TeamService:TeamSelected(Team)
         self.TeamSelected:Fire(Team)
 
-        -- Update all team UI buttons to reflect the new selection
         for _, frame in pairs(TeamUI.List:GetChildren()) do
             if frame:IsA("Frame") then
                 frame.Background.Image = 'rbxassetid://90244196390560'
@@ -230,38 +217,39 @@ function TeamController:ButtonSelected(Team: string)
             end
         end
 
-        -- Highlight the selected team
-        if TeamUI.List[Team] then
-            TeamUI.List[Team].Background.Image = 'rbxassetid://92560465279538'
-            TeamUI.List[Team].Select.Label.Text = 'Selected'
-            TeamUI.List[Team].Select.Label.TextColor3 = Color3.fromRGB(30, 30, 30)
-            TeamUI.List[Team].Select.Image = 'rbxassetid://134713465405556'
+        local selectedFrame = TeamUI.List[Team]
+        if selectedFrame then
+            selectedFrame.Background.Image = 'rbxassetid://92560465279538'
+            selectedFrame.Select.Label.Text = 'Selected'
+            selectedFrame.Select.Label.TextColor3 = Color3.fromRGB(30, 30, 30)
+            selectedFrame.Select.Image = 'rbxassetid://134713465405556'
         end
     end
 end
 
--- Toggle leaderboard visibility
 function TeamController:ToggleLeaderboard(input: InputObject, gameProcessed: boolean)
     if input.KeyCode == Enum.KeyCode.Tab and not gameProcessed then
         if toggled and not onCooldown then
             toggled, onCooldown = false, true
             local position = LeaderboardUI.Position
-            -- spr.target(LeaderboardUI, 1, 3, {Position = UDim2.new(position.X.Scale + 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)})
-            AnimNation.target(LeaderboardUI, {s = 10, d = 0.5}, {Position = UDim2.new(position.X.Scale + 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)}):AndThen(function()
+            AnimNation.target(LeaderboardUI, {s = 10, d = 0.5}, {
+                Position = UDim2.new(position.X.Scale + 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)
+            }):AndThen(function()
                 LeaderboardUI.Visible = false
-                onCooldown = false 
+                onCooldown = false
             end)
         elseif not toggled and not onCooldown then
             toggled, onCooldown = true, true
             local position = LeaderboardUI.Position
             LeaderboardUI.Visible = true
-            -- spr.target(LeaderboardUI, 1, 3, {Position = UDim2.new(position.X.Scale - 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)})
-            AnimNation.target(LeaderboardUI, {s = 10, d = 0.7}, {Position = UDim2.new(position.X.Scale - 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)}):AndThen(function()
+            AnimNation.target(LeaderboardUI, {s = 10, d = 0.7}, {
+                Position = UDim2.new(position.X.Scale - 0.22, position.X.Offset, position.Y.Scale, position.Y.Offset)
+            }):AndThen(function()
                 onCooldown = false
             end)
         end
     end
 end
 
+-- Return Controller to Knit
 return TeamController
-

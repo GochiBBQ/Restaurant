@@ -11,7 +11,7 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local Zone = require(ReplicatedStorage.Modules.Zone) --- @module Zone
+local Trove = require(ReplicatedStorage.Packages.Trove)
 
 -- Variables
 local Player = Players.LocalPlayer
@@ -26,6 +26,9 @@ local NavigationController = Knit.CreateController {
     Name = "NavigationController",
 }
 
+-- Trove for managing the single active beam
+NavigationController._beamTrove = Trove.new()
+
 -- Client Functions
 function NavigationController:KnitStart()
     NavigationService = Knit.GetService("NavigationService")
@@ -36,17 +39,24 @@ function NavigationController:KnitStart()
 end
 
 function NavigationController:InitBeam(model: Instance)
-    -- Ensure Beam and PlayerStorage are valid
-    assert(Beam, "Beam is not defined")
-    assert(PlayerStorage, "PlayerStorage is not defined")
+    assert(model and model:IsA("Model"), "Invalid model provided.")
+    assert(Beam and PlayerStorage, "Missing Beam or PlayerStorage references.")
+
+    -- Clean up any existing beam first
+    self._beamTrove:Clean()
+
+    local beamsFolder = PlayerStorage:WaitForChild("Beams"):WaitForChild(Player.Name)
+    if not beamsFolder then
+        beamsFolder = Instance.new("Folder")
+        beamsFolder.Name = "Beams"
+        beamsFolder.Parent = PlayerStorage:WaitForChild(Player.Name)
+    end
 
     local beamClone = Beam:Clone()
-
-    -- Get the player's character
     local character = Player.Character or Player.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-    -- Ensure the player's attachment exists
+    -- Create or get player attachment
     local playerAttachment = humanoidRootPart:FindFirstChild("beamAttachment")
     if not playerAttachment then
         playerAttachment = Instance.new("Attachment")
@@ -54,39 +64,36 @@ function NavigationController:InitBeam(model: Instance)
         playerAttachment.Parent = humanoidRootPart
     end
 
-    -- Ensure the model's attachment exists
+    -- Create or get model attachment
     local modelAttachment = model:FindFirstChild("beamAttachment")
     if not modelAttachment then
+        local primaryPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        assert(primaryPart, "Model missing a suitable BasePart.")
         modelAttachment = Instance.new("Attachment")
         modelAttachment.Name = "beamAttachment"
-        local primaryPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-        assert(primaryPart, "Model does not have a PrimaryPart, HumanoidRootPart, or any BasePart")
         modelAttachment.Parent = primaryPart
     end
 
-    -- Ensure the Beams folder exists in PlayerStorage
-    local beamsFolder = PlayerStorage:FindFirstChild("Beams")
-    if not beamsFolder then
-        beamsFolder = Instance.new("Folder")
-        beamsFolder.Name = "Beams"
-        beamsFolder.Parent = PlayerStorage
-    end
-
-    -- Set up the beam
-    beamClone.Parent = beamsFolder
+    beamClone.Name = `{model.Name}_Beam`
     beamClone.Attachment0 = playerAttachment
     beamClone.Attachment1 = modelAttachment
     beamClone.Enabled = true
+    beamClone.Parent = beamsFolder
 
-    local zone = Zone.new(model)
+    -- Store the beam + any connections in the trove
+    self._beamTrove:Add(beamClone)
 
-    zone.playerEntered:Connect(function(player: Player)
-        if player == Players.LocalPlayer then
-            beamClone:Destroy()
-            zone:Destroy()
+    local primaryPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    local connection = game:GetService("RunService").Heartbeat:Connect(function()
+        if primaryPart then
+            local distance = (humanoidRootPart.Position - primaryPart.Position).Magnitude
+            if distance <= 7 then
+                self._beamTrove:Clean()
+            end
         end
     end)
+
+    self._beamTrove:Connect(connection)
 end
 
- -- Return Controller to Knit.
 return NavigationController

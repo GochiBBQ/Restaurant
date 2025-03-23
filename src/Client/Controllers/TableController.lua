@@ -6,14 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local NotificationService = game:GetService("NotificationService")
-local Players = game:GetService("Players")
-local RunService = game:GetService('RunService')
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local NotificationService: NotificationService = game:GetService("NotificationService")
+local Players: Players = game:GetService("Players")
+local RunService: RunService = game:GetService('RunService')
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local TableController = Knit.CreateController {
@@ -21,21 +22,284 @@ local TableController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local TableUI = GochiUI:WaitForChild("TableManagement")
-local Panel = GochiUI:WaitForChild("TableManagementPanel")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local TableUI: GuiObject = GochiUI:WaitForChild("TableManagement")
+local Panel: GuiObject = GochiUI:WaitForChild("TableManagementPanel")
 
-local Content = TableUI:WaitForChild("Content")
+local Content: GuiObject = TableUI:WaitForChild("Content")
 
 local TableService, RankService, NotificationService, NavigationService
 local UIController
 
-local uiOpen = false
-local activeRegister = nil
+local uiOpen: boolean = false
+local activeRegister: Instance = nil
+local currentTable: Instance = nil
 
-local selectedOption = nil
+local selectedOption: string = nil
+
+-- Global Variables
+local ExistingPlayers: {Player} = {}
+local PlayersToAdd: {Player} = {}
+
+-- Reset function for global variables
+local function ResetPartyData()
+    print("Resetting party data...")
+    ExistingPlayers = {}
+    PlayersToAdd = {}
+    currentTable = nil
+
+    local panelContent = Panel.Content
+    local PartyView = panelContent:WaitForChild("PartyView")
+
+    for _, child in PartyView.ScrollingFrame:GetChildren() do
+        if child:IsA("Frame") and child.Name ~= "Template" then
+            child:Destroy()
+        end
+    end
+    panelContent.OrderOptions.PlayerInput.TextLabel.Text = ""
+
+    return true
+end
+
+-- Move HandleParty to a higher scope
+
+local function HandleParty(OrderOptions, PartyView, PlayerInput)
+    local trove = Trove.new() -- Create a new Trove instance to manage connections
+
+    trove:Connect(OrderOptions.AddButton.Activated, function()
+        print("AddButton activated")
+        if OrderOptions.PlayerInput.TextLabel.Text == "" then
+            warn("Invalid entry: Empty username")
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
+
+        local PlayerToAdd = Players:FindFirstChild(OrderOptions.PlayerInput.TextLabel.Text)
+        OrderOptions.PlayerInput.TextLabel.Text = ""
+
+        if not PlayerToAdd then
+            warn("Player not found: " .. OrderOptions.PlayerInput.TextLabel.Text)
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
+
+        -- if PlayerToAdd == Player then
+        --     warn("Cannot add yourself to the party")
+        --     OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
+        --     task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+        --     return
+        -- end
+
+        -- if PlayerToAdd:GetAttribute("Table") ~= nil then
+        --     warn("Player already assigned to a table")
+        --     OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player cannot be added"
+        --     task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+        --     return
+        -- end
+
+        if table.find(ExistingPlayers, PlayerToAdd) or table.find(PlayersToAdd, PlayerToAdd) then
+            warn("Player already in the party")
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Already in Party"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
+
+        if PlayerToAdd:GetAttribute("InParty") then
+            warn("Player is already in a different party")
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player in Different Party"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
+
+        local success, occupantHeadshot = pcall(function()
+            return Players:GetUserThumbnailAsync(PlayerToAdd.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+        end)
+
+        if not success then
+            warn("Failed to fetch player thumbnail for " .. PlayerToAdd.Name)
+            return
+        end
+
+        if selectedOption == 'New' then
+            local frame = PartyView.ScrollingFrame.Template:Clone()
+            frame.Name = PlayerToAdd.Name
+            frame.PlayerName.Text = PlayerToAdd.Name
+            frame.PlayerImage.Image = occupantHeadshot
+            frame.Visible = true
+            frame.Parent = PartyView.ScrollingFrame
+
+            table.insert(PlayersToAdd, PlayerToAdd)
+            print("Player added to party: " .. PlayerToAdd.Name)
+            NotificationService:CreateNotif(PlayerToAdd, `You have been added to a party by <b>{Player.Name}</b>.`)
+        elseif selectedOption == 'Existing' then
+            TableService:AddOccupant(currentTable, PlayerToAdd):andThen(function(success)
+                if success then
+                    local frame = PartyView.ScrollingFrame.Template:Clone()
+                    frame.Name = PlayerToAdd.Name
+                    frame.PlayerName.Text = PlayerToAdd.Name
+                    frame.PlayerImage.Image = occupantHeadshot
+                    frame.Visible = true
+                    frame.Parent = PartyView.ScrollingFrame
+
+                    table.insert(PlayersToAdd, PlayerToAdd)
+                    print("Player added to existing party: " .. PlayerToAdd.Name)
+                    NotificationService:CreateNotif(PlayerToAdd, `You have been added to a party by <b>{Player.Name}</b>.`)
+                else
+                    warn("Failed to add player to existing party: " .. PlayerToAdd.Name)
+                    OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Failed to add player"
+                end
+            end)
+        end
+    end)
+
+    trove:Connect(OrderOptions.MinusButton.Activated, function()
+        print("MinusButton activated")
+        if PlayerInput.Text == "" then
+            warn("Invalid entry: Empty username")
+            PlayerInput.PlaceholderText = "Invalid Entry"
+            task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
+            return
+        end
+
+        local PlayerToRemove = nil
+        for i, player in ipairs(PlayersToAdd) do
+            if player.Name == PlayerInput.Text then
+                PlayerToRemove = player
+                break
+            end
+        end
+
+        if not PlayerToRemove then
+            for i, player in ipairs(ExistingPlayers) do
+                if player.Name == PlayerInput.Text then
+                    PlayerToRemove = player
+                    break
+                end
+            end
+        end
+
+        PlayerInput.Text = ""
+
+        if not PlayerToRemove then
+            warn("Player not found for removal: " .. PlayerInput.Text)
+            PlayerInput.PlaceholderText = "Player Not Found"
+            task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
+            return
+        end
+
+        if selectedOption == 'New' then
+            local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
+            if frame then
+                frame:Destroy()
+            end
+
+            -- Remove the player from the appropriate table only after success
+            for i, player in ipairs(PlayersToAdd) do
+                if player == PlayerToRemove then
+                    table.remove(PlayersToAdd, i)
+                    break
+                end
+            end
+
+            for i, player in ipairs(ExistingPlayers) do
+                if player == PlayerToRemove then
+                    table.remove(ExistingPlayers, i)
+                    break
+                end
+            end
+
+            print("Player removed from party: " .. PlayerToRemove.Name)
+            NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
+        elseif selectedOption == 'Existing' then
+            print("ExistingPlayers: ", ExistingPlayers)
+            print(currentTable)
+            TableService:RemoveOccupant(currentTable, PlayerToRemove):andThen(function(success)
+                if success then
+                    local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
+                    if frame then
+                        frame:Destroy()
+                    end
+
+                    -- Remove the player from the appropriate table only after success
+                    for i, player in ipairs(PlayersToAdd) do
+                        if player == PlayerToRemove then
+                            table.remove(PlayersToAdd, i)
+                            break
+                        end
+                    end
+
+                    for i, player in ipairs(ExistingPlayers) do
+                        if player == PlayerToRemove then
+                            table.remove(ExistingPlayers, i)
+                            break
+                        end
+                    end
+
+                    print("Player removed from existing party: " .. PlayerToRemove.Name)
+                    NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
+                else
+                    warn("Failed to remove player from existing party: " .. PlayerToRemove.Name)
+                    PlayerInput.PlaceholderText = "Failed to remove player"
+                end
+            end)
+        end
+    end)
+
+    -- Cleanup connections when UI is closed
+    Panel:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not Panel.Visible then
+            trove:Clean()
+        end
+    end)
+end
+
+-- Move PartyExists to a higher scope
+local function PartyExists(tableData)
+    print("Checking if party exists for table data...")
+    local result = ResetPartyData()
+
+    if result then
+
+        currentTable = tableData.Table
+
+        local panelContent = Panel.Content
+        local OrderOptions = panelContent:WaitForChild("OrderOptions")
+        local PartyView = panelContent:WaitForChild("PartyView")
+        local PlayerInput = OrderOptions.PlayerInput.TextLabel
+    
+        local Occupants = tableData.Occupants or {}
+    
+        for _, occupant in ipairs(Occupants) do
+            local success, occupantHeadshot = pcall(function()
+                return Players:GetUserThumbnailAsync(occupant.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+            end)
+    
+            if not success then
+                warn("Failed to fetch occupant thumbnail for " .. occupant.Name)
+                continue
+            end
+    
+            local frame = PartyView.ScrollingFrame.Template:Clone()
+            frame.Name = occupant.Name
+            frame.PlayerName.Text = occupant.Name
+            frame.PlayerImage.Image = occupantHeadshot
+            frame.Visible = true
+            frame.Parent = PartyView.ScrollingFrame
+    
+            table.insert(ExistingPlayers, occupant)
+            print("Occupant added to existing party: " .. occupant.Name)
+        end
+    
+        HandleParty(OrderOptions, PartyView, PlayerInput) 
+    end
+end
+
+-- Add a Trove instance for managing connections
+local controllerTrove = Trove.new()
 
 -- Client Functions
 function TableController:KnitStart()
@@ -61,12 +325,12 @@ function TableController:KnitStart()
 end
 
 function TableController:InitUI()
-    TableUI.Close.Activated:Connect(function()
+    controllerTrove:Connect(TableUI.Close.Activated, function()
         uiOpen = false
         UIController:Close(TableUI)
     end)
 
-    Panel.Close.Activated:Connect(function()
+    controllerTrove:Connect(Panel.Close.Activated, function()
         uiOpen = false
         UIController:Close(Panel)
     end)
@@ -83,8 +347,7 @@ function TableController:InitUI()
 
     for _, frame in pairs(Content:GetChildren()) do
         if frame:IsA("Frame") then
-
-            frame.MouseEnter:Connect(function()
+            controllerTrove:Connect(frame.MouseEnter, function()
                 AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
                 frame.SelectButton.Visible = true
@@ -93,7 +356,7 @@ function TableController:InitUI()
                 end)
             end)
 
-            frame.MouseLeave:Connect(function()
+            controllerTrove:Connect(frame.MouseLeave, function()
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.494, 0, 0.877, 0)})
                 AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.494, 0,0.94, 0)})
                 AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.494, 0, 1.147, 0)}):AndThen(function()
@@ -109,7 +372,7 @@ function TableController:InitUI()
             --     AnimNation.target(frame.SelectButton, {s = 20}, {Size = UDim2.new(0.899, 0, 0.131, 0)})
             -- end)
 
-            frame.SelectButton.Activated:Connect(function()
+            controllerTrove:Connect(frame.SelectButton.Activated, function()
                 self:AreaSelected(frame.Name)
             end)
 
@@ -121,11 +384,11 @@ function TableController:InitUI()
             local scaleFactor = UDim2.new(0.02, 0, 0.02, 0)
             local originalSize = button.Size
 
-            button.MouseEnter:Connect(function()
+            controllerTrove:Connect(button.MouseEnter, function()
                 AnimNation.target(button, {s = 20}, {Size = originalSize - scaleFactor})
             end)
 
-            button.MouseLeave:Connect(function()
+            controllerTrove:Connect(button.MouseLeave, function()
                 AnimNation.target(button, {s = 20}, {Size = originalSize})
             end)
         end
@@ -136,11 +399,11 @@ function TableController:InitUI()
             local scaleFactor = UDim2.new(0.02, 0, 0.02, 0)
             local originalSize = button.Size
 
-            button.MouseEnter:Connect(function()
+            controllerTrove:Connect(button.MouseEnter, function()
                 AnimNation.target(button, {s = 20}, {Size = originalSize - scaleFactor})
             end)
 
-            button.MouseLeave:Connect(function()
+            controllerTrove:Connect(button.MouseLeave, function()
                 AnimNation.target(button, {s = 20}, {Size = originalSize})
             end)
         end
@@ -152,7 +415,7 @@ function TableController:InitRegisters()
     local registers = Functionality:WaitForChild("Registers")
 
     RankService:Get():andThen(function(Rank)
-
+        print("Rank fetched: " .. Rank)
         if Rank < 4 and not RunService:IsStudio() then
             for _, register in ipairs(registers:GetChildren()) do
                 if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
@@ -163,14 +426,47 @@ function TableController:InitRegisters()
         else
             for _, register in ipairs(registers:GetChildren()) do
                 if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
-                    register.Screen.ProximityPrompt.Triggered:Connect(function()
-                        uiOpen = true
-                        activeRegister = register
-                        UIController:Open(TableUI)
-                        TableService:TabletInit(register)
+                    controllerTrove:Connect(register.Screen.ProximityPrompt.Triggered, function()
+                        print("ProximityPrompt triggered for register: " .. register.Name)
+                        if currentTable == nil then
+                            print("No table assigned to player")
+                            -- ...existing code for when "Table" is nil...
+                            selectedOption = 'New'
+                            uiOpen = true
+                            activeRegister = register
+                            UIController:Open(TableUI)
+                            TableService:TabletInit(register)
+                        else
+                            TableService:GetInfo(currentTable):andThen(function(tableData)
+                                print(tableData)
+                                if tableData then
+                                    print("Table data fetched for table: " .. tableData.Name)
+                                    selectedOption = 'Existing'
+                                    uiOpen = true
+                                    activeRegister = register
+                                    TableService:TabletInit(register)
+
+                                    local panelContent = Panel.Content
+                                    panelContent.Section.Text = `Section: <b>{tableData.Category}</b>`
+                                    panelContent.Title.Text = `Your party is assigned to Table <b>{tableData.Name}</b>`
+
+                                    Panel.Content.Visible = true
+                                    Panel.GuestSelection.Visible = false
+
+                                    UIController:Open(Panel)
+
+                                    -- Call PartyExists to handle occupants
+                                    PartyExists(tableData) 
+                                else
+                                    warn("Failed to fetch table data")
+                                end
+                            end):catch(function(err)
+                                warn("Error fetching table info: " .. tostring(err))
+                            end)
+                        end
                     end)
-    
-                    register:GetAttributeChangedSignal("InUse"):Connect(function()
+
+                    controllerTrove:Connect(register:GetAttributeChangedSignal("InUse"), function()
                         local inUse = register:GetAttribute("InUse")
                         if not inUse then
                             register.Screen.ProximityPrompt.Enabled = false
@@ -180,26 +476,27 @@ function TableController:InitRegisters()
                             register.Screen.ProximityPrompt.Enabled = false
                         end
                     end)                    
-    
+
                     local function checkUIVisibility()
                         if not uiOpen and activeRegister then
+                            ResetPartyData() -- Reset global variables
                             TableService:TabletEnd(activeRegister)
                             activeRegister = nil
                         end
                     end
-    
-                    Panel:GetPropertyChangedSignal("Visible"):Connect(checkUIVisibility)
-                    TableUI:GetPropertyChangedSignal("Visible"):Connect(checkUIVisibility)
+
+                    controllerTrove:Connect(Panel:GetPropertyChangedSignal("Visible"), checkUIVisibility)
+                    controllerTrove:Connect(TableUI:GetPropertyChangedSignal("Visible"), checkUIVisibility)
                 end
             end
         end
+    end):catch(function(err)
+        warn("Error fetching rank: " .. tostring(err))
     end)
 end
 
 function TableController:AreaSelected(Area: string)
-
-    local PlayersToAdd = {}
-    local ExistingPlayers = {}
+    ResetPartyData() -- Reset global variables
 
     UIController:Close(TableUI)
     UIController:Open(Panel)
@@ -212,132 +509,16 @@ function TableController:AreaSelected(Area: string)
 
     local originalSize = GuestSelection.OrderOptions.Confirm.Size
 
-    GuestSelection.OrderOptions.Confirm.MouseEnter:Connect(function()
+    local trove = Trove.new() -- Create a new Trove instance to manage connections
+
+    trove:Connect(GuestSelection.OrderOptions.Confirm.MouseEnter, function()
         local scaleFactor = UDim2.new(0.02, 0, 0.02, 0)
         AnimNation.target(GuestSelection.OrderOptions.Confirm, {s = 20}, {Size = originalSize - scaleFactor})
     end)
 
-    GuestSelection.OrderOptions.Confirm.MouseLeave:Connect(function()
+    trove:Connect(GuestSelection.OrderOptions.Confirm.MouseLeave, function()
         AnimNation.target(GuestSelection.OrderOptions.Confirm, {s = 20}, {Size = originalSize})
     end)
-
-    local function HandleParty(OrderOptions, PartyView, PlayerInput)
-        OrderOptions.AddButton.Activated:Connect(function()
-            if OrderOptions.PlayerInput.TextLabel.Text == "" then
-                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
-                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-                return
-            end
-
-            local PlayerToAdd = Players:FindFirstChild(OrderOptions.PlayerInput.TextLabel.Text)
-            OrderOptions.PlayerInput.TextLabel.Text = ""
-
-            if not PlayerToAdd then
-                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
-                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-                return
-            end
-
-            if PlayerToAdd == Player then
-                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
-                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-                return
-            end
-
-            if table.find(ExistingPlayers, PlayerToAdd) or table.find(PlayersToAdd, PlayerToAdd) then
-                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Already in Party"
-                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-                return
-            end
-
-            if PlayerToAdd:GetAttribute("InParty") then
-                OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player in Different Party"
-                task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-                return
-            end
-
-            local thumbType = Enum.ThumbnailType.HeadShot
-            local thumbSize = Enum.ThumbnailSize.Size420x420
-            local occupantHeadshot = Players:GetUserThumbnailAsync(PlayerToAdd.UserId, thumbType, thumbSize)
-
-            local frame = PartyView.ScrollingFrame.Template:Clone()
-            frame.Name = PlayerToAdd.Name
-            frame.PlayerName.Text = PlayerToAdd.Name
-            frame.PlayerImage.Image = occupantHeadshot
-            frame.Visible = true
-            frame.Parent = PartyView.ScrollingFrame
-
-            table.insert(PlayersToAdd, PlayerToAdd)
-            NotificationService:CreateNotif(PlayerToAdd, `You have been added to a party by <b>{Player.Name}</b>.`)
-        end)
-
-        OrderOptions.MinusButton.Activated:Connect(function()
-            if PlayerInput.Text == "" then
-                PlayerInput.PlaceholderText = "Invalid Entry"
-                task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
-                return
-            end
-
-            local PlayerToRemove = nil
-            for i, player in ipairs(PlayersToAdd) do
-                if player.Name == PlayerInput.Text then
-                    PlayerToRemove = player
-                    table.remove(PlayersToAdd, i)
-                    break
-                end
-            end
-
-            if not PlayerToRemove then
-                for i, player in ipairs(ExistingPlayers) do
-                    if player.Name == PlayerInput.Text then
-                        PlayerToRemove = player
-                        table.remove(ExistingPlayers, i)
-                        break
-                    end
-                end
-            end
-
-            PlayerInput.Text = ""
-
-            if not PlayerToRemove then
-                PlayerInput.PlaceholderText = "Player Not Found"
-                task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
-                return
-            end
-
-            local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
-            if frame then
-                frame:Destroy()
-            end
-            NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
-        end)
-    end
-
-    local function PartyExists(tableData)
-        local panelContent = Panel.Content
-        local OrderOptions = panelContent:WaitForChild("OrderOptions")
-        local PartyView = panelContent:WaitForChild("PartyView")
-        local PlayerInput = OrderOptions.PlayerInput.TextLabel
-
-        local Occupants = tableData.Occupants or {}
-
-        for _, occupant in ipairs(Occupants) do
-            local thumbType = Enum.ThumbnailType.HeadShot
-            local thumbSize = Enum.ThumbnailSize.Size420x420
-            local occupantHeadshot = Players:GetUserThumbnailAsync(occupant.UserId, thumbType, thumbSize)
-
-            local frame = PartyView.ScrollingFrame.Template:Clone()
-            frame.Name = occupant.Name
-            frame.PlayerName.Text = occupant.Name
-            frame.PlayerImage.Image = occupantHeadshot
-            frame.Visible = true
-            frame.Parent = PartyView.ScrollingFrame
-
-            table.insert(ExistingPlayers, occupant)
-        end
-
-        HandleParty(OrderOptions, PartyView, PlayerInput)
-    end
 
     local function NewParty()
         local panelContent = Panel.Content
@@ -348,7 +529,7 @@ function TableController:AreaSelected(Area: string)
         HandleParty(OrderOptions, PartyView, PlayerInput)
     end
 
-    GuestSelection.OrderOptions.Confirm.Activated:Connect(function()
+    trove:Connect(GuestSelection.OrderOptions.Confirm.Activated, function()
         local Guests = GuestSelection.OrderOptions.GuestInput.TextLabel.Text
 
         if Guests == "" or tonumber(Guests) == nil or tonumber(Guests) > 9 or tonumber(Guests) < 1 then
@@ -364,6 +545,8 @@ function TableController:AreaSelected(Area: string)
 
         TableService:Claim(Area, Guests):andThen(function(success, tableData)
             if not success then return end
+
+            currentTable = tableData.Table
 
             local Name = string.match(tableData.Name, "%d+")
             local Occupants = tableData.Occupants or {}
@@ -393,10 +576,8 @@ function TableController:AreaSelected(Area: string)
                     return
                 end
 
-                if selectedOption == 'Existing' then
-                    print("Existing ", PlayersToAdd, ExistingPlayers)
-                elseif selectedOption == 'New' then
-                    TableService:SetOccupied(tableData.Table, PlayersToAdd):andThen(function(success)
+                if selectedOption == 'New' then
+                    TableService:SetOccupied(currentTable, PlayersToAdd):andThen(function(success)
                         if success then
                             NavigationService:Beam(tableData.Table):andThen(function(success)
                                 if success then
@@ -407,15 +588,10 @@ function TableController:AreaSelected(Area: string)
 
                                     for _, occupant in pairs(PlayersToAdd) do
                                         if occupant:IsA("Player") then
-                                            NavigationService:Beam(tableData.Table):andThen(function(success)
-                                                if success then
-                                                    NotificationService:CreateNotif(occupant, `Please follow your server to Table <b>{Name}</b>.`)
-                                                end
-                                            end):catch(function(err)
-                                                warn("Error: ", err)
-                                            end)
+                                            NotificationService:CreateNotif(occupant, `Please follow your server to Table <b>{Name}</b>.`)
                                         end
                                     end
+
                                 end
                             end):catch(function(err)
                                 warn("Error: ", err)
@@ -427,7 +603,19 @@ function TableController:AreaSelected(Area: string)
             end)
         end)
     end)
+
+    -- Cleanup connections when UI is closed
+    controllerTrove:Connect(Panel:GetPropertyChangedSignal("Visible"), function()
+        if not Panel.Visible then
+            trove:Clean()
+        end
+    end)
 end
 
- -- Return Controller to Knit.
+-- Cleanup Trove when the controller is destroyed
+function TableController:Destroy()
+    controllerTrove:Clean()
+end
+
+-- Return Controller to Knit.
 return TableController
