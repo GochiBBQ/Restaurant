@@ -35,6 +35,8 @@ local content, isReady = Players:GetUserThumbnailAsync(Player.UserId, thumbType,
 
 local RankService, CurrencyService
 
+local activeLerpConn = nil
+
 -- Trove Instance
 CurrencyController._trove = Trove.new()
 
@@ -49,24 +51,30 @@ local function comma_value(amount)
 end
 
 local function LerpNumber(StartNumber, EndNumber)
+    if activeLerpConn then
+        activeLerpConn:Disconnect()
+    end
+
     local StartTime = tick()
     local Duration = 3
-    local Connection
 
-    Connection = RunService.Heartbeat:Connect(function()
+    activeLerpConn = RunService.Heartbeat:Connect(function()
         local ElapsedTime = tick() - StartTime
         if ElapsedTime > Duration then
             Profiler.Content.Coins.Text = string.format("<b>%s</b> Coins", comma_value(EndNumber))
-            Connection:Disconnect()
+            activeLerpConn:Disconnect()
+            activeLerpConn = nil
             return
         end
+
         local Alpha = ElapsedTime / Duration
         local CurrentValue = StartNumber + (EndNumber - StartNumber) * Alpha
         Profiler.Content.Coins.Text = string.format("<b>%s</b> Coins", comma_value(math.round(CurrentValue)))
     end)
 
-    CurrencyController._trove:Add(Connection)
+    CurrencyController._trove:Add(activeLerpConn)
 end
+
 
 function CurrencyController:KnitStart()
     RankService = Knit.GetService("RankService")

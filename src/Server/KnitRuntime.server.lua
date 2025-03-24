@@ -15,6 +15,7 @@ local Signal = require(Packages.Signal)
 
 Knit.Modules = Server.Modules
 Knit.Classes = Server.Classes
+Knit.Structures = Server.Structures
 Knit.Data = ReplicatedStorage.Data
 
 Knit.Profiles = {}

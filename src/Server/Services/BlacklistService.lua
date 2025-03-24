@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
 
 -- Create Knit Service
 local BlacklistService = Knit.CreateService {
@@ -24,14 +25,16 @@ local BlacklistService = Knit.CreateService {
 local url = "http://138.197.80.59:3001"
 local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
--- Trove for managing player connections
-local playerTroves = {}
+-- Use HashSet to track player troves safely
+local PlayerTroves = HashSet.new()
+local TroveMap = {} -- Player → Trove
 
 -- Server Functions
 function BlacklistService:KnitStart()
     Players.PlayerAdded:Connect(function(Player)
         local trove = Trove.new()
-        playerTroves[Player] = trove
+        TroveMap[Player] = trove
+        PlayerTroves:add(Player)
 
         local success, response = pcall(HttpService.RequestAsync, HttpService, {
             Url = ("%s/checkblacklist?id=%d"):format(url, Player.UserId),
@@ -55,18 +58,22 @@ function BlacklistService:KnitStart()
 
         trove:Connect(Player.AncestryChanged, function(_, parent)
             if not parent then
-                if playerTroves[Player] then
-                    playerTroves[Player]:Destroy()
-                    playerTroves[Player] = nil
+                if PlayerTroves:contains(Player) then
+                    local t = TroveMap[Player]
+                    if t then t:Destroy() end
+                    TroveMap[Player] = nil
+                    PlayerTroves:remove(Player)
                 end
             end
         end)
     end)
 
     Players.PlayerRemoving:Connect(function(Player)
-        if playerTroves[Player] then
-            playerTroves[Player]:Destroy()
-            playerTroves[Player] = nil
+        if PlayerTroves:contains(Player) then
+            local t = TroveMap[Player]
+            if t then t:Destroy() end
+            TroveMap[Player] = nil
+            PlayerTroves:remove(Player)
         end
     end)
 

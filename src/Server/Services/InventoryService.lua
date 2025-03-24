@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local NametagList = require(Knit.Data.NametagList) -- @module NametagList
+local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local InventoryService = Knit.CreateService {
@@ -20,20 +21,17 @@ local InventoryService = Knit.CreateService {
         UpdateInventory = Knit.CreateSignal(),
     },
     Parts = {
-		["Torso"] = { "UpperTorso" },
-		["Right Arm"] = { "RightUpperArm", "RightLowerArm", "RightHand" },
-		["Left Arm"] = { "LeftUpperArm", "LeftLowerArm", "LeftHand" },
-		["Right Leg"] = { "RightUpperLeg", "RightLowerLeg", "RightFoot" },
-		["Left Leg"] = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" },
-	},
-	Equipped = {},
+        ["Torso"] = { "UpperTorso" },
+        ["Right Arm"] = { "RightUpperArm", "RightLowerArm", "RightHand" },
+        ["Left Arm"] = { "LeftUpperArm", "LeftLowerArm", "LeftHand" },
+        ["Right Leg"] = { "RightUpperLeg", "RightLowerLeg", "RightFoot" },
+        ["Left Leg"] = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" },
+    },
+    Equipped = TableMap.new(), -- Player → { Particles, Trails }
 }
 
 -- Variables
-local ParticlesFolder = nil
-local TrailsFolder = nil
 local PlayerStorage = workspace:WaitForChild("PlayerStorage")
-
 local OverheadService
 local RankService
 
@@ -45,15 +43,16 @@ function InventoryService:KnitStart()
     Players.PlayerAdded:Connect(function(Player)
         repeat task.wait() until Player:GetAttribute("Loaded")
 
-        self.Equipped[Player] = {
+        self.Equipped:set(Player, {
             Particles = {},
             Trails = {},
-        }
+        })
 
         for _, category in pairs(PlayerStorage:GetChildren()) do
             if not category:FindFirstChild(Player.Name) then
-                local folder = Instance.new("Folder", category)
+                local folder = Instance.new("Folder")
                 folder.Name = Player.Name
+                folder.Parent = category
             end
         end
 
@@ -64,117 +63,95 @@ function InventoryService:KnitStart()
         end
 
         Player.CharacterAdded:Connect(function(character)
-            
+            -- Placeholder if any setup logic is added later
         end)
     end)
 
     Players.PlayerRemoving:Connect(function(Player)
-		for _, category in pairs(PlayerStorage:GetChildren()) do
-			if category:FindFirstChild(Player.Name) then
-				category:FindFirstChild(Player.Name):Destroy()
-			end
-		end
-	end)
+        for _, category in pairs(PlayerStorage:GetChildren()) do
+            local folder = category:FindFirstChild(Player.Name)
+            if folder then folder:Destroy() end
+        end
+
+        self.Equipped:remove(Player)
+    end)
 end
 
 function InventoryService:_get(Player: Player, Category: string?)
-
     repeat task.wait() until Player:GetAttribute("Loaded")
 
-    if Knit.Profiles[Player] then
-        local Profile = Knit.Profiles[Player]
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
 
-        if Category then
-            return Profile.Data.Inventory[Category]
-        else
-            return Profile.Data.Inventory
-        end
-
-        return nil
-    end
+    return Category and Profile.Data.Inventory[Category] or Profile.Data.Inventory
 end
 
 function InventoryService:_update(Player: Player, Category: string, Item: string, add: boolean)
-
     repeat task.wait() until Player:GetAttribute("Loaded")
 
-    if Knit.Profiles[Player] then
-        local Inventory = Knit.Profiles[Player].Data.Inventory
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
 
-        if Inventory[Category] then
-            if add then
-                if not self:_search(Player, Category, Item) then
-                    table.insert(Inventory[Category], Item)
-                    self.Client.UpdateInventory:Fire(Player, Category, Item, add)
-                    return true
-                end
-            else
-                if self:_search(Player, Category, Item) then
-                    table.remove(Inventory[Category], table.find(Inventory[Category], Item))
-                    self.Client.UpdateInventory:Fire(Player, Category, Item, add)
-                    return true
-                end
-            end
+    local Inventory = Profile.Data.Inventory
+    if not Inventory[Category] then return end
+
+    if add then
+        if not self:_search(Player, Category, Item) then
+            table.insert(Inventory[Category], Item)
+            self.Client.UpdateInventory:Fire(Player, Category, Item, add)
+            return true
+        end
+    else
+        local index = table.find(Inventory[Category], Item)
+        if index then
+            table.remove(Inventory[Category], index)
+            self.Client.UpdateInventory:Fire(Player, Category, Item, add)
+            return true
         end
     end
 end
 
 function InventoryService:_search(Player: Player, Category: string, Item: string)
-
     repeat task.wait() until Player:GetAttribute("Loaded")
 
-    if Knit.Profiles[Player] then
-        local Inventory = Knit.Profiles[Player].Data.Inventory
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
 
-        if Inventory[Category] then
-            if table.find(Inventory[Category], Item) then
-                return true
-            end
-        end
-
-        return false
-    end
+    local Inventory = Profile.Data.Inventory
+    return Inventory[Category] and table.find(Inventory[Category], Item) ~= nil
 end
 
 function InventoryService:_equip(Player: Player, Category: string, Item: string, equip: boolean)
-
     repeat task.wait() until Player:GetAttribute("Loaded")
 
     local function EquipNametag(Player, Item)
-		OverheadService:StopGradient(Player)
-		OverheadService:CreateGradient(Player, Item)
-	end
+        OverheadService:StopGradient(Player)
+        OverheadService:CreateGradient(Player, Item)
+    end
 
-    if Knit.Profiles[Player] then
-        local Inventory = Knit.Profiles[Player].Data.Inventory
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
 
-        if equip then
-            if self:_search(Player, Category, Item) then
-                Inventory.Equipped[Category] = Item
-
-                if tostring(Category) == "Nametags" then
-                    EquipNametag(Player, Item)
-                end
+    local Inventory = Profile.Data.Inventory
+    if equip then
+        if self:_search(Player, Category, Item) then
+            Inventory.Equipped[Category] = Item
+            if Category == "Nametags" then
+                EquipNametag(Player, Item)
             end
-        else
-            -- unequip logic here
         end
+    else
+        -- Add unequip logic here if needed
     end
 end
 
 function InventoryService:_getEquipped(Player: Player, Category: string)
-
     repeat task.wait() until Player:GetAttribute("Loaded")
 
-    if Knit.Profiles[Player] then
-        local Inventory = Knit.Profiles[Player].Data.Inventory
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
 
-        if Inventory.Equipped[Category] then
-            return Inventory.Equipped[Category]
-        end
-
-        return nil
-    end
+    return Profile.Data.Inventory.Equipped[Category]
 end
 
 -- Client Functions
@@ -198,5 +175,5 @@ function InventoryService.Client:Equip(Player: Player, Category: string, Item: s
     self.Server:_equip(Player, Category, Item, equip)
 end
 
- -- Return Service to Knit.
+-- Return Service to Knit.
 return InventoryService

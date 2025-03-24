@@ -18,6 +18,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local ProfileService = require(Knit.Modules.ProfileService)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
 local template = require(script.template)
 
 -- Create Knit Service
@@ -35,7 +36,10 @@ local DataService = Knit.CreateService({
 local ProfileStore = ProfileService.GetProfileStore(DataService.DataKey, template)
 
 Knit.Profiles = {}
-local PlayerTroves = {}
+
+-- Use HashSet to manage PlayerTroves
+local PlayerTroves = HashSet.new()
+local TroveMap = {} -- maps Player → Trove instance
 
 local RankService
 local GamepassService
@@ -64,14 +68,17 @@ function DataService:LoadProfile(Player: Player)
 			self:CreateData(Player, PlayerProfile)
 
 			local trove = Trove.new()
-			PlayerTroves[Player] = trove
+			TroveMap[Player] = trove
+			PlayerTroves:add(Player)
 
 			trove:Connect(Player.AncestryChanged, function(_, parent)
 				if not parent then
 					local Profile = Knit.Profiles[Player]
 					if Profile then Profile:Release() end
+
 					trove:Destroy()
-					PlayerTroves[Player] = nil
+					TroveMap[Player] = nil
+					PlayerTroves:remove(Player)
 				end
 			end)
 
@@ -208,9 +215,11 @@ function DataService:KnitStart()
 		local Profile = Knit.Profiles[Player]
 		if Profile then Profile:Release() end
 
-		if PlayerTroves[Player] then
-			PlayerTroves[Player]:Destroy()
-			PlayerTroves[Player] = nil
+		if PlayerTroves:contains(Player) then
+			local trove = TroveMap[Player]
+			if trove then trove:Destroy() end
+			TroveMap[Player] = nil
+			PlayerTroves:remove(Player)
 		end
 	end)
 end

@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove)
 local TipUtil = require(ReplicatedStorage.Util.TipUtil)
+local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local TippingService = Knit.CreateService {
@@ -31,8 +32,8 @@ local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 local TopTippers = DataStoreService:GetOrderedDataStore("TopTippers")
 local TopReceivers = DataStoreService:GetOrderedDataStore("TopReceivers")
 
-local PassesToPlayers: { [number]: Player } = {}
-local PlayerTroveMap: { [Player]: Trove } = {}
+local PassesToPlayers = TableMap.new() -- gamePassId → Player
+local PlayerTroveMap = TableMap.new() -- Player → Trove
 
 local RankService, NotificationService
 
@@ -44,14 +45,13 @@ function TippingService:HandlePlayer(Player: Player)
 	local Profile = Knit.Profiles[Player]
 	if not Profile then return end
 
-	-- Clean and set up a new Trove for the player
-	if PlayerTroveMap[Player] then
-		PlayerTroveMap[Player]:Clean()
+	local trove = PlayerTroveMap:get(Player)
+	if not trove then
+		trove = Trove.new()
+		PlayerTroveMap:set(Player, trove)
 	else
-		PlayerTroveMap[Player] = Trove.new()
+		trove:Clean()
 	end
-
-	local trove = PlayerTroveMap[Player]
 
 	if #Profile.Data.Gamepasses < 1 then
 		local gamepasses = TipUtil:GetUserGamepasses(Player.UserId)
@@ -59,10 +59,10 @@ function TippingService:HandlePlayer(Player: Player)
 	end
 
 	for _, passId in Profile.Data.Gamepasses do
-		PassesToPlayers[passId] = Player
+		PassesToPlayers:set(passId, Player)
 		trove:Add(function()
-			if PassesToPlayers[passId] == Player then
-				PassesToPlayers[passId] = nil
+			if PassesToPlayers:get(passId) == Player then
+				PassesToPlayers:remove(passId)
 			end
 		end)
 	end
@@ -83,22 +83,26 @@ function TippingService:KnitStart()
 	end
 
 	Players.PlayerRemoving:Connect(function(Player)
-		if PlayerTroveMap[Player] then
-			PlayerTroveMap[Player]:Destroy()
-			PlayerTroveMap[Player] = nil
+		local trove = PlayerTroveMap:get(Player)
+		if trove then
+			trove:Destroy()
+			PlayerTroveMap:remove(Player)
 		end
 	end)
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamePassId, wasPurchased)
 		if not wasPurchased then return end
 
-		local receiver = PassesToPlayers[gamePassId]
+		local receiver = PassesToPlayers:get(gamePassId)
 		if not receiver then return end
 
 		local productInfo = MarketplaceService:GetProductInfo(gamePassId, Enum.InfoType.GamePass)
 		local price = productInfo.PriceInRobux or 0
 
-		NotificationService:CreateAnnouncement(`<b>{player.Name}</b> has tipped <b>{receiver.Name} {price}</b> robux!`)
+		NotificationService:CreateAnnouncement(
+			`<b>{player.Name}</b> has tipped <b>{receiver.Name} {price}</b> robux!`
+		)
+
 		self:Update(TopTippers, player.UserId, price)
 		self:Update(TopReceivers, receiver.UserId, price)
 		self:Log(player, gamePassId, price)
@@ -119,7 +123,7 @@ function TippingService:Log(Player: Player, GamepassID: number, Price: number)
 		Method = "POST",
 		Headers = {
 			["Content-Type"] = "application/json",
-			["Authorization"] = key,  
+			["Authorization"] = key,
 		},
 		Body = HttpService:JSONEncode(info)
 	})
@@ -140,7 +144,7 @@ end
 
 function TippingService:Get(player: Player)
 	local playerPasses = {}
-	for passId, passPlayer in pairs(PassesToPlayers) do
+	for passId, passPlayer in PassesToPlayers:entries() do
 		if passPlayer == player then
 			table.insert(playerPasses, passId)
 		end

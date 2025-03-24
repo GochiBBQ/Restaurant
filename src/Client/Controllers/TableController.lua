@@ -7,7 +7,8 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
-local NotificationService: NotificationService = game:GetService("NotificationService")
+local UserInputService: UserInputService = game:GetService("UserInputService")
+
 local Players: Players = game:GetService("Players")
 local RunService: RunService = game:GetService('RunService')
 
@@ -43,12 +44,14 @@ local selectedOption: string = nil
 local ExistingPlayers: {Player} = {}
 local PlayersToAdd: {Player} = {}
 
+local partyTrove = Trove.new()
+
 -- Reset function for global variables
-local function ResetPartyData()
+local function ResetPartyData(fullReset: boolean?)
     print("Resetting party data...")
+
     ExistingPlayers = {}
     PlayersToAdd = {}
-    currentTable = nil
 
     local panelContent = Panel.Content
     local PartyView = panelContent:WaitForChild("PartyView")
@@ -58,17 +61,32 @@ local function ResetPartyData()
             child:Destroy()
         end
     end
+
     panelContent.OrderOptions.PlayerInput.TextLabel.Text = ""
+    panelContent.OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username"
+
+    if fullReset then
+
+        UIController:Close(Panel)
+        UIController:Close(TableUI)
+
+        uiOpen = false
+        panelContent.Visible = false
+        Panel.GuestSelection.Visible = true
+        currentTable = nil
+        selectedOption = nil
+    end
 
     return true
 end
 
+
 -- Move HandleParty to a higher scope
 
 local function HandleParty(OrderOptions, PartyView, PlayerInput)
-    local trove = Trove.new() -- Create a new Trove instance to manage connections
+    partyTrove:Clean() -- Clean up previous listeners
 
-    trove:Connect(OrderOptions.AddButton.Activated, function()
+    partyTrove:Connect(OrderOptions.AddButton.Activated, function()
         print("AddButton activated")
         if OrderOptions.PlayerInput.TextLabel.Text == "" then
             warn("Invalid entry: Empty username")
@@ -87,19 +105,19 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
             return
         end
 
-        -- if PlayerToAdd == Player then
-        --     warn("Cannot add yourself to the party")
-        --     OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
-        --     task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-        --     return
-        -- end
+        if PlayerToAdd == Player then
+            warn("Cannot add yourself to the party")
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
 
-        -- if PlayerToAdd:GetAttribute("Table") ~= nil then
-        --     warn("Player already assigned to a table")
-        --     OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player cannot be added"
-        --     task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
-        --     return
-        -- end
+        if PlayerToAdd:GetAttribute("Table") ~= nil then
+            warn("Player already assigned to a table")
+            OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player in Different Party"
+            task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
+            return
+        end
 
         if table.find(ExistingPlayers, PlayerToAdd) or table.find(PlayersToAdd, PlayerToAdd) then
             warn("Player already in the party")
@@ -156,8 +174,9 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
         end
     end)
 
-    trove:Connect(OrderOptions.MinusButton.Activated, function()
+    partyTrove:Connect(OrderOptions.MinusButton.Activated, function()
         print("MinusButton activated")
+        warn(selectedOption)
         if PlayerInput.Text == "" then
             warn("Invalid entry: Empty username")
             PlayerInput.PlaceholderText = "Invalid Entry"
@@ -215,44 +234,59 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
             print("Player removed from party: " .. PlayerToRemove.Name)
             NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
         elseif selectedOption == 'Existing' then
-            print("ExistingPlayers: ", ExistingPlayers)
-            print(currentTable)
-            TableService:RemoveOccupant(currentTable, PlayerToRemove):andThen(function(success)
-                if success then
-                    local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
-                    if frame then
-                        frame:Destroy()
-                    end
-
-                    -- Remove the player from the appropriate table only after success
-                    for i, player in ipairs(PlayersToAdd) do
-                        if player == PlayerToRemove then
-                            table.remove(PlayersToAdd, i)
-                            break
+            print("Removing player from existing party: " .. PlayerToRemove.Name)
+            warn(#ExistingPlayers + #PlayersToAdd)
+            if (#ExistingPlayers + #PlayersToAdd == 1) then
+                TableService:SetUnoccupied(currentTable):andThen(function(success)
+                    print(`Success: {success}`)
+                    if success then
+                        local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
+                        if frame then
+                            frame:Destroy()
                         end
-                    end
 
-                    for i, player in ipairs(ExistingPlayers) do
-                        if player == PlayerToRemove then
-                            table.remove(ExistingPlayers, i)
-                            break
+                        ResetPartyData(true)
+                        NotificationService:CreateNotif(Player, `Your table has been vacated.`)
+                    end
+                end)
+            else
+                TableService:RemoveOccupant(currentTable, PlayerToRemove):andThen(function(success)
+                    if success then
+                        local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
+                        if frame then
+                            frame:Destroy()
                         end
+    
+                        -- Remove the player from the appropriate table only after success
+                        for i, player in ipairs(PlayersToAdd) do
+                            if player == PlayerToRemove then
+                                table.remove(PlayersToAdd, i)
+                                break
+                            end
+                        end
+    
+                        for i, player in ipairs(ExistingPlayers) do
+                            if player == PlayerToRemove then
+                                table.remove(ExistingPlayers, i)
+                                break
+                            end
+                        end
+    
+                        print("Player removed from existing party: " .. PlayerToRemove.Name)
+                        NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
+                    else
+                        warn("Failed to remove player from existing party: " .. PlayerToRemove.Name)
+                        PlayerInput.PlaceholderText = "Failed to remove player"
                     end
-
-                    print("Player removed from existing party: " .. PlayerToRemove.Name)
-                    NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
-                else
-                    warn("Failed to remove player from existing party: " .. PlayerToRemove.Name)
-                    PlayerInput.PlaceholderText = "Failed to remove player"
-                end
-            end)
+                end)
+            end
         end
     end)
 
     -- Cleanup connections when UI is closed
     Panel:GetPropertyChangedSignal("Visible"):Connect(function()
         if not Panel.Visible then
-            trove:Clean()
+            partyTrove:Clean()
         end
     end)
 end
@@ -260,13 +294,19 @@ end
 -- Move PartyExists to a higher scope
 local function PartyExists(tableData)
     print("Checking if party exists for table data...")
-    local result = ResetPartyData()
+    local result = ResetPartyData(false)
 
     if result then
 
         currentTable = tableData.Table
 
+        local Name = string.match(tableData.Name, "%d+")
+
         local panelContent = Panel.Content
+
+        panelContent.Section.Text = `Section: <b>{tableData.Category}</b>`
+        panelContent.Title.Text = `Your party is assigned to Table <b>{Name}</b>`
+
         local OrderOptions = panelContent:WaitForChild("OrderOptions")
         local PartyView = panelContent:WaitForChild("PartyView")
         local PlayerInput = OrderOptions.PlayerInput.TextLabel
@@ -347,22 +387,46 @@ function TableController:InitUI()
 
     for _, frame in pairs(Content:GetChildren()) do
         if frame:IsA("Frame") then
-            controllerTrove:Connect(frame.MouseEnter, function()
+
+            if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled then
+                -- mobile
                 AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
                 frame.SelectButton.Visible = true
                 AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)}):AndThen(function()
                     frame.SelectButton.Visible = true
                 end)
-            end)
-
-            controllerTrove:Connect(frame.MouseLeave, function()
-                AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.494, 0, 0.877, 0)})
-                AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.494, 0,0.94, 0)})
-                AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.494, 0, 1.147, 0)}):AndThen(function()
-                    frame.SelectButton.Visible = false
+            elseif not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then
+                -- laptop/desktop
+                controllerTrove:Connect(frame.MouseEnter, function()
+                    AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
+                    AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
+                    frame.SelectButton.Visible = true
+                    AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)}):AndThen(function()
+                        frame.SelectButton.Visible = true
+                    end)
                 end)
-            end)
+
+                controllerTrove:Connect(frame.MouseLeave, function()
+                    AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.494, 0, 0.877, 0)})
+                    AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.494, 0, 0.94, 0)})
+                    AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.494, 0, 1.147, 0)}):AndThen(function()
+                        frame.SelectButton.Visible = false
+                    end)
+                end)
+            elseif UserInputService.GamepadEnabled then
+                -- console
+                frame.SelectButton.Visible = true
+                AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
+                AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
+                AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)})
+            elseif UserInputService.VREnabled then
+                -- VR
+                frame.SelectButton.Visible = true
+                AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
+                AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
+                AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)})
+            end
 
             -- frame.SelectButton.MouseEnter:Connect(function()
             --     AnimNation.target(frame.SelectButton, {s = 20}, {Size = UDim2.new(0.88, 0, 0.125, 0)})
@@ -479,7 +543,6 @@ function TableController:InitRegisters()
 
                     local function checkUIVisibility()
                         if not uiOpen and activeRegister then
-                            ResetPartyData() -- Reset global variables
                             TableService:TabletEnd(activeRegister)
                             activeRegister = nil
                         end
@@ -496,7 +559,7 @@ function TableController:InitRegisters()
 end
 
 function TableController:AreaSelected(Area: string)
-    ResetPartyData() -- Reset global variables
+    ResetPartyData(true) -- Reset global variables
 
     UIController:Close(TableUI)
     UIController:Open(Panel)
@@ -543,7 +606,7 @@ function TableController:AreaSelected(Area: string)
             return
         end
 
-        TableService:Claim(Area, Guests):andThen(function(success, tableData)
+        TableService:Claim(Area, tonumber(Guests)):andThen(function(success, tableData)
             if not success then return end
 
             currentTable = tableData.Table

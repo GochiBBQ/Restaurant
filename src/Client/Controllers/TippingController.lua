@@ -20,8 +20,8 @@ local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local TippingController = Knit.CreateController {
-    Name = "TippingController",
-    IngamePlayers = {},
+	Name = "TippingController",
+	IngamePlayers = {},
 }
 
 -- Variables
@@ -63,7 +63,14 @@ function TippingController:KnitStart()
 		UIController:Close(TippingUI)
 	end)
 
-	RunService:BindToRenderStep("TippingPrompts", Enum.RenderPriority.Last.Value, function()
+	local lastUpdate = 0
+	local updateInterval = 0.5 -- every 0.5 seconds
+
+	RunService:BindToRenderStep("TippingPrompts", Enum.RenderPriority.Last.Value, function(dt)
+		lastUpdate += dt
+		if lastUpdate < updateInterval then return end
+		lastUpdate = 0
+
 		for _, player in ipairs(Players:GetPlayers()) do
 			if player and player:GetAttribute("Loaded") and self.IngamePlayers[player] then
 				if self.IngamePlayers[player].Rank >= 4 and player ~= Player then
@@ -82,11 +89,15 @@ function TippingController:KnitStart()
 							prompt.ActionText = player.Name
 							prompt.MaxActivationDistance = 10
 							prompt.Parent = root
+						end
 
+						if not prompt:GetAttribute("Connected") then
+							prompt:SetAttribute("Connected", true)
 							trove:Connect(prompt.Triggered, function()
-								if not TippingUI.Visible then
+								if not TippingUI.Visible or TippingUI:GetAttribute("CurrentTarget") ~= player then
 									self:UpdateTips(player)
 									UIController:Open(TippingUI)
+									TippingUI:SetAttribute("CurrentTarget", player)
 								end
 							end)
 						end
@@ -100,6 +111,8 @@ function TippingController:KnitStart()
 end
 
 function TippingController:UpdateTips(player: Player)
+	trove:Clean() -- clean previous tip button connections
+
 	for _, v in ipairs(TipsContainer:GetChildren()) do
 		if v:IsA("Frame") and v.Name ~= "Template" and v.Name ~= "Zend" then
 			v:Destroy()

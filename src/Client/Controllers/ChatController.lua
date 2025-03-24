@@ -19,7 +19,7 @@ local ChatController = Knit.CreateController {
     Name = "ChatController",
 }
 
--- Variables
+-- Constants
 local ChatMessageToFormat = "<font color='#%s'>%s</font>"
 local PrefixToFormat = "<font color='#%s'>[%s]</font> %s"
 
@@ -43,41 +43,40 @@ local BoosterTag = {
 -- Trove Instance
 ChatController._trove = Trove.new()
 
--- Client Functions
+-- Knit Start
 function ChatController:KnitStart()
     self:CheckBubble()
     self:CheckText()
 end
 
+-- Bubble Chat Formatting
 function ChatController:CheckBubble()
-    local handler = function(message: TextChatMessage, adornee: Instance)
+    local bubbleHandler = function(message: TextChatMessage, adornee: Instance)
         local chatProperties = Instance.new("BubbleChatMessageProperties")
 
         if message.TextSource then
             local PlayerId = message.TextSource.UserId
 
-            if Tags[PlayerId] then
-                if Tags[PlayerId].BackgroundColor then
-                    chatProperties.BackgroundColor3 = Tags[PlayerId].BackgroundColor
-                    chatProperties.BackgroundTransparency = 0.1
-                end
+            if Tags[PlayerId] and Tags[PlayerId].BackgroundColor then
+                chatProperties.BackgroundColor3 = Tags[PlayerId].BackgroundColor
+                chatProperties.BackgroundTransparency = 0.1
             end
         end
 
         return chatProperties
     end
 
-    TextChatService.OnBubbleAdded = handler
+    TextChatService.OnBubbleAdded = bubbleHandler
     self._trove:Add(function()
-        -- Clear the callback if Trove is cleaned
-        if TextChatService.OnBubbleAdded == handler then
+        if TextChatService.OnBubbleAdded == bubbleHandler then
             TextChatService.OnBubbleAdded = nil
         end
     end)
 end
 
+-- Text Chat Formatting
 function ChatController:CheckText()
-    local handler = function(message: TextChatMessage)
+    local textHandler = function(message: TextChatMessage)
         if message.Metadata == "Roblox.Team.Success.NowInTeam" then
             local override = Instance.new("TextChatMessageProperties")
             override.Text = " "
@@ -93,16 +92,14 @@ function ChatController:CheckText()
             if Player then
                 properties.PrefixText = (message.PrefixText:gsub(Player.DisplayName, Player.Name))
 
+                -- VIP
                 if Player:GetAttribute("VIP") then
-                    properties.PrefixText = string.format(PrefixToFormat, PremiumTag.PrefixColor:ToHex(), PremiumTag.Prefix, Player.Name)
-                    properties.Text = string.format(ChatMessageToFormat, PremiumTag.PrefixColor:ToHex(), message.Text)
+                    local hex = PremiumTag.PrefixColor:ToHex()
+                    properties.PrefixText = string.format(PrefixToFormat, hex, PremiumTag.Prefix, Player.Name)
+                    properties.Text = string.format(ChatMessageToFormat, hex, message.Text)
                 end
 
-                -- if Player:GetAttribute("Booster") then
-                --     properties.PrefixText = string.format(PrefixToFormat, BoosterTag.PrefixColor:ToHex(), BoosterTag.Prefix, Player.Name)
-                --     properties.Text = string.format(ChatMessageToFormat, BoosterTag.PrefixColor:ToHex(), message.Text)
-                -- end
-
+                -- Custom Tag Coloring
                 if Tags[PlayerId] and Tags[PlayerId].MessageColor then
                     properties.Text = string.format(ChatMessageToFormat, Tags[PlayerId].MessageColor:ToHex(), message.Text)
                 end
@@ -112,10 +109,9 @@ function ChatController:CheckText()
         return properties
     end
 
-    TextChatService.OnIncomingMessage = handler
+    TextChatService.OnIncomingMessage = textHandler
     self._trove:Add(function()
-        -- Clear the callback if Trove is cleaned
-        if TextChatService.OnIncomingMessage == handler then
+        if TextChatService.OnIncomingMessage == textHandler then
             TextChatService.OnIncomingMessage = nil
         end
     end)

@@ -32,11 +32,15 @@ function NavigationService:KnitStart()
         local folder = Instance.new("Folder", PlayerStorage.Beams)
         folder.Name = Player.Name
     end)
+
+    Players.PlayerRemoving:Connect(function(Player)
+        local folder = PlayerStorage.Beams:FindFirstChild(Player.Name)
+        if folder then folder:Destroy() end
+    end)
+    
 end
 
 function NavigationService:InitBeam(Player: Player, Model: Instance)
-
-    print("InitBeam")
 
     local result = self.Client.Init:Fire(Player, Model)
 

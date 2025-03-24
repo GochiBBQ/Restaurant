@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
 
 -- Create Knit Service
 local ClothingService = Knit.CreateService {
@@ -20,14 +21,16 @@ local ClothingService = Knit.CreateService {
     Client = {},
 }
 
--- Trove instances per player for cleanup
-local playerTrove = {}
+-- Trove instances per player
+local PlayerTroves = HashSet.new()
+local TroveMap = {} -- Player → Trove
 
 -- Server Functions
 function ClothingService:KnitStart()
     local function onCharacterAdded(player: Player, character: Model)
-        local trove = playerTrove[player] or Trove.new()
-        playerTrove[player] = trove
+        local trove = TroveMap[player] or Trove.new()
+        TroveMap[player] = trove
+        PlayerTroves:add(player)
 
         local patch
         local humanoid: Humanoid?
@@ -93,7 +96,8 @@ function ClothingService:KnitStart()
 
     local function onPlayerAdded(player: Player)
         local trove = Trove.new()
-        playerTrove[player] = trove
+        TroveMap[player] = trove
+        PlayerTroves:add(player)
 
         if player.Character and player.Character:IsDescendantOf(workspace) then
             task.spawn(onCharacterAdded, player, player.Character)
@@ -104,9 +108,11 @@ function ClothingService:KnitStart()
         end)
 
         trove:Connect(player.AncestryChanged, function(_, parent)
-            if not parent then
-                trove:Destroy()
-                playerTrove[player] = nil
+            if not parent and PlayerTroves:contains(player) then
+                local t = TroveMap[player]
+                if t then t:Destroy() end
+                TroveMap[player] = nil
+                PlayerTroves:remove(player)
             end
         end)
     end
@@ -116,10 +122,13 @@ function ClothingService:KnitStart()
     end
 
     Players.PlayerAdded:Connect(onPlayerAdded)
+
     Players.PlayerRemoving:Connect(function(player)
-        if playerTrove[player] then
-            playerTrove[player]:Destroy()
-            playerTrove[player] = nil
+        if PlayerTroves:contains(player) then
+            local t = TroveMap[player]
+            if t then t:Destroy() end
+            TroveMap[player] = nil
+            PlayerTroves:remove(player)
         end
     end)
 end

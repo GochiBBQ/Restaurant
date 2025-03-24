@@ -5,35 +5,21 @@ For: Gochi
 
 ]]
 
--- ————————— 🂡 —————————
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 
--- ————————— 🂡 —————————
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
--- ————————— 🂡 —————————
 -- Create Knit Service
 local CollisionsService = Knit.CreateService {
     Name = "CollisionsService",
     Client = {},
 }
 
--- ————————— 🂡 —————————
 -- Server Functions
---[[
-    Initializes the collision groups and sets up collision rules for players and NPCs.
-    Registers collision groups "Players" and "NPCs" with the PhysicsService.
-    Sets collision rules so that players do not collide with other players or NPCs.
-    Connects to the PlayerAdded event to set the collision group for each player's character parts when they load.
-    Iterates over existing players to set the collision group for their character parts.
-
-    @function KnitStart
-    @within CollisionsService
-]]
 function CollisionsService:KnitStart()
     -- Register collision groups
     PhysicsService:RegisterCollisionGroup("Players")
@@ -64,6 +50,5 @@ function CollisionsService:KnitStart()
     end
 end
 
--- ————————— 🂡 —————————
  -- Return Service to Knit.
 return CollisionsService

@@ -11,10 +11,11 @@ local Teams = game:GetService("Teams")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove)
+local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
 
 -- Variables
 local RankService
-local playerTroveMap = {}
+local playerTroveMap = TableMap.new() -- Player → Trove
 
 -- Create Knit Service
 local TeamService = Knit.CreateService {
@@ -29,11 +30,11 @@ local TeamService = Knit.CreateService {
 function TeamService:KnitStart()
     RankService = Knit.GetService("RankService")
 
-    -- Handle cleanup when players leave
     Players.PlayerRemoving:Connect(function(player)
-        if playerTroveMap[player] then
-            playerTroveMap[player]:Destroy()
-            playerTroveMap[player] = nil
+        local trove = playerTroveMap:get(player)
+        if trove then
+            trove:Destroy()
+            playerTroveMap:remove(player)
         end
     end)
 end
@@ -43,12 +44,10 @@ function TeamService.Client:TeamSelected(player: Player, team: string)
     local role = RankService:GetRole(player) or "Unknown"
     local rank = RankService:GetRank(player) or 0
 
-    -- Set player attributes
     player:SetAttribute("Team", team)
     player:SetAttribute("Rank", rank)
     player:SetAttribute("Role", role)
 
-    -- Assign player to the team if it exists
     local teamObj = Teams:FindFirstChild(team)
     if teamObj then
         player.Team = teamObj
@@ -57,14 +56,14 @@ function TeamService.Client:TeamSelected(player: Player, team: string)
         return
     end
 
-    -- Setup or reset Trove per player
-    if not playerTroveMap[player] then
-        playerTroveMap[player] = Trove.new()
+    local trove = playerTroveMap:get(player)
+    if not trove then
+        trove = Trove.new()
+        playerTroveMap:set(player, trove)
     else
-        playerTroveMap[player]:Clean()
+        trove:Clean()
     end
 
-    -- Fire signal to all clients
     self.AssignTeam:FireAll(player, team, rank, role)
 end
 

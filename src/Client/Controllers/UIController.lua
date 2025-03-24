@@ -74,6 +74,10 @@ function UIController:KnitStart()
 		for _, object in pairs(self.UI:GetDescendants()) do
 			if object:IsA("GuiObject") and object.Position and not Positions[object] then
 				Positions[object] = object.Position
+
+				object.Destroying:Connect(function()
+					Positions[object] = nil
+				end)
 			end
 		end
 	end
@@ -83,6 +87,10 @@ function UIController:KnitStart()
 	trove:Connect(self.UI.DescendantAdded, function(descendant)
 		if descendant:IsA("GuiObject") and descendant.Position then
 			Positions[descendant] = descendant.Position
+
+			descendant.Destroying:Connect(function()
+				Positions[descendant] = nil
+			end)
 		end
 	end)
 
@@ -217,9 +225,17 @@ function UIController:Open(UI: GuiObject, Effects: boolean?)
 	end
 
 	if Effects then
-		AnimNation.target(Lighting.Blur, {s = 3}, {Size = 35})
-		AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 90})
-		AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(60, 60, 60)})
+		if Lighting:FindFirstChild("Blur") then
+			AnimNation.target(Lighting.Blur, {s = 3}, {Size = 35})
+		end
+		
+		if workspace.CurrentCamera then
+			AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 90})
+		end
+		
+		if ColorCorrection then
+			AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(60, 60, 60)})
+		end
 	end
 
 	UI.Visible = true
@@ -254,9 +270,18 @@ function UIController:Close(UI: GuiObject, HUD: boolean?)
     end
 
     -- Close effects
-    AnimNation.target(Lighting.Blur, {s = 3}, {Size = 0})
-    AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 70})
-    AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(255, 255, 255)})
+	if Lighting:FindFirstChild("Blur") then
+		AnimNation.target(Lighting.Blur, {s = 3}, {Size = 0})
+	end
+	
+	if workspace.CurrentCamera then
+		AnimNation.target(workspace.CurrentCamera, {s = 3}, {FieldOfView = 70})
+	end
+	
+	if ColorCorrection then
+		AnimNation.target(ColorCorrection, {s = 3}, {TintColor = Color3.fromRGB(255, 255, 255)})
+	end
+	
 
     for _, component in pairs(Components) do
         local f = component.Frame
@@ -353,18 +378,28 @@ function UIController:AdvertisementBoards()
 	local Character = Player.Character or Player.CharacterAdded:Wait()
 	local Distance = 15
 
-	trove:Connect(RunService.RenderStepped, function()
-		for _, AdvertBoard in pairs(AdvertBoards:GetChildren()) do
-			local root = Character:FindFirstChild("HumanoidRootPart")
-			local Surface = AdvertBoard:FindFirstChild("SurfaceDisplay")
-			local Frame = Surface and Surface:FindFirstChild("SurfaceGui") and Surface.SurfaceGui.Frame.Frame
-			if root and Frame then
-				local magnitude = (root.Position - Surface.Position).Magnitude
-				local pos = magnitude < Distance and UDim2.fromScale(0, 0) or UDim2.fromScale(0, 1)
-				AnimNation.target(Frame, {s = 5, d = 0.9}, {Position = pos})
-			end
+	local lastUpdate = 0
+	local updateInterval = 0.3 -- every 0.3 seconds
+
+trove:Connect(RunService.RenderStepped, function(dt)
+	lastUpdate += dt
+	if lastUpdate < updateInterval then return end
+	lastUpdate = 0
+
+	local root = Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	for _, AdvertBoard in pairs(AdvertBoards:GetChildren()) do
+		local Surface = AdvertBoard:FindFirstChild("SurfaceDisplay")
+		local Frame = Surface and Surface:FindFirstChild("SurfaceGui") and Surface.SurfaceGui.Frame.Frame
+		if Surface and Frame then
+			local magnitude = (root.Position - Surface.Position).Magnitude
+			local pos = magnitude < Distance and UDim2.fromScale(0, 0) or UDim2.fromScale(0, 1)
+			AnimNation.target(Frame, {s = 5, d = 0.9}, {Position = pos})
 		end
-	end)
+	end
+end)
+
 end
 
 -- Return Controller to Knit.

@@ -11,7 +11,8 @@ local ServerStorage = game:GetService("ServerStorage")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local Table = require(Knit.Classes.Table) --- @module Table
+local TableClass = require(Knit.Classes.Table) --- @module Table
+local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local TableService = Knit.CreateService {
@@ -27,14 +28,11 @@ local TableService = Knit.CreateService {
 
 -- Variables
 local TableFolder = workspace:WaitForChild("Functionality"):WaitForChild("Tables")
-local Tables = {}
-
+local Tables = TableMap.new() -- Instance → TableClass
 local Animations = ServerStorage:WaitForChild("Animations")
+local ongoingAnimations = TableMap.new() -- Player → AnimationTrack
 
-local ongoingAnimations = {}
-
--- Server Functions
-
+-- Utility
 local function LoadAnimation(Character: Instance, Animation: Animation)
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
 	if Humanoid then
@@ -68,6 +66,7 @@ local function LockPlayerToModel(Player: Player, Model: Model, State: boolean)
     end
 end
 
+-- Server Functions
 function TableService:KnitStart()
     if not TableFolder then
         warn("TableService:KnitStart() - TableFolder not found.")
@@ -76,92 +75,78 @@ function TableService:KnitStart()
 
     for _, categoryFolder in pairs(TableFolder:GetChildren()) do
         for _, tableInstance in pairs(categoryFolder:GetChildren()) do
-            local seats = tableInstance:GetAttribute("Seats") or 4 -- Default to 4 seats if not specified
+            local seats = tableInstance:GetAttribute("Seats") or 4
             local category = categoryFolder.Name
-            local newTable = Table.new(tableInstance, category, seats)
-            Tables[tableInstance] = newTable
+            local newTable = TableClass.new(tableInstance, category, seats)
+            Tables:set(tableInstance, newTable)
         end
     end
 
-    self.Client.UpdateCount:FireAll(self:GetTableCount())
-    self.Client.TableOccupied:FireAll("hi")
+    TableClass.__loaded = true
 end
 
 function TableService:GetTableCount()
-    return Table:_getTableCount()
+    return TableClass:_getTableCount()
 end
 
 function TableService:ClaimTable(Server, Area, Seats)
-    return Table:_claimTable(Server, Area, Seats)
+    return TableClass:_claimTable(Server, Area, Seats)
 end
 
 function TableService:SetTableOccupied(Server, tableInstance, occupants)
-    local tableObj = Tables[tableInstance]
+    local tableObj = Tables:get(tableInstance)
     if tableObj then
         local result = tableObj:_setOccupied(Server, tableInstance, occupants)
-        if result == nil then
-            self.Client.TableOccupied:Fire(tableInstance, occupants)
-        end
-        return result
-    else
-        return "Table not found."
-    end
-end
-
-function TableService:SetTableUnoccupied(tableInstance)
-    local tableObj = Tables[tableInstance]
-    if tableObj then
-        tableObj:_setUnoccupied(tableInstance)
-        self.Client.TableUnoccupied:Fire(tableInstance)
-    else
-        return "Table not found."
-    end
-end
-
-function TableService:AddOccupantToTable(tableInstance, occupant)
-    local tableObj = Tables[tableInstance]
-    if tableObj then
-        local result = tableObj:_addOccupant(tableInstance, occupant)
-        if result == nil then
-            self.Client.OccupantAdded:Fire(tableInstance, occupant)
-        end
-        return result
-    else
-        return "Table not found."
-    end
-end
-
-function TableService:RemoveOccupantFromTable(tableInstance, occupant)
-    local tableObj = Tables[tableInstance]
-    if tableObj then
-        local result = tableObj:_removeOccupant(tableInstance, occupant)
-
         return result
     else
         return false
     end
 end
 
+function TableService:SetTableUnoccupied(tableInstance)
+    local tableObj = Tables:get(tableInstance)
+    if tableObj then
+        return tableObj:_setUnoccupied(tableInstance)
+    else
+        return false
+    end
+end
+
+function TableService:AddOccupantToTable(tableInstance, occupant)
+    local tableObj = Tables:get(tableInstance)
+    if tableObj then
+        local result = tableObj:_addOccupant(tableInstance, occupant)
+        return result
+    else
+        return false
+    end
+end
+
+function TableService:RemoveOccupantFromTable(tableInstance, occupant)
+    local tableObj = Tables:get(tableInstance)
+    if tableObj then
+        return tableObj:_removeOccupant(tableInstance, occupant)
+    else
+        return false
+    end
+end
+
 function TableService:GetTableOccupants(tableInstance)
-    local tableObj = Tables[tableInstance]
+    local tableObj = Tables:get(tableInstance)
     if tableObj then
         return tableObj:_getOccupants(tableInstance)
     else
-        return "Table not found."
+        return false
     end
 end
 
 function TableService:GetAvailableTables(Seats)
-    return Table:_getAvailableTables(Seats)
+    return TableClass:_getAvailableTables(Seats)
 end
 
 function TableService:GetTableInfo(tableInstance)
-
-    print(tableInstance)
-
-    -- If tableInstance is a string, find the corresponding Instance
     if typeof(tableInstance) == "string" then
-        for instance, _ in pairs(Tables) do
+        for instance, _ in Tables:entries() do
             if instance.Name == tableInstance then
                 tableInstance = instance
                 break
@@ -169,11 +154,11 @@ function TableService:GetTableInfo(tableInstance)
         end
     end
 
-    local tableObj = Tables[tableInstance]
+    local tableObj = Tables:get(tableInstance)
     if tableObj then
         return tableObj:_getTableInfo(tableInstance)
     else
-        return "Table not found."
+        return false
     end
 end
 
@@ -191,7 +176,6 @@ function TableService.Client:AddOccupant(Player: Player, Table: Instance, Occupa
 end
 
 function TableService.Client:RemoveOccupant(Player: Player, Table: Instance, Occupant: Player)
-    print(Table, Occupant)
     return self.Server:RemoveOccupantFromTable(Table, Occupant)
 end
 
@@ -218,33 +202,28 @@ end
 function TableService.Client:TabletInit(Player: Player, Tablet: Instance)
     assert(Player:IsA("Player"), "Player must be a Player instance.")
     assert(Tablet:IsA("Model"), "Tablet must be a Model instance.")
-    
+
     local Character = Player.Character or Player.CharacterAdded:Wait()
     local Animation = LoadAnimation(Character, Animations.TabletInit)
 
-    if ongoingAnimations[Player] then
-        ongoingAnimations[Player]:Stop()
-    end
+    local current = ongoingAnimations:get(Player)
+    if current then current:Stop() end
 
     Tablet:SetAttribute("InUse", true)
+    ongoingAnimations:set(Player, Animation)
 
-    ongoingAnimations[Player] = Animation
     LockPlayerToModel(Player, Tablet, true)
     Animation:Play()
 end
 
 function TableService.Client:TabletEnd(Player: Player, Tablet: Instance)
     assert(Player:IsA("Player"), "Player must be a Player instance.")
-    assert(Tablet:IsA("Model"), "Tablet must be a Model instance.")
 
-    if ongoingAnimations[Player] == nil then
-        return
-    end
+    local anim = ongoingAnimations:get(Player)
+    if not anim then return end
 
-    if ongoingAnimations[Player] then
-        ongoingAnimations[Player]:Stop()
-        ongoingAnimations[Player] = nil
-    end
+    anim:Stop()
+    ongoingAnimations:remove(Player)
 
     Tablet:SetAttribute("InUse", false)
     LockPlayerToModel(Player, Tablet, false)

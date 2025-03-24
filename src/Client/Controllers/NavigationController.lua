@@ -93,7 +93,7 @@ function NavigationController:InitBeam(model: Instance)
         end
     end)
 
-    self._beamTrove:Connect(connection)
+    self._beamTrove:Add(connection)
 end
 
 return NavigationController

@@ -6,6 +6,7 @@ For: Gochi
 -- Class Init
 local Table = {}
 Table.__index = Table
+Table.__loaded = false
 
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
@@ -14,230 +15,256 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local TableMap
 
 -- Variables
 local NotificationService
 
-local Tables = {}
+local Tables
+local SeatTrove
+
 local TableCount = {
-    ["Indoor Dining"] = 0,
-    ["Terrace Dining"] = 0,
-    ["Underwater Dining"] = 0
+	["Indoor Dining"] = 0,
+	["Terrace Dining"] = 0,
+	["Underwater Dining"] = 0
 }
 
-local SeatTrove = {} -- Stores Troves for each table's seat connections
-
 Knit.OnStart():andThen(function()
-    NotificationService = Knit.GetService("NotificationService")
+	NotificationService = Knit.GetService("NotificationService")
+    TableMap = require(Knit.Structures.TableMap) --- @module TableMap
+
+    Tables = TableMap.new() -- TableInstance → TableData
+    SeatTrove = TableMap.new() -- TableInstance → Trove
 end)
 
--- Functions
+-- Constructor
 function Table.new(tab: Instance, Category: string, Seats: number)
-    local self = setmetatable({}, Table)
+    repeat task.wait() until Tables ~= nil and SeatTrove ~= nil
+    if not tab:IsA("Model") then error("Table.new() requires a Model instance.") end
+    
+	local self = setmetatable({}, Table)
 
-    self.Table = tab
-    self.Name = tab.Name
-    self.Category = Category
-    self.Seats = Seats
+	self.Table = tab
+	self.Name = tab.Name
+	self.Category = Category
+	self.Seats = tonumber(Seats)
 
-    Tables[tab] = {
-        Table = self.Table,
-        Name = self.Name,
-        Seats = self.Seats,
-        Category = self.Category,
-        isOccupied = false,
-        Server = nil,
-        Occupants = {}
-    }
+	Tables:set(tab, {
+		Table = self.Table,
+		Name = self.Name,
+		Seats = tonumber(self.Seats),
+		Category = self.Category,
+		isOccupied = false,
+		Server = nil,
+		Occupants = {},
+	})
 
-    TableCount[Category] = TableCount[Category] + 1
+	TableCount[Category] += 1
 
-    local trove = Trove.new()
-    SeatTrove[tab] = trove
+	local trove = Trove.new()
+	SeatTrove:set(tab, trove)
 
-    for _, object in pairs(tab:GetDescendants()) do
-        if object:IsA("Seat") then
-            trove:Connect(object:GetPropertyChangedSignal("Occupant"), function()
-                if object.Occupant then
-                    local Player = Players:GetPlayerFromCharacter(object.Occupant.Parent)
-                    local Humanoid = object.Occupant
+	for _, object in pairs(tab:GetDescendants()) do
+		if object:IsA("Seat") then
+			trove:Connect(object:GetPropertyChangedSignal("Occupant"), function()
+				if object.Occupant then
+					local player = Players:GetPlayerFromCharacter(object.Occupant.Parent)
+					local humanoid = object.Occupant
 
-                    local function denyPermission()
-                        NotificationService:_createNotif(Player, "You do not have permission to sit at this table.")
-                        task.delay(0.1, function()
-                            Humanoid.Jump = true
-                        end)
-                    end
+					if not player then return end
 
-                    if not Tables[tab].isOccupied or not table.find(Tables[tab].Occupants, Player) then
-                        denyPermission()
-                    end
-                end
-            end)
-        end
-    end
+					local denyPermission = function()
+						NotificationService:_createNotif(player, "You do not have permission to sit at this table.")
+						task.delay(0.1, function()
+							humanoid.Jump = true
+						end)
+					end
 
-    return self
+					local tableData = Tables:get(tab)
+					if not tableData or not tableData.isOccupied or not table.find(tableData.Occupants, player) then
+						denyPermission()
+					end
+				end
+			end)
+		end
+	end
+
+	return self
 end
 
+-- Methods
 function Table:_getTableCount()
-    return TableCount
+    
+    repeat task.wait() until self.__loaded
+    
+	return TableCount
 end
 
 function Table:_claimTable(Server: Player, Area: string, Seats: number)
-    local availableTables = self:_getAvailableTables(Area, Seats)
+	local availableTables = self:_getAvailableTables(Area, Seats)
+	if #availableTables == 0 then
+		return false, "No available tables in this area."
+	end
 
-    if #availableTables == 0 then
-        return false, "No available tables in this area."
-    end
+	table.sort(availableTables, function(a, b)
+		local aSeats = tonumber(Tables:get(a).Seats)
+		local bSeats = tonumber(Tables:get(b).Seats)
+		local diffA = math.abs(aSeats - Seats)
+		local diffB = math.abs(bSeats - Seats)
+		return diffA < diffB
+	end)
 
-    table.sort(availableTables, function(a, b)
-        local diffA = math.abs(Tables[a].Seats - Seats)
-        local diffB = math.abs(Tables[b].Seats - Seats)
-        return diffA < diffB
-    end)
+	local tableInstance = availableTables[1]
+	local tableData = Tables:get(tableInstance)
 
-    local tableInstance = availableTables[1]
-    local tableData = Tables[tableInstance]
+	if not tableData then
+		return false, "Table data not found."
+	end
 
-    if not tableData then
-        return false, "Table data not found."
-    end
+	tableData.Server = Server
+	Server:SetAttribute("Table", tableData.Name)
 
-    tableData.Server = Server
-    Server:SetAttribute("Table", tableData.Name)
-
-    return true, tableData
+	return true, tableData
 end
 
-function Table:_checkOccupied(Table: Instance)
-    return Tables[Table].isOccupied, Tables[Table].Occupants
+function Table:_checkOccupied(TableInst: Instance)
+	local data = Tables:get(TableInst)
+	return data and data.isOccupied, data and data.Occupants
 end
 
-function Table:_setOccupied(Server: Player, Table: Instance, Occupants: {Player})
-    if #Occupants > Tables[Table].Seats then
-        return false, "Occupants exceeds table seat limit."
-    end
+function Table:_setOccupied(Server: Player, TableInst: Instance, Occupants: { Player })
+	local data = Tables:get(TableInst)
+	if not data then return false, "Table not found." end
 
-    if Tables[Table].Server ~= Server then
-        return false, "Table is already claimed by another server."
-    end
+	if #Occupants > tonumber(data.Seats) then
+		return false, "Occupants exceeds table seat limit."
+	end
 
-    if Tables[Table].isOccupied then
-        return false, "Table is already occupied."
-    end
+	if data.Server ~= Server then
+		return false, "Table is already claimed by another server."
+	end
 
-    for _, Occupant in pairs(Occupants) do
-        if not Occupant:IsA("Player") then
-            return false, "Occupants must be players."
-        end
-    end
+	if data.isOccupied then
+		return false, "Table is already occupied."
+	end
 
-    Tables[Table].isOccupied = true
-    Tables[Table].Occupants = Occupants
+	for _, occupant in pairs(Occupants) do
+		if not occupant:IsA("Player") then
+			return false, "Occupants must be players."
+		end
+	end
 
-    for _, Occupant in pairs(Occupants) do
-        if Occupant:IsA("Player") then
-            Occupant:SetAttribute("Table", Tables[Table].Name)
-            Occupant:SetAttribute("InParty", true)
-        end
-    end
+	data.isOccupied = true
+	data.Occupants = Occupants
 
-    return true
+	for _, p in pairs(Occupants) do
+		p:SetAttribute("Table", data.Name)
+		p:SetAttribute("InParty", true)
+	end
+
+	return true
 end
 
-function Table:_setUnoccupied(Table: Instance)
-    if not Tables[Table].isOccupied then
-        return false, "Table is not occupied."
-    end
+function Table:_setUnoccupied(TableInst: Instance)
+	local data = Tables:get(TableInst)
+	if not data then return false, "Table not found." end
 
-    Tables[Table].isOccupied = false
-    if Tables[Table].Server then
-        Tables[Table].Server:SetAttribute("Table", nil)
-    end
-    Tables[Table].Server = nil
+	if not data.isOccupied then
+		return false, "Table is not occupied."
+	end
 
-    for _, Occupant in pairs(Tables[Table].Occupants) do
-        if Occupant:IsA("Player") then
-            Occupant:SetAttribute("Table", nil)
-            Occupant:SetAttribute("InParty", false)
-        end
-    end
+	data.isOccupied = false
 
-    Tables[Table].Occupants = {}
-    return true
+	if data.Server then
+		data.Server:SetAttribute("Table", nil)
+	end
+
+	for _, p in pairs(data.Occupants) do
+		if p:IsA("Player") then
+			p:SetAttribute("Table", nil)
+			p:SetAttribute("InParty", false)
+		end
+	end
+
+	data.Server = nil
+	data.Occupants = {}
+
+	return true
 end
 
-function Table:_addOccupant(Table: Instance, Occupant: Player)
-    if not Tables[Table].isOccupied then
-        return false, "Table is not occupied."
-    end
+function Table:_addOccupant(TableInst: Instance, Player: Player)
+	local data = Tables:get(TableInst)
+	if not data then return false, "Table not found." end
 
-    if #Tables[Table].Occupants >= Tables[Table].Seats then
-        return false, "Table is full."
-    end
+	if not data.isOccupied then return false, "Table is not occupied." end
+	if #data.Occupants >= tonumber(data.Seats) then return false, "Table is full." end
 
-    table.insert(Tables[Table].Occupants, Occupant)
-    Occupant:SetAttribute("Table", Tables[Table].Name)
-    Occupant:SetAttribute("InParty", true)
-    return true
+	table.insert(data.Occupants, Player)
+	Player:SetAttribute("Table", data.Name)
+	Player:SetAttribute("InParty", true)
+
+	return true
 end
 
-function Table:_removeOccupant(Table: Instance, Occupant: Player)
-    print("Removing occupant from table:", Table.Name, "Occupant:", Occupant.Name)
+function Table:_removeOccupant(TableInst: Instance, Player: Player)
+	local data = Tables:get(TableInst)
+	if not data then return false, "Table not found." end
 
-    if not Tables[Table].isOccupied then
-        return false, "Table is not occupied."
-    end
+	if not data.isOccupied then return false, "Table is not occupied." end
 
-    local index = table.find(Tables[Table].Occupants, Occupant)
-    if index then
-        table.remove(Tables[Table].Occupants, index)
-        Occupant:SetAttribute("Table", nil)
-        Occupant:SetAttribute("InParty", false)
+	local index = table.find(data.Occupants, Player)
+	if not index then return false, "Occupant not found." end
 
-        if #Tables[Table].Occupants == 0 then
-            self:_setUnoccupied(Table)
-        end
+	table.remove(data.Occupants, index)
+	Player:SetAttribute("Table", nil)
+	Player:SetAttribute("InParty", false)
 
-        return true
-    else
-        return false, "Occupant not found."
-    end
+	if #data.Occupants == 0 then
+		self:_setUnoccupied(TableInst)
+	end
+
+	return true
 end
 
-function Table:_getOccupants(Table: Instance)
-    return Tables[Table].Occupants
+function Table:_getOccupants(TableInst: Instance)
+	local data = Tables:get(TableInst)
+	return data and data.Occupants
 end
 
-function Table:_getServer(Table: Instance)
-    return Tables[Table].Server
+function Table:_getServer(TableInst: Instance)
+	local data = Tables:get(TableInst)
+	return data and data.Server
 end
 
 function Table:_getAvailableTables(Area: string, Seats: number)
-    local availableTables = {}
-    local seatsNumber = tonumber(Seats)
+	local results = {}
 
-    for tableInstance, tableData in pairs(Tables) do
-        if tableData.Category == Area and not tableData.isOccupied and not tableData.Server and tableData.Seats >= seatsNumber then
-            table.insert(availableTables, tableInstance)
-        end
-    end
+	for tableInstance, data in Tables:entries() do
+		if data.Category == Area
+			and not data.isOccupied
+			and not data.Server
+			and tonumber(data.Seats) >= tonumber(Seats)
+		then
+			table.insert(results, tableInstance)
+		end
 
-    return availableTables
+	end
+
+	return results
 end
 
-function Table:_getTableInfo(Table: Instance)
-    return Tables[Table]
+function Table:_getTableInfo(TableInst: Instance)
+	return Tables:get(TableInst)
 end
 
-function Table:_destroy(Table: Instance)
-    if SeatTrove[Table] then
-        SeatTrove[Table]:Clean()
-        SeatTrove[Table] = nil
-    end
+function Table:_destroy(TableInst: Instance)
+	local trove = SeatTrove:get(TableInst)
+	if trove then
+		trove:Clean()
+		SeatTrove:remove(TableInst)
+	end
 
-    Tables[Table] = nil
+	Tables:remove(TableInst)
 end
 
 return Table
