@@ -60,7 +60,7 @@ function NotificationController:TweenExistingAnnouncements()
         local targetPosition = UDim2.new(
             announcement.Position.X.Scale,
             announcement.Position.X.Offset,
-            announcement.Position.Y.Scale - 0.09,
+            announcement.Position.Y.Scale - 0.12,
             announcement.Position.Y.Offset
         )
         AnimNation.target(announcement, {s = 10, d = 1}, {Position = targetPosition})
@@ -75,7 +75,7 @@ function NotificationController:CreateAnnouncement(message: string)
     Announcement.Description.Text = ""
     Announcement.Parent = Container
     Announcement.Visible = true
-    Announcement.Position = UDim2.new(0.499, 0, 0.96, 0)
+    Announcement.Position = UDim2.new(0.495, 0, 0.929, 0)
 
     local trove = Trove.new()
     local entry = {

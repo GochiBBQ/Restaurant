@@ -77,6 +77,10 @@ function TeamController:KnitStart()
     trove:Connect(Players.PlayerRemoving, function(player)
         self:RemovePlayer(player)
     end)
+
+    if UserInputService.TouchEnabled or UserInputService.VREnabled then
+        LeaderboardUI.Visible = false
+    end
 end
 
 function TeamController:InitializePlayers()
@@ -112,6 +116,19 @@ function TeamController:UpdatePlayerAttributes(player)
 
     if team and rank and role then
         self:HandleLeaderboard(player, team, rank, role)
+
+        GochiUI.ChefQueue.Visible = false
+        GochiUI.CreateOrder.Visible = false
+
+        if team == 'Management' then
+            GochiUI.ChefQueue.Visible = true
+        elseif team == 'Server' then
+            GochiUI.CreateOrder.Visible = true
+        elseif team == 'Chef' then
+            GochiUI.ChefQueue.Visible = true
+        elseif team == 'Customer' then
+            GochiUI.CreateOrder.Visible = true
+        end
     end
 end
 

@@ -388,16 +388,14 @@ function TableController:InitUI()
     for _, frame in pairs(Content:GetChildren()) do
         if frame:IsA("Frame") then
 
-            if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled then
+            if UserInputService.TouchEnabled then
                 -- mobile
-                AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
-                AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
+                frame.Int.Position = UDim2.new(0.5, 0, 0.775, 0)
+                frame.Title.Position = UDim2.new(0.5, 0, 0.71, 0)
                 frame.SelectButton.Visible = true
-                AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)}):AndThen(function()
-                    frame.SelectButton.Visible = true
-                end)
             elseif not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then
                 -- laptop/desktop
+                print('desktop')
                 controllerTrove:Connect(frame.MouseEnter, function()
                     AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                     AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
@@ -416,6 +414,7 @@ function TableController:InitUI()
                 end)
             elseif UserInputService.GamepadEnabled then
                 -- console
+                print('console')
                 frame.SelectButton.Visible = true
                 AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
@@ -427,15 +426,6 @@ function TableController:InitUI()
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
                 AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)})
             end
-
-            -- frame.SelectButton.MouseEnter:Connect(function()
-            --     AnimNation.target(frame.SelectButton, {s = 20}, {Size = UDim2.new(0.88, 0, 0.125, 0)})
-            -- end)
-
-            -- frame.SelectButton.MouseLeave:Connect(function()
-            --     AnimNation.target(frame.SelectButton, {s = 20}, {Size = UDim2.new(0.899, 0, 0.131, 0)})
-            -- end)
-
             controllerTrove:Connect(frame.SelectButton.Activated, function()
                 self:AreaSelected(frame.Name)
             end)
@@ -550,6 +540,24 @@ function TableController:InitRegisters()
 
                     controllerTrove:Connect(Panel:GetPropertyChangedSignal("Visible"), checkUIVisibility)
                     controllerTrove:Connect(TableUI:GetPropertyChangedSignal("Visible"), checkUIVisibility)
+                    controllerTrove:Connect(Content:GetPropertyChangedSignal("Visible"), function()
+
+                        repeat task.wait() until UIController.FrameOpen
+
+                        for _, frame in pairs(Content:GetChildren()) do
+                            if UserInputService.TouchEnabled or UserInputService.GamepadEnabled or UserInputService.VREnabled then
+                                -- mobile, console, vr
+                                if frame:IsA("Frame") then
+                                    AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
+                                    AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
+                                    frame.SelectButton.Visible = true
+                                    AnimNation.target(frame.SelectButton, {s = 8}, {Position = UDim2.new(0.5, 0, 0.897, 0)}):AndThen(function()
+                                        frame.SelectButton.Visible = true
+                                    end)
+                                end
+                            end
+                        end
+                end)
                 end
             end
         end
@@ -565,6 +573,7 @@ function TableController:AreaSelected(Area: string)
     UIController:Open(Panel)
 
     local GuestSelection = Panel:WaitForChild("GuestSelection")
+    local panelContent = Panel.Content
 
     GuestSelection.Section.Text = `Section: <b>{Area}</b>`
 
@@ -613,7 +622,6 @@ function TableController:AreaSelected(Area: string)
 
             local Name = string.match(tableData.Name, "%d+")
             local Occupants = tableData.Occupants or {}
-            local panelContent = Panel.Content
 
             panelContent.Section.Text = `Section: <b>{tableData.Category}</b>`
             panelContent.Title.Text = `Your party is assigned to Table <b>{Name}</b>`
@@ -667,6 +675,33 @@ function TableController:AreaSelected(Area: string)
         end)
     end)
 
+    trove:Connect(panelContent.OrderOptions.Vacate.Activated, function()
+        if not currentTable then
+            NotificationService:CreateNotif(Player, "No table is currently assigned to vacate.")
+            return
+        end
+    
+        TableService:SetUnoccupied(currentTable):andThen(function(success)
+            if success then
+                -- Reset UI & data
+                ResetPartyData(true)
+    
+                -- End tablet session if active
+                if activeRegister then
+                    TableService:TabletEnd(activeRegister)
+                    activeRegister = nil
+                end
+    
+                NotificationService:CreateNotif(Player, "You have successfully vacated the table.")
+            else
+                NotificationService:CreateNotif(Player, "Failed to vacate the table. Please try again.")
+            end
+        end):catch(function(err)
+            warn("Error while vacating table: " .. tostring(err))
+            NotificationService:CreateNotif(Player, "An error occurred while vacating the table.")
+        end)
+    end)
+    
     -- Cleanup connections when UI is closed
     controllerTrove:Connect(Panel:GetPropertyChangedSignal("Visible"), function()
         if not Panel.Visible then

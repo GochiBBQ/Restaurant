@@ -123,6 +123,7 @@ function Table:_claimTable(Server: Player, Area: string, Seats: number)
 
 	tableData.Server = Server
 	Server:SetAttribute("Table", tableData.Name)
+	Server:SetAttribute("Server", true)
 
 	return true, tableData
 end

@@ -132,6 +132,16 @@ function TableService:RemoveOccupantFromTable(tableInstance, occupant)
 end
 
 function TableService:GetTableOccupants(tableInstance)
+
+    if typeof(tableInstance) == "string" then
+        for instance, _ in Tables:entries() do
+            if instance.Name == tableInstance then
+                tableInstance = instance
+                break
+            end
+        end
+    end
+
     local tableObj = Tables:get(tableInstance)
     if tableObj then
         return tableObj:_getOccupants(tableInstance)

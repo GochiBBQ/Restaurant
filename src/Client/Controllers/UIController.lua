@@ -23,6 +23,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 -- Create Knit Controller
 local UIController = Knit.CreateController {
 	Name = "UIController",
+	FrameOpen = false
 }
 
 -- Variables
@@ -34,7 +35,6 @@ local UIHover = SoundService.UIHover
 
 local ColorCorrection
 local CurrentFrame = nil
-local FrameOpen = false
 local RankService
 local HUDOpen = true
 
@@ -194,8 +194,8 @@ function UIController:Open(UI: GuiObject, Effects: boolean?)
 	Effects = Effects == nil and true or Effects
 	warn("Opening UI: " .. UI.Name)
 
-	repeat task.wait() until not FrameOpen
-	FrameOpen = true
+	repeat task.wait() until not self.FrameOpen
+	self.FrameOpen = true
 
 	local Components = {}
 
@@ -315,7 +315,7 @@ function UIController:Close(UI: GuiObject, HUD: boolean?)
     end
 
     CurrentFrame = nil
-    FrameOpen = false
+    self.FrameOpen = false
     Player:SetAttribute("UIOpen", false)
 end
 
