@@ -7,6 +7,7 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local RunService = game:GetService('RunService')
 local UserInputService = game:GetService('UserInputService')
 local SoundService = game:GetService("SoundService")
 local StarterGui = game:GetService('StarterGui')
@@ -126,8 +127,9 @@ function TeamController:UpdatePlayerAttributes(player)
             GochiUI.CreateOrder.Visible = true
         elseif team == 'Chef' then
             GochiUI.ChefQueue.Visible = true
-        elseif team == 'Customer' then
-            GochiUI.CreateOrder.Visible = true
+        elseif RunService:IsStudio() then
+            GochiUI.ChefQueue.Visible = true
+            -- GochiUI.CreateOrder.Visible = true
         end
     end
 end

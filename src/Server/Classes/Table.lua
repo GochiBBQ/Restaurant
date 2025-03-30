@@ -170,20 +170,18 @@ function Table:_setUnoccupied(TableInst: Instance)
 	local data = Tables:get(TableInst)
 	if not data then return false, "Table not found." end
 
-	if not data.isOccupied then
-		return false, "Table is not occupied."
-	end
-
 	data.isOccupied = false
 
 	if data.Server then
 		data.Server:SetAttribute("Table", nil)
 	end
 
-	for _, p in pairs(data.Occupants) do
-		if p:IsA("Player") then
-			p:SetAttribute("Table", nil)
-			p:SetAttribute("InParty", false)
+	if #data.Occupants > 0 then
+		for _, p in pairs(data.Occupants) do
+			if p:IsA("Player") then
+				p:SetAttribute("Table", nil)
+				p:SetAttribute("InParty", false)
+			end
 		end
 	end
 

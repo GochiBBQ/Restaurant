@@ -48,7 +48,6 @@ local partyTrove = Trove.new()
 
 -- Reset function for global variables
 local function ResetPartyData(fullReset: boolean?)
-    print("Resetting party data...")
 
     ExistingPlayers = {}
     PlayersToAdd = {}
@@ -87,9 +86,7 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
     partyTrove:Clean() -- Clean up previous listeners
 
     partyTrove:Connect(OrderOptions.AddButton.Activated, function()
-        print("AddButton activated")
         if OrderOptions.PlayerInput.TextLabel.Text == "" then
-            warn("Invalid entry: Empty username")
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
@@ -99,35 +96,30 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
         OrderOptions.PlayerInput.TextLabel.Text = ""
 
         if not PlayerToAdd then
-            warn("Player not found: " .. OrderOptions.PlayerInput.TextLabel.Text)
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Invalid Entry"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
         end
 
         if PlayerToAdd == Player then
-            warn("Cannot add yourself to the party")
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Cannot add yourself"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
         end
 
         if PlayerToAdd:GetAttribute("Table") ~= nil then
-            warn("Player already assigned to a table")
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player in Different Party"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
         end
 
         if table.find(ExistingPlayers, PlayerToAdd) or table.find(PlayersToAdd, PlayerToAdd) then
-            warn("Player already in the party")
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Already in Party"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
         end
 
         if PlayerToAdd:GetAttribute("InParty") then
-            warn("Player is already in a different party")
             OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Player in Different Party"
             task.delay(2, function() OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Username" end)
             return
@@ -138,7 +130,6 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
         end)
 
         if not success then
-            warn("Failed to fetch player thumbnail for " .. PlayerToAdd.Name)
             return
         end
 
@@ -151,7 +142,6 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
             frame.Parent = PartyView.ScrollingFrame
 
             table.insert(PlayersToAdd, PlayerToAdd)
-            print("Player added to party: " .. PlayerToAdd.Name)
             NotificationService:CreateNotif(PlayerToAdd, `You have been added to a party by <b>{Player.Name}</b>.`)
         elseif selectedOption == 'Existing' then
             TableService:AddOccupant(currentTable, PlayerToAdd):andThen(function(success)
@@ -164,10 +154,8 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
                     frame.Parent = PartyView.ScrollingFrame
 
                     table.insert(PlayersToAdd, PlayerToAdd)
-                    print("Player added to existing party: " .. PlayerToAdd.Name)
                     NotificationService:CreateNotif(PlayerToAdd, `You have been added to a party by <b>{Player.Name}</b>.`)
                 else
-                    warn("Failed to add player to existing party: " .. PlayerToAdd.Name)
                     OrderOptions.PlayerInput.TextLabel.PlaceholderText = "Failed to add player"
                 end
             end)
@@ -175,10 +163,8 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
     end)
 
     partyTrove:Connect(OrderOptions.MinusButton.Activated, function()
-        print("MinusButton activated")
         warn(selectedOption)
         if PlayerInput.Text == "" then
-            warn("Invalid entry: Empty username")
             PlayerInput.PlaceholderText = "Invalid Entry"
             task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
             return
@@ -204,7 +190,6 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
         PlayerInput.Text = ""
 
         if not PlayerToRemove then
-            warn("Player not found for removal: " .. PlayerInput.Text)
             PlayerInput.PlaceholderText = "Player Not Found"
             task.delay(2, function() PlayerInput.PlaceholderText = "Username" end)
             return
@@ -231,14 +216,11 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
                 end
             end
 
-            print("Player removed from party: " .. PlayerToRemove.Name)
             NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
         elseif selectedOption == 'Existing' then
-            print("Removing player from existing party: " .. PlayerToRemove.Name)
             warn(#ExistingPlayers + #PlayersToAdd)
             if (#ExistingPlayers + #PlayersToAdd == 1) then
                 TableService:SetUnoccupied(currentTable):andThen(function(success)
-                    print(`Success: {success}`)
                     if success then
                         local frame = PartyView.ScrollingFrame:FindFirstChild(PlayerToRemove.Name)
                         if frame then
@@ -272,10 +254,8 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
                             end
                         end
     
-                        print("Player removed from existing party: " .. PlayerToRemove.Name)
                         NotificationService:CreateNotif(PlayerToRemove, `You have been removed from a party by <b>{Player.Name}</b>.`)
                     else
-                        warn("Failed to remove player from existing party: " .. PlayerToRemove.Name)
                         PlayerInput.PlaceholderText = "Failed to remove player"
                     end
                 end)
@@ -293,7 +273,6 @@ end
 
 -- Move PartyExists to a higher scope
 local function PartyExists(tableData)
-    print("Checking if party exists for table data...")
     local result = ResetPartyData(false)
 
     if result then
@@ -319,7 +298,6 @@ local function PartyExists(tableData)
             end)
     
             if not success then
-                warn("Failed to fetch occupant thumbnail for " .. occupant.Name)
                 continue
             end
     
@@ -331,7 +309,6 @@ local function PartyExists(tableData)
             frame.Parent = PartyView.ScrollingFrame
     
             table.insert(ExistingPlayers, occupant)
-            print("Occupant added to existing party: " .. occupant.Name)
         end
     
         HandleParty(OrderOptions, PartyView, PlayerInput) 
@@ -395,7 +372,6 @@ function TableController:InitUI()
                 frame.SelectButton.Visible = true
             elseif not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then
                 -- laptop/desktop
-                print('desktop')
                 controllerTrove:Connect(frame.MouseEnter, function()
                     AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                     AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
@@ -414,7 +390,6 @@ function TableController:InitUI()
                 end)
             elseif UserInputService.GamepadEnabled then
                 -- console
-                print('console')
                 frame.SelectButton.Visible = true
                 AnimNation.target(frame.Int, {s = 8}, {Position = UDim2.new(0.5, 0, 0.775, 0)})
                 AnimNation.target(frame.Title, {s = 8}, {Position = UDim2.new(0.5, 0, 0.71, 0)})
@@ -469,7 +444,6 @@ function TableController:InitRegisters()
     local registers = Functionality:WaitForChild("Registers")
 
     RankService:Get():andThen(function(Rank)
-        print("Rank fetched: " .. Rank)
         if Rank < 4 and not RunService:IsStudio() then
             for _, register in ipairs(registers:GetChildren()) do
                 if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
@@ -481,9 +455,7 @@ function TableController:InitRegisters()
             for _, register in ipairs(registers:GetChildren()) do
                 if register:FindFirstChild("Screen") and register.Screen:FindFirstChild("ProximityPrompt") then
                     controllerTrove:Connect(register.Screen.ProximityPrompt.Triggered, function()
-                        print("ProximityPrompt triggered for register: " .. register.Name)
                         if currentTable == nil then
-                            print("No table assigned to player")
                             -- ...existing code for when "Table" is nil...
                             selectedOption = 'New'
                             uiOpen = true
@@ -492,9 +464,7 @@ function TableController:InitRegisters()
                             TableService:TabletInit(register)
                         else
                             TableService:GetInfo(currentTable):andThen(function(tableData)
-                                print(tableData)
                                 if tableData then
-                                    print("Table data fetched for table: " .. tableData.Name)
                                     selectedOption = 'Existing'
                                     uiOpen = true
                                     activeRegister = register
@@ -511,8 +481,6 @@ function TableController:InitRegisters()
 
                                     -- Call PartyExists to handle occupants
                                     PartyExists(tableData) 
-                                else
-                                    warn("Failed to fetch table data")
                                 end
                             end):catch(function(err)
                                 warn("Error fetching table info: " .. tostring(err))
@@ -667,7 +635,6 @@ function TableController:AreaSelected(Area: string)
                             end):catch(function(err)
                                 warn("Error: ", err)
                             end)
-                            -- add server path logic here
                         end
                     end)
                 end
@@ -675,13 +642,13 @@ function TableController:AreaSelected(Area: string)
         end)
     end)
 
-    trove:Connect(panelContent.OrderOptions.Vacate.Activated, function()
+    panelContent.OrderOptions.Vacate.Activated:Connect(function()
         if not currentTable then
             NotificationService:CreateNotif(Player, "No table is currently assigned to vacate.")
             return
         end
     
-        TableService:SetUnoccupied(currentTable):andThen(function(success)
+        TableService:SetUnoccupied(currentTable):andThen(function(success, err)
             if success then
                 -- Reset UI & data
                 ResetPartyData(true)
@@ -694,7 +661,7 @@ function TableController:AreaSelected(Area: string)
     
                 NotificationService:CreateNotif(Player, "You have successfully vacated the table.")
             else
-                NotificationService:CreateNotif(Player, "Failed to vacate the table. Please try again.")
+                NotificationService:CreateNotif(Player, "Failed to vacate the table. Error: " .. tostring(err))
             end
         end):catch(function(err)
             warn("Error while vacating table: " .. tostring(err))

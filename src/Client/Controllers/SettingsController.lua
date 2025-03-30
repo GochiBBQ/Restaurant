@@ -197,8 +197,8 @@ function SettingsController:AnimateTab(button, isDeselected)
     local transparency = isDeselected and 1 or 0
     local color = isDeselected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(30, 30, 30)
 
-    AnimNation.target(button, {s = 10, d = 0.5}, {ImageTransparency = transparency})
-    AnimNation.target(button.Text, {s = 10, d = 0.5}, {TextColor3 = color})
+    AnimNation.target(button, {s = 10}, {ImageTransparency = transparency})
+    AnimNation.target(button.Text, {s = 10}, {TextColor3 = color})
 end
 
 -- Return Controller to Knit.

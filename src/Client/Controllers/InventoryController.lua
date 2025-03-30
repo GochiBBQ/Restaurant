@@ -11,6 +11,8 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+
+local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
@@ -64,11 +66,15 @@ function InventoryController:SetState(Button: ImageButton, State: boolean)
         for _, button in pairs(Buttons.List:GetChildren()) do
             if button:IsA("ImageButton") then
                 if button ~= Button then
-                    button.ImageTransparency = 1
-                    button.TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    AnimNation.target(button, {s = 10}, {ImageTransparency = 1})
+                    AnimNation.target(button.TextLabel, {s = 10}, {
+                        TextColor3 = Color3.fromRGB(255, 255, 255)
+                    })
                 end
-                Button.ImageTransparency = 0
-                Button.TextLabel.TextColor3 = Color3.fromRGB(30, 30, 30)
+                AnimNation.target(Button, {s = 10}, {ImageTransparency = 0})
+                AnimNation.target(Button.TextLabel, {s = 10}, {
+                    TextColor3 = Color3.fromRGB(30, 30, 30)
+                })
             end
         end
     end
@@ -77,12 +83,11 @@ end
 function InventoryController:OpenPage(Page: ScrollingFrame | Frame)
     assert(Page:IsA("ScrollingFrame") or Page:IsA("Frame"), "Page must be a Frame object")
 
-    for _, page in pairs(Pages:GetChildren()) do
+    for _, page in ipairs(Pages:GetChildren()) do
         if page:IsA("ScrollingFrame") or page:IsA("Frame") then
-            page.Visible = false
+            page.Visible = page == Page
         end
     end
-    Page.Visible = true
 end
 
 -- Return Controller to Knit.

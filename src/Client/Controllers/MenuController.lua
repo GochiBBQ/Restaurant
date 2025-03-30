@@ -11,6 +11,8 @@ local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
+
+local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
@@ -59,10 +61,9 @@ function MenuController:SetState(selectedButton: ImageButton)
     for _, button in ipairs(Buttons.List:GetChildren()) do
         if button:IsA("ImageButton") then
             local isSelected = button == selectedButton
-            button.ImageTransparency = isSelected and 0 or 1
-            button.TextLabel.TextColor3 = isSelected
-                and Color3.fromRGB(30, 30, 30)
-                or Color3.fromRGB(255, 255, 255)
+
+            AnimNation.target(button, {s = 10}, {ImageTransparency = isSelected and 0 or 1})
+            AnimNation.target(button.TextLabel, {s = 10}, {TextColor3 = isSelected and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)})
         end
     end
 end

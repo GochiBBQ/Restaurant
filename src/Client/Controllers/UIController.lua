@@ -192,7 +192,6 @@ end
 
 function UIController:Open(UI: GuiObject, Effects: boolean?)
 	Effects = Effects == nil and true or Effects
-	warn("Opening UI: " .. UI.Name)
 
 	repeat task.wait() until not self.FrameOpen
 	self.FrameOpen = true
