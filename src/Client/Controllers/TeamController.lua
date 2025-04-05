@@ -118,18 +118,20 @@ function TeamController:UpdatePlayerAttributes(player)
     if team and rank and role then
         self:HandleLeaderboard(player, team, rank, role)
 
-        GochiUI.ChefQueue.Visible = false
-        GochiUI.CreateOrder.Visible = false
+        if player == LocalPlayer then
+            GochiUI.ChefQueue.Visible = false
+            GochiUI.CreateOrder.Visible = false
 
-        if team == 'Management' then
-            GochiUI.ChefQueue.Visible = true
-        elseif team == 'Server' then
-            GochiUI.CreateOrder.Visible = true
-        elseif team == 'Chef' then
-            GochiUI.ChefQueue.Visible = true
-        elseif RunService:IsStudio() then
-            GochiUI.ChefQueue.Visible = true
-            -- GochiUI.CreateOrder.Visible = true
+            if team == 'Management' then
+                GochiUI.ChefQueue.Visible = true
+            elseif team == 'Server' then
+                GochiUI.CreateOrder.Visible = true
+            elseif team == 'Chef' then
+                GochiUI.ChefQueue.Visible = true
+            elseif RunService:IsStudio() then
+                GochiUI.ChefQueue.Visible = true
+                -- GochiUI.CreateOrder.Visible = true
+            end
         end
     end
 end
@@ -149,7 +151,7 @@ function TeamController:Check()
     TeamUI.List['Management'].Select.Label.Text = 'Locked'
 
     RankService:Get():andThen(function(Rank: number, Role: string)
-        if Rank >= 4 then
+        if Rank >= 4 or RunService:IsStudio() then
             table.insert(AllowedTeams, 'Chef')
             table.insert(AllowedTeams, 'Server')
 
@@ -163,7 +165,7 @@ function TeamController:Check()
             TeamUI.List['Customer'].Select.Label.Text = 'Locked'
         end
 
-        if Rank >= 7 then
+        if Rank >= 7 or RunService:IsStudio() then
             table.insert(AllowedTeams, 'Management')
 
             TeamUI.List['Management'].Interactable = true

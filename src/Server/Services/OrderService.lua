@@ -81,12 +81,11 @@ local function assignChefsToOrder(self, orderDetails)
 
         assignments[i] = chef
 
-        -- Notify the chef
-        self.Client.UpdateOrder:Fire(chef, {
-            OrderPlayer = orderDetails.Player,
-            Table = orderDetails.Table,
-            ItemIndex = i,
-            Item = orderDetails.Items[i],
+        self.Client.UpdateOrder:FireAll({
+            orderId = orderDetails.OrderId, -- Pass the orderId for context
+            Action = "AssignChef", -- Action type for the clients to handle
+            Chef = chef, -- The player assigned to this item
+            Item = orderDetails.Items[i], -- The item being assigned
         })
     end
     return assignments
@@ -112,10 +111,12 @@ function OrderService:_submit(server: Player, orderDetails: table): boolean
     assert(orderDetails.Player and orderDetails.Table and orderDetails.Items, "Missing order fields")
 
     local orderId = HttpService:GenerateGUID(false)
+    orderDetails.OrderId = orderId -- Store the generated orderId in orderDetails for reference
     local assignments = assignChefsToOrder(self, orderDetails)
 
     activeOrders[orderId] = {
         Player = orderDetails.Player,
+        Server = server, -- The server that submitted the order
         Table = orderDetails.Table,
         Items = orderDetails.Items,
         Assignments = assignments,
@@ -123,6 +124,17 @@ function OrderService:_submit(server: Player, orderDetails: table): boolean
     }
 
     broadcastQueueUpdate(self)
+
+    self.Client.UpdateOrder:FireAll({
+        OrderId = orderId, -- The unique ID for this order
+        Server = server, -- The server that submitted the order
+        Player = orderDetails.Player, -- The player who made the order
+        Action = "NewOrder", -- Action type for the clients to handle
+        Table = orderDetails.Table,
+        Items = orderDetails.Items, -- Pass the items in the order
+        Assignments = assignments, -- Pass the chef assignments for each item
+        Time = os.time(), -- Optional
+    })
 
     return true
 end
@@ -207,6 +219,14 @@ end
 function OrderService:KnitStart()
     Players.PlayerRemoving:Connect(function(player)
         self:_leaveQueue(player)
+    end)
+
+    Players.PlayerAdded:Connect(function(player)
+        player:GetAttributeChangedSignal("Team"):Connect(function()
+            if player:GetAttribute("Team") ~= "Chef" or player:GetAttribute("Team") ~= "Management" then
+                self:_leaveQueue(player)
+            end
+        end)
     end)
 end
 

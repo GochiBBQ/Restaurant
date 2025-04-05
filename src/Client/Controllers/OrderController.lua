@@ -46,6 +46,7 @@ local NotificationService
 local UIController
 
 local queueUIEntries = {} -- [UserId] = { Frame = Template, JoinTime = time }
+local orderUIEntries = {} -- [OrderId] = { Frame = Template, OrderDetails = orderDetails }
 
 -- Helper to clean up previous visuals
 function OrderController:ClearSelections()
@@ -109,7 +110,6 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
         assert(time and type(time) == "number", "Expected a valid join time")
 
         local Template = Queue.Template:Clone()
-        Template.Visible = true
         Template.Parent = Queue.ScrollingFrame
 
         local thumbType = Enum.ThumbnailType.HeadShot
@@ -120,6 +120,7 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
         Template.Username.Text = chef.Name
         Template.Title.Text = `#{position}` -- Set position here
         Template.Time.Text = "00:00 in queue"
+        Template.Visible = true
 
         queueUIEntries[chef.UserId] = {
             Frame = Template,
@@ -155,9 +156,70 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
     end
 end
 
+local orderTimer = false
+OrderController.UpdateOrders = function(orderDetails: table): nil
+    warn(orderDetails)
+    local Template = OrderBoard.OrderTemplate -- @type Frame
 
-OrderController.UpdateOrders = function()
-    
+    if not Template then
+        warn("OrderBoard.OrderTemplate not found")
+        return
+    end
+
+    if not orderDetails or type(orderDetails) ~= "table" then
+        warn("Invalid order details received")
+        return
+    end
+
+    local thumbType = Enum.ThumbnailType.HeadShot
+    local thumbSize = Enum.ThumbnailSize.Size420x420
+
+    local clone = Template:Clone()
+    clone.Name = `Order_{orderDetails.OrderId}`
+    clone.TableNumber.Text = `Table {string.match(orderDetails.Table, "%d+")}` -- Display the table number
+    clone.Server.Text = orderDetails.Server.Name
+    clone.Server_Thumbnail.Image = Players:GetUserThumbnailAsync(orderDetails.Server.UserId, thumbType, thumbSize)
+    clone.OrderedPlayer.Image = orderDetails.Player.Headshot or "" -- Fallback to empty string if no headshot is provided
+    clone.Title.Text = orderDetails.Player.Occupant.Name -- Display the name of the player who made the order
+    clone.TimeElapsed.Text = "00:00" -- Placeholder, will be updated by timer
+
+    for index, item in ipairs(orderDetails.Items) do
+        -- Create an entry for each item in the order
+        local itemLabel = clone.Items:FindFirstChild("Item_" .. tostring(index)) -- Assuming Item1, Item2, etc. in the template
+        if itemLabel then
+            itemLabel.Text = `❌ {item}` -- Set the text to the item name
+            itemLabel.Visible = true -- Ensure it's visible
+        else
+            warn(`Item label not found for index {index} in order template`)
+        end
+    end
+
+    clone.Parent = OrderBoard.Frame.ScrollingFrame
+    clone.Visible = true
+
+    if not orderDetails.OrderId then
+        warn("OrderId is missing in orderDetails")
+        return
+    end
+
+    orderUIEntries[orderDetails.OrderId] = {
+        Frame = clone,
+        OrderDetails = orderDetails, -- Store the order details for future reference
+    }
+
+    if not orderTimer then
+        orderTimer = true
+        task.spawn(function()
+            while true do
+                local now = os.time()
+                for orderId, data in pairs(orderUIEntries) do
+                    local elapsed = now - data.OrderDetails.Time -- Use the time the order was created to calculate elapsed time
+                    data.Frame.TimeElapsed.Text = string.format("%02d:%02d", math.floor(elapsed / 60), elapsed % 60)
+                end
+                task.wait(1)
+            end
+        end)
+    end
 end
 
 function OrderController:InitOrders()
