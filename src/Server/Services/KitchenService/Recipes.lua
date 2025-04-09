@@ -11,18 +11,29 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
+-- Variables
+local DrinkMachines
+local DrinkMixers
+local Fridges
+local Fryers
+local PreparationAreas
+local RiceCookers
+local Stoves
+local TrashCans
+local WaffleMakers
+
 Knit.OnStart():andThen(function()
 	local Classes = Knit.Classes
 
-	local DrinkMachines = require(Classes.DrinkMachine)
-	local DrinkMixers = require(Classes.DrinkMixer)
-	local Fridges = require(Classes.Fridge)
-	local Fryers = require(Classes.Fryer)
-	local PreparationAreas = require(Classes.PreparationArea)
-	local RiceCookers = require(Classes.RiceCooker)
-	local Stoves = require(Classes.Stove)
-	local TrashCans = require(Classes.TrashCan)
-	local WaffleMakers = require(Classes.WaffleMaker)
+	DrinkMachines = require(Classes.DrinkMachine)
+	DrinkMixers = require(Classes.DrinkMixer)
+	Fridges = require(Classes.Fridge)
+	Fryers = require(Classes.Fryer)
+	PreparationAreas = require(Classes.PreparationArea)
+	RiceCookers = require(Classes.RiceCooker)
+	Stoves = require(Classes.Stove)
+	TrashCans = require(Classes.TrashCan)
+	WaffleMakers = require(Classes.WaffleMaker)
 end)
 
 return {
@@ -38,6 +49,29 @@ return {
 		-- 6. Fish Cake
 		-- 7. Roller Board
 		-- 8. Oil (Oil Thingy)
+
+		Fridges:_getPlate(Player)
+			:andThen(function()
+				return Fridges:_getItem(Player, "Seaweed")
+			end)
+			:andThen(function()
+				return Fridges:_getItem(Player, "Carrots")
+			end)
+			:andThen(function()
+				return Fridges:_getItem(Player, "Spinach")
+			end)
+			:andThen(function()
+				return Fridges:_getItem(Player, "Fish Cake")
+			end)
+			:andThen(function()
+				return PreparationAreas:_rollItem(Player, 'Kimbap')
+			end)
+			:andThen(function()
+				return Fridges:_getItem(Player, "Oil")
+			end)
+			:andThen(function()
+				return Fridges:_submitItem(Player, "Kimbap")
+			end)
 	end,
 	["Tteokbokki"] = function(Player: Player, Stove: Instance)
 		-- Description: Street food made from chewy rice cakes and fish cakes, stir-fried in a spicy and savory sauce, typically made with gochujang.

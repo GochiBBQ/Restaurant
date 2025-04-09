@@ -1,6 +1,8 @@
 --[[
+
 Author: alreadyfans
 For: Gochi
+
 ]]
 
 -- Services
@@ -22,6 +24,7 @@ local OrderService = Knit.CreateService {
         UpdateQueue = Knit.CreateSignal(),
         UpdateOrder = Knit.CreateSignal(), -- Fired to assigned chefs
         OrderCompleted = Knit.CreateSignal(), -- Fired to original player
+        UpdateUI = Knit.CreateSignal(), -- Fired to player
     },
 }
 
@@ -33,6 +36,9 @@ local joinTimes = {} -- [userId] = os.time()
 
 -- Active Orders
 local activeOrders = {} -- [orderId] = { Player, Table, Items, Assignments, Completed }
+
+-- Variables
+local KitchenService
 
 -- Helper: Rebuild a queue excluding a specific UserId
 local function rebuildQueueExcluding(queue, excludeUserId)
@@ -77,9 +83,12 @@ local function assignChefsToOrder(self, orderDetails)
     local assignments = {}
     for i = 1, #orderDetails.Items do
         local chef = self:GetNextPlayer()
+        print(chef)
         if not chef then break end
 
         assignments[i] = chef
+        
+        KitchenService:SelectItem(chef, orderDetails.Items[i])
 
         self.Client.UpdateOrder:FireAll({
             orderId = orderDetails.OrderId, -- Pass the orderId for context
@@ -195,11 +204,17 @@ function OrderService:_leaveQueue(Player: Player): boolean
     joinTimes[userId] = nil
 
     broadcastQueueUpdate(self)
+    self.Client.UpdateUI:Fire(Player, {
+        Action = "LeaveQueue",
+    })
 
     return true
 end
 
 function OrderService:GetNextPlayer(): Player?
+
+    print(priorityQueue, normalQueue)
+
     local userId
     if not priorityQueue:isEmpty() then
         userId = priorityQueue:pop()
@@ -210,13 +225,20 @@ function OrderService:GetNextPlayer(): Player?
     if userId then
         queuedUserIds:remove(userId)
         joinTimes[userId] = nil
-        return Players:GetPlayerByUserId(userId)
+        local player = Players:GetPlayerByUserId(userId)
+        if not player then
+            warn("Player with userId " .. tostring(userId) .. " not found in the game.")
+        end
+        return player
     end
 
     return nil
 end
 
 function OrderService:KnitStart()
+
+    KitchenService = Knit.GetService("KitchenService")
+
     Players.PlayerRemoving:Connect(function(player)
         self:_leaveQueue(player)
     end)

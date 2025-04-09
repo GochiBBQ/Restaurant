@@ -48,6 +48,11 @@ local KitchenService = Knit.CreateService {
     },
 }
 
+function KitchenService:SelectItem(Player: Player, Item: string)
+    print("SelectItem", Player, Item)
+    Recipes[Item](Player)
+end
+
 -- Client Functions
 function KitchenService.Client:UnclaimStove(Player: Player, Stove: Instance)
     -- return Stoves:UnclaimStove(Player, Stove)

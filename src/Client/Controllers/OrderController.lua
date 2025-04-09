@@ -362,6 +362,12 @@ function OrderController:InitChefQueue()
         UIController:Open(Queue)
     end)
 
+    OrderService.UpdateUI:Connect(function(action)
+        if action == 'LeaveQueue' then
+            Queue.Join.TextLabel.Text = 'Join queue'
+        end
+    end)
+
     Queue.Join.Activated:Connect(function()
 
         if Queue.Join.TextLabel.Text == 'Join queue' then
