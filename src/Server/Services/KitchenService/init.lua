@@ -11,9 +11,8 @@ local DataStoreService = game:GetService("DataStoreService")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-
+local Promise = require(Knit.Util.Promise) -- @module Promise
 local Classes = Knit.Classes
-
 local DrinkMachines = require(Classes.DrinkMachine)
 local DrinkMixers = require(Classes.DrinkMixer)
 local Fridges = require(Classes.Fridge)
@@ -48,9 +47,42 @@ local KitchenService = Knit.CreateService {
     },
 }
 
+-- Variables
+local Cooking: Folder = workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
+
+local NavigationService
+
+-- Server Functions
+function KitchenService:KnitStart()
+    NavigationService = Knit.GetService("NavigationService")
+end
+
 function KitchenService:SelectItem(Player: Player, Item: string)
     print("SelectItem", Player, Item)
     Recipes[Item](Player)
+end
+
+function KitchenService:_getPlate(Player: Player)
+    return Promise.new(function(resolve, reject)
+        local Plates = Cooking:WaitForChild("Plates")
+        local Plate = Plates:GetChildren()
+        local RandomPlate = Plate[math.random(1, #Plate)]
+
+        local result = NavigationService:InitBeam(Player, RandomPlate)
+
+        if result == false then
+            reject("Failed to beam item")
+            return
+        end
+
+        KitchenService.Client.Tasks:Fire(Player, "getPlate", RandomPlate):andThen(function(result)
+            if result == true then
+                resolve(RandomPlate)
+            else
+                reject("Failed to get plate")
+            end
+        end)
+    end)
 end
 
 -- Client Functions
