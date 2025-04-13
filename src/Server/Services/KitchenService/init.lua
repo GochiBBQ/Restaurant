@@ -6,26 +6,24 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
+local Workspace = game:GetService("Workspace")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local Promise = require(Knit.Util.Promise) -- @module Promise
-local Classes = Knit.Classes
-local DrinkMachines = require(Classes.DrinkMachine)
-local DrinkMixers = require(Classes.DrinkMixer)
-local Fridges = require(Classes.Fridge)
-local Fryers = require(Classes.Fryer)
-local PreparationAreas = require(Classes.PreparationArea)
-local RiceCookers = require(Classes.RiceCooker)
-local Stoves = require(Classes.Stove)
-local TrashCans = require(Classes.TrashCan)
-local WaffleMakers = require(Classes.WaffleMaker)
+local Promise = require(Knit.Util.Promise)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 
+local Classes = Knit.Classes
 local Recipes = require(script.Recipes)
 
--- Create Knit Service
+-- Data Structures
+local TableMap = require(Knit.Structures.TableMap) -- @module TableMap
+local HashSet = require(Knit.Structures.HashSet) -- @module HashSet
+
+-- Create Service
 local KitchenService = Knit.CreateService {
     Name = "KitchenService",
     Client = {
@@ -44,17 +42,55 @@ local KitchenService = Knit.CreateService {
 
         Complete = Knit.CreateSignal(),
         Alerts = Knit.CreateSignal()
-    },
+    }
 }
 
--- Variables
-local Cooking: Folder = workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
-
+-- Runtime State
+local Cooking = Workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
 local NavigationService
+
+-- Player Tasks
+KitchenService.Tasks = TableMap.new() -- Player → Task
+KitchenService.ActivePlayers = HashSet.new() -- Set of players with an active task
 
 -- Server Functions
 function KitchenService:KnitStart()
     NavigationService = Knit.GetService("NavigationService")
+end
+
+function KitchenService:_assignTask(Player, TaskType, TaskName, Model)
+    if self.ActivePlayers:contains(Player) then
+        warn(Player.Name .. " already has an active task.")
+        return nil
+    end
+
+    local taskId = HttpService:GenerateGUID(false)
+    local task = {
+        TaskName = TaskName,
+        TaskType = TaskType,
+        TaskID = taskId,
+        Complete = Signal.new(),
+        Model = Model
+    }
+
+    self.Tasks:set(Player, task)
+    self.ActivePlayers:add(Player)
+    self.Client.Tasks:Fire(Player, task, Model)
+
+    return task
+end
+
+function KitchenService:_completeTask(Player)
+    local task = self.Tasks:get(Player)
+    if task then
+        task.Complete:Fire()
+        task.Complete:Destroy()
+        self.Tasks:remove(Player)
+        self.ActivePlayers:remove(Player)
+        print("Task completed for", Player.Name)
+    else
+        warn("No active task for", Player.Name)
+    end
 end
 
 function KitchenService:SelectItem(Player: Player, Item: string)
@@ -62,41 +98,42 @@ function KitchenService:SelectItem(Player: Player, Item: string)
     Recipes[Item](Player)
 end
 
-function KitchenService:_getPlate(Player: Player)
+------------------------------------------------------------
+-- Tasks
+------------------------------------------------------------
+
+function KitchenService:_getPlate(Player)
     return Promise.new(function(resolve, reject)
         local Plates = Cooking:WaitForChild("Plates")
-        local Plate = Plates:GetChildren()
-        local RandomPlate = Plate[math.random(1, #Plate)]
+        local children = Plates:GetChildren()
+        if #children == 0 then return reject("No plates available") end
 
-        local result = NavigationService:InitBeam(Player, RandomPlate)
+        local RandomPlate = children[math.random(1, #children)]
+        local success = NavigationService:InitBeam(Player, RandomPlate)
 
-        if result == false then
-            reject("Failed to beam item")
-            return
-        end
+        if not success then return reject("Failed to beam item") end
 
-        KitchenService.Client.Tasks:Fire(Player, "getPlate", RandomPlate):andThen(function(result)
-            if result == true then
-                resolve(RandomPlate)
-            else
-                reject("Failed to get plate")
-            end
-        end)
+        local task = self:_assignTask(Player, "Plate", "getPlate", RandomPlate)
+        if not task then return reject("Player already has a task") end
+
+        task.Complete:Wait()
+        resolve(true)
     end)
 end
 
 -- Client Functions
-function KitchenService.Client:UnclaimStove(Player: Player, Stove: Instance)
-    -- return Stoves:UnclaimStove(Player, Stove)
-end
-
 function KitchenService.Client:SelectReceipe(Player: Player, Stove: Instance, Item: string)
     Recipes[Item](Player, Stove)
 end
 
-function KitchenService.Client:SelectFridgeItem(Player: Player, Item: string)
-    -- return Fridges:SelectItem(Player, Item)
+function KitchenService.Client:CompleteTask(Player: Player, TaskName: string, TaskID: string)
+    local task = self.Server.Tasks:get(Player)
+    if task and task.TaskName == TaskName and task.TaskID == TaskID then
+        self.Server:_completeTask(Player)
+    else
+        warn("Invalid or already completed task for", Player.Name)
+    end
 end
 
- -- Return Service to Knit.
+-- Return the service to Knit
 return KitchenService
