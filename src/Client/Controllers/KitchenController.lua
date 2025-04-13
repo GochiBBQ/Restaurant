@@ -14,6 +14,8 @@ local Knit = require(ReplicatedStorage.Packages.Knit) -- @module Knit
 local Promise = require(Knit.Util.Promise) -- @module Promise
 local Trove = require(ReplicatedStorage.Packages.Trove) -- @module Trove
 
+local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
+
 -- Create Controller
 local KitchenController = Knit.CreateController { Name = "KitchenController" }
 
@@ -22,6 +24,8 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI = PlayerGui:WaitForChild("GochiUI")
 local FridgeUI = GochiUI:WaitForChild("Fridge")
+
+local TaskUI = GochiUI:WaitForChild("Task")
 
 local KitchenService
 local TaskTrove = Trove.new()
@@ -59,11 +63,17 @@ KitchenController.TaskHandlers.Plate = {
 			return
 		end
 
+        local notif = self:CreateTaskNotif("Go to the counter and get a plate.")
+        if not notif then
+            warn("Failed to create notification")
+            return
+        end
 		prompt.Enabled = true
 
 		local conn
 		conn = prompt.Triggered:Connect(function()
 			prompt.Enabled = false
+            self:HideTaskNotif()
 			KitchenService:CompleteTask(task.TaskName, task.TaskID)
 			if conn then conn:Disconnect() end
 		end)
@@ -96,6 +106,21 @@ function KitchenController:HandleTask(task)
 	end
 end
 
+function KitchenController:CreateTaskNotif(task)
+    TaskUI.Description.Text = task
+    TaskUI.Visible = true
+    AnimNation.target(TaskUI, {s = 10, d = 1}, {Position = UDim2.new(0.098, 0, 0.65, 0)})
+
+    return true
+end
+
+function KitchenController:HideTaskNotif()
+    AnimNation.target(TaskUI, {s = 10}, {Position = UDim2.new(-0.5, 0, 0.65, 0)}):AndThen(function()
+        TaskUI.Description.Text = ""
+        TaskUI.Visible = false
+    end)
+end
+
 -- Knit Lifecycle
 function KitchenController:KnitStart()
 	KitchenService = Knit.GetService("KitchenService")
@@ -103,6 +128,14 @@ function KitchenController:KnitStart()
 	KitchenService.Tasks:Connect(function(task)
 		self:HandleTask(task)
 	end)
+
+    KitchenService.QueueNotification:Connect(function(task)
+        self:CreateTaskNotif(task)
+
+        task.delay(3, function()
+            self:HideTaskNotif()
+        end)
+    end)
 end
 
 -- Return Controller to Knit

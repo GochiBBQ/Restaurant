@@ -22,7 +22,11 @@ local Stoves
 local TrashCans
 local WaffleMakers
 
+local KitchenService
+
 Knit.OnStart():andThen(function()
+	KitchenService = Knit.GetService("KitchenService")
+
 	local Classes = Knit.Classes
 
 	DrinkMachines = require(Classes.DrinkMachine)
@@ -50,7 +54,7 @@ return {
 		-- 7. Roller Board
 		-- 8. Oil (Oil Thingy)
 
-		Fridges:_getPlate(Player)
+		KitchenService:_getPlate(Player)
 			:andThen(function()
 				return Fridges:_getIngredient(Player, "Seaweed")
 			end)

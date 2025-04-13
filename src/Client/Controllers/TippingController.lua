@@ -59,10 +59,6 @@ function TippingController:KnitStart()
 		end
 	end
 
-	trove:Connect(TippingUI.Content.Close.MouseButton1Click, function()
-		UIController:Close(TippingUI)
-	end)
-
 	local lastUpdate = 0
 	local updateInterval = 0.5 -- every 0.5 seconds
 
@@ -158,6 +154,14 @@ function TippingController:UpdateTips(player: Player)
 				frame.UIStroke.UIGradient.Enabled = false
 			end)
 		end
+
+		trove:Connect(TippingUI.Close.Activated, function()
+			UIController:Close(TippingUI)
+		end)
+
+		trove:Connect(TippingUI.Content.Close.Activated, function()
+			UIController:Close(TippingUI)
+		end)
 	end)
 
 	TipsContainer.Parent.Title.Text = `Would you like to tip <font weight ="Bold">{player.Name}</font> for your service today?`

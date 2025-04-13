@@ -29,8 +29,11 @@ function NavigationService:KnitStart()
     Players.PlayerAdded:Connect(function(Player)
         repeat task.wait() until Player:GetAttribute("Loaded")
 
-        local folder = Instance.new("Folder", PlayerStorage.Beams)
-        folder.Name = Player.Name
+        local folder = PlayerStorage.Beams:FindFirstChild(Player.Name)
+        if not folder then
+            local folder = Instance.new("Folder", PlayerStorage.Beams)
+            folder.Name = Player.Name
+        end
     end)
 
     Players.PlayerRemoving:Connect(function(Player)
@@ -41,6 +44,13 @@ function NavigationService:KnitStart()
 end
 
 function NavigationService:InitBeam(Player: Player, Model: Instance)
+
+    local folder = PlayerStorage.Beams:FindFirstChild(Player.Name)
+    
+    if not folder then
+        local folder = Instance.new("Folder", PlayerStorage.Beams)
+        folder.Name = Player.Name
+    end
 
     local result = self.Client.Init:Fire(Player, Model)
 
