@@ -287,39 +287,39 @@ end
 
 -- Client Functions
 function TableService.Client:SetOccupied(Player, Table, Occupants)
-	return TableService.Server:SetTableOccupied(Player, Table, Occupants)
+	return self.Server:SetTableOccupied(Player, Table, Occupants)
 end
 
 function TableService.Client:SetUnoccupied(Player, Table)
-	return TableService.Server:SetTableUnoccupied(Table)
+	return self.Server:SetTableUnoccupied(Table)
 end
 
 function TableService.Client:AddOccupant(Player, Table, Occupant)
-	return TableService.Server:AddOccupantToTable(Table, Occupant)
+	return self.Server:AddOccupantToTable(Table, Occupant)
 end
 
 function TableService.Client:RemoveOccupant(Player, Table, Occupant)
-	return TableService.Server:RemoveOccupantFromTable(Table, Occupant)
+	return self.Server:RemoveOccupantFromTable(Table, Occupant)
 end
 
 function TableService.Client:GetOccupants(Player, Table)
-	return TableService.Server:GetTableOccupants(Table)
+	return self.Server:GetTableOccupants(Table)
 end
 
 function TableService.Client:GetAvailable(Player, Seats)
-	return TableService.Server:GetAvailableTables(Seats)
+	return self.Server:GetAvailableTables(Seats)
 end
 
 function TableService.Client:GetCount(Player)
-	return TableService.Server:GetTableCount()
+	return self.Server:GetTableCount()
 end
 
 function TableService.Client:Claim(Player, Area, Seats)
-	return TableService.Server:ClaimTable(Player, Area, Seats)
+	return self.Server:ClaimTable(Player, Area, Seats)
 end
 
 function TableService.Client:GetInfo(Player, Table)
-	return TableService.Server:GetTableInfo(Table)
+	return self.Server:GetTableInfo(Table)
 end
 
 function TableService.Client:TabletInit(Player, Tablet)

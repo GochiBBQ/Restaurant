@@ -12,32 +12,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
 -- Variables
-local DrinkMachines
-local DrinkMixers
-local Fridges
-local Fryers
-local PreparationAreas
-local RiceCookers
-local Stoves
-local TrashCans
-local WaffleMakers
-
 local KitchenService
 
 Knit.OnStart():andThen(function()
 	KitchenService = Knit.GetService("KitchenService")
-
-	local Classes = Knit.Classes
-
-	DrinkMachines = require(Classes.DrinkMachine)
-	DrinkMixers = require(Classes.DrinkMixer)
-	Fridges = require(Classes.Fridge)
-	Fryers = require(Classes.Fryer)
-	PreparationAreas = require(Classes.PreparationArea)
-	RiceCookers = require(Classes.RiceCooker)
-	Stoves = require(Classes.Stove)
-	TrashCans = require(Classes.TrashCan)
-	WaffleMakers = require(Classes.WaffleMaker)
 end)
 
 return {
@@ -56,25 +34,25 @@ return {
 
 		KitchenService:_getPlate(Player)
 			:andThen(function()
-				return Fridges:_getIngredient(Player, "Seaweed")
+				return KitchenService:_getFridgeIngredient(Player, "Seaweed")
 			end)
 			:andThen(function()
-				return Fridges:_getIngredient(Player, "Carrots")
+				return KitchenService:_getFridgeIngredient(Player, "Carrots")
 			end)
 			:andThen(function()
-				return Fridges:_getIngredient(Player, "Spinach")
+				return KitchenService:_getFridgeIngredient(Player, "Spinach")
 			end)
 			:andThen(function()
-				return Fridges:_getIngredient(Player, "Fish Cake")
+				return KitchenService:_getFridgeIngredient(Player, "Fish Cake")
 			end)
 			:andThen(function()
-				return PreparationAreas:_rollItem(Player, 'Kimbap')
+				return KitchenService:_rollItem(Player, 'Kimbap')
 			end)
 			:andThen(function()
-				return Fridges:_getIngredient(Player, "Oil")
+				return KitchenService:_getFridgeIngredient(Player, "Oil")
 			end)
 			:andThen(function()
-				return Fridges:_submitItem(Player, "Kimbap")
+				return KitchenService:_submitItem(Player, "Kimbap")
 			end)
 	end,
 	["Tteokbokki"] = function(Player: Player, Stove: Instance)

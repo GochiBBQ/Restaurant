@@ -38,11 +38,7 @@ KitchenController.TaskHandlers.Fridge = {
 	getIngredient = function(self, task, model)
 		print("Handling fridge task:", task.TaskID)
 
-		-- TODO: Add fridge interaction logic here
-		-- Simulated interaction delay
-		Promise.delay(1):andThen(function()
-			KitchenService:CompleteTask(task.TaskName, task.TaskID)
-		end)
+		print(task)
 	end
 }
 

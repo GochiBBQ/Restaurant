@@ -27,6 +27,7 @@ local Queue = require(Knit.Structures.Queue) -- @module Queue
 -- Create Service
 local KitchenService = Knit.CreateService {
 	Name = "KitchenService",
+	TaskQueues = {}, -- [Player] = { {TaskType=..., TaskName=..., Model=...}, ... }
 	Client = {
 		Tasks = Knit.CreateSignal(),
 		Games = Knit.CreateSignal(),
@@ -63,11 +64,15 @@ function KitchenService:KnitStart()
 end
 
 function KitchenService:_assignTask(Player, TaskType, TaskName, Model)
+	-- If player is busy, queue the task
 	if self.ActivePlayers:contains(Player) then
-		warn(Player.Name .. " already has an active task.")
+		self.TaskQueues[Player] = self.TaskQueues[Player] or {}
+		table.insert(self.TaskQueues[Player], {TaskType = TaskType, TaskName = TaskName, Model = Model})
+		self.Client.QueueNotification:Fire(Player, `You're busy. Queued task: {TaskName}`)
 		return nil
 	end
 
+	-- If model is in use, reject
 	if self.ModelLocks:contains(Model) then
 		local lockedBy = self.ModelLocks:get(Model)
 		warn(("Model %s is already in use by %s"):format(Model.Name, lockedBy.Name))
@@ -106,20 +111,31 @@ function KitchenService:_completeTask(Player)
 
 		print("Task completed for", Player.Name)
 
-		-- Check queue for that task type
+		-- Handle model-based queue
 		local queue = self.ModelQueues:get(task.TaskType)
 		if queue and not queue:isEmpty() then
 			local nextPlayer = queue:pop()
-			task.TaskType = task.TaskType -- needed for pattern match
+			task.TaskType = task.TaskType -- trigger pattern match
 			if task.TaskType == "Plate" then
 				self:_getPlate(nextPlayer)
 			end
 			-- Extend with other task types as needed
 		end
+
+		-- Handle queued tasks for this player
+		local personalQueue = self.TaskQueues[Player]
+		if personalQueue and #personalQueue > 0 then
+			local nextTask = table.remove(personalQueue, 1)
+			task = self:_assignTask(Player, nextTask.TaskType, nextTask.TaskName, nextTask.Model)
+			if task then
+				task.Complete:Wait() -- start task immediately
+			end
+		end
 	else
 		warn("No active task for", Player.Name)
 	end
 end
+
 
 function KitchenService:SelectItem(Player: Player, Item: string)
 	print("SelectItem", Player, Item)
@@ -143,13 +159,25 @@ function KitchenService:_getPlate(Player)
 		end
 
 		if #available == 0 then
-			print("No available plates. Adding player to queue.")
+			print("No available plates. Adding player to model and task queues.")
+		
+			-- Model-based queue
 			local queue = self.ModelQueues:get("Plate") or Queue.new()
 			queue:push(Player)
 			self.ModelQueues:set("Plate", queue)
-            self.Client.QueueNotification:Fire(Player, "There are no available plates. You have been added to the queue.")
-			return -- Will be retried when a model frees
+		
+			-- Personal task queue
+			self.TaskQueues[Player] = self.TaskQueues[Player] or {}
+			table.insert(self.TaskQueues[Player], {
+				TaskType = "Plate",
+				TaskName = "getPlate",
+				Model = nil -- Will be chosen when retried
+			})
+		
+			self.Client.QueueNotification:Fire(Player, "There are no available plates. You have been added to the queue.")
+			return
 		end
+		
 
 		local RandomPlate = available[math.random(1, #available)]
 		local success = NavigationService:InitBeam(Player, RandomPlate)
@@ -162,6 +190,41 @@ function KitchenService:_getPlate(Player)
 		resolve(true)
 	end)
 end
+
+function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Fridges = Cooking:WaitForChild("Fridges")
+		local children = Fridges:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available fridges. Adding player to queue.")
+			local queue = self.ModelQueues:get("Fridge") or Queue.new()
+			queue:push({Player = Player, Item = Item})
+			self.ModelQueues:set("Fridge", queue)
+			self.Client.QueueNotification:Fire(Player, "All fridges are busy. You've been queued.")
+			return
+		end
+
+		local selectedFridge = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedFridge)
+		if not success then return reject("Failed to beam to fridge") end
+
+		local task = self:_assignTask(Player, "Fridge", "getIngredient", selectedFridge)
+		if not task then return reject("Player already has a task or fridge in use") end
+
+		task.Ingredient = Item
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
 
 -- Client Functions
 function KitchenService.Client:SelectReceipe(Player: Player, Stove: Instance, Item: string)

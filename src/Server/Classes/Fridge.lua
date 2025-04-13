@@ -40,17 +40,24 @@ end
 
 function Fridge:_getIngredient(Player: Player, Item: string)
     return Promise.new(function(resolve, reject)
-        local Fridge = self:_getRandom()
+        local FridgeModel = self:_getRandom()
 
-        local result = NavigationService:InitBeam(Player, Fridge)
-
-        if result == false then
-            reject("Failed to beam item")
-            return
+        local result = NavigationService:InitBeam(Player, FridgeModel)
+        if not result then
+            return reject("Failed to beam item")
         end
 
-        KitchenService.Client.Tasks:Fire(Player, "Fridge", "getIngredient", Fridge, Item)
+        local task = KitchenService:_assignTask(Player, "Fridge", "getIngredient", FridgeModel)
+        if not task then
+            return reject("Could not assign fridge task to player")
+        end
+
+        task.Ingredient = Item
+
+        task.Complete:Wait()
+        resolve(true)
     end)
 end
+
 
 return Fridge
