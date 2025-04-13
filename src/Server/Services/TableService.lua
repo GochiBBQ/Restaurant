@@ -97,6 +97,7 @@ function TableService:SetTableOccupied(Server, tableInstance, occupants)
     local tableObj = Tables:get(tableInstance)
     if tableObj then
         local result = tableObj:_setOccupied(Server, tableInstance, occupants)
+        TableService.Client.UpdateCount:FireAll()
         return result
     else
         return false
@@ -106,11 +107,14 @@ end
 function TableService:SetTableUnoccupied(tableInstance)
     local tableObj = Tables:get(tableInstance)
     if tableObj then
-        return tableObj:_setUnoccupied(tableInstance)
+        local result = tableObj:_setUnoccupied(tableInstance)
+        TableService.Client.UpdateCount:FireAll()
+        return result
     else
         return false
     end
 end
+
 
 function TableService:AddOccupantToTable(tableInstance, occupant)
     local tableObj = Tables:get(tableInstance)

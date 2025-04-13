@@ -227,7 +227,7 @@ end
 
 function Table:_getOccupants(TableInst: Instance)
 	local data = Tables:get(TableInst)
-	return data and data.Occupants
+	return (data and data.Occupants) or {}
 end
 
 function Table:_getServer(TableInst: Instance)

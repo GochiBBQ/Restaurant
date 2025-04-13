@@ -49,13 +49,7 @@ function Fridge:_getIngredient(Player: Player, Item: string)
             return
         end
 
-        KitchenService.Client.Tasks:Fire(Player, "Fridge", "getIngredient", Fridge, Item):andThen(function(result)
-            if result == true then
-                resolve()
-            else
-                reject("Failed to get ingredient")
-            end
-        end)
+        KitchenService.Client.Tasks:Fire(Player, "Fridge", "getIngredient", Fridge, Item)
     end)
 end
 

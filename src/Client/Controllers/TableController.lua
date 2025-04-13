@@ -362,6 +362,18 @@ function TableController:InitUI()
         end
     end)
 
+    TableService.UpdateCount:Connect(function()
+        TableService:GetCount():andThen(function(data)
+            for area, count in data do
+                local frame = Content:FindFirstChild(area)
+                if frame then
+                    frame.Int.Text = `<b>{count}</b> tables available`
+                end
+            end
+        end)
+    end)
+    
+
     for _, frame in pairs(Content:GetChildren()) do
         if frame:IsA("Frame") then
 
