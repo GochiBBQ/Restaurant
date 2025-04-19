@@ -36,6 +36,7 @@ local ongoingAnimations = TableMap.new()
 local DisconnectedPlayers = {} -- [UserId] = { timestamp, table, wasServer }
 local RejoinGraceTime = 60 -- seconds
 
+local AnimationService
 -- Utility
 local function LoadAnimation(Character: Instance, Animation: Animation)
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
@@ -72,6 +73,8 @@ end
 
 -- Knit Start
 function TableService:KnitStart()
+	AnimationService = Knit.GetService("AnimationService")
+
 	if not TableFolder then
 		warn("TableService: TableFolder not found.")
 		return
@@ -320,36 +323,6 @@ end
 
 function TableService.Client:GetInfo(Player, Table)
 	return self.Server:GetTableInfo(Table)
-end
-
-function TableService.Client:TabletInit(Player, Tablet)
-	assert(Player:IsA("Player"))
-	assert(Tablet:IsA("Model"))
-
-	local Character = Player.Character or Player.CharacterAdded:Wait()
-	local Animation = LoadAnimation(Character, Animations.TabletInit)
-
-	local current = ongoingAnimations:get(Player)
-	if current then current:Stop() end
-
-	Tablet:SetAttribute("InUse", true)
-	ongoingAnimations:set(Player, Animation)
-
-	LockPlayerToModel(Player, Tablet, true)
-	Animation:Play()
-end
-
-function TableService.Client:TabletEnd(Player, Tablet)
-	assert(Player:IsA("Player"))
-
-	local anim = ongoingAnimations:get(Player)
-	if not anim then return end
-
-	anim:Stop()
-	ongoingAnimations:remove(Player)
-
-	Tablet:SetAttribute("InUse", false)
-	LockPlayerToModel(Player, Tablet, false)
 end
 
 return TableService

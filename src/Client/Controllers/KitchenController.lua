@@ -30,6 +30,9 @@ local TaskUI = GochiUI:WaitForChild("Task")
 local KitchenService
 local TaskTrove = Trove.new()
 
+local AnimationService
+local UIController
+
 -- Task Handlers
 KitchenController.TaskHandlers = {}
 
@@ -38,7 +41,57 @@ KitchenController.TaskHandlers.Fridge = {
 	getIngredient = function(self, task, model)
 		print("Handling fridge task:", task.TaskID)
 
-		print(task)
+		local promptHolder = model:FindFirstChild("main")
+		if not promptHolder then
+			warn("Missing main in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder['main door']:FindFirstChild("ProximityPrompt")
+		print(prompt)
+		if not prompt then
+			warn("Missing ProximityPrompt in main door")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the fridge and get <b>{task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			AnimationService:PlayAnimation("Fridge", "Open", model)
+			prompt.Enabled = false
+
+			local button = FridgeUI.Content.Ingredients:FindFirstChild(task.Ingredient)
+
+			if button then
+				button.UIGradient.Enabled = true
+				-- FridgeUI.Content.Ingredients.Visible = true
+				-- UIController:Open(FridgeUI)
+
+				button.Activated:Connect(function()
+					UIController:Close(FridgeUI)
+					FridgeUI.Content.Ingredients.Visible = false
+					button.UIGradient.Enabled = false
+					KitchenService:CompleteTask(task.TaskName, task.TaskID)
+					self:HideTaskNotif()
+					if conn then conn:Disconnect() end
+				end)
+			else
+				self:HideTaskNotif()
+				warn("Ingredient button not found in FridgeUI")
+				if conn then conn:Disconnect() end
+			end
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
 	end
 }
 
@@ -103,6 +156,8 @@ function KitchenController:HandleTask(task)
 end
 
 function KitchenController:CreateTaskNotif(task)
+	self:HideTaskNotif()
+
     TaskUI.Description.Text = task
     TaskUI.Visible = true
     AnimNation.target(TaskUI, {s = 10, d = 1}, {Position = UDim2.new(0.098, 0, 0.65, 0)})
@@ -120,6 +175,8 @@ end
 -- Knit Lifecycle
 function KitchenController:KnitStart()
 	KitchenService = Knit.GetService("KitchenService")
+	AnimationService = Knit.GetService("AnimationService")
+	UIController = Knit.GetController("UIController")
 
 	KitchenService.Tasks:Connect(function(task)
 		self:HandleTask(task)
@@ -127,10 +184,6 @@ function KitchenController:KnitStart()
 
     KitchenService.QueueNotification:Connect(function(task)
         self:CreateTaskNotif(task)
-
-        task.delay(3, function()
-            self:HideTaskNotif()
-        end)
     end)
 end
 

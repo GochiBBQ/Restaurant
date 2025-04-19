@@ -63,7 +63,7 @@ function KitchenService:KnitStart()
 	NavigationService = Knit.GetService("NavigationService")
 end
 
-function KitchenService:_assignTask(Player, TaskType, TaskName, Model)
+function KitchenService:_assignTask(Player, TaskType, TaskName, Model, Ingredient: string?)
 	-- If player is busy, queue the task
 	if self.ActivePlayers:contains(Player) then
 		self.TaskQueues[Player] = self.TaskQueues[Player] or {}
@@ -85,7 +85,8 @@ function KitchenService:_assignTask(Player, TaskType, TaskName, Model)
 		TaskType = TaskType,
 		TaskID = taskId,
 		Complete = Signal.new(),
-		Model = Model
+		Model = Model,
+		Ingredient = Ingredient
 	}
 
 	self.Tasks:set(Player, task)
@@ -216,10 +217,8 @@ function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
 		local success = NavigationService:InitBeam(Player, selectedFridge)
 		if not success then return reject("Failed to beam to fridge") end
 
-		local task = self:_assignTask(Player, "Fridge", "getIngredient", selectedFridge)
+		local task = self:_assignTask(Player, "Fridge", "getIngredient", selectedFridge, Item)
 		if not task then return reject("Player already has a task or fridge in use") end
-
-		task.Ingredient = Item
 		task.Complete:Wait()
 		resolve(true)
 	end)

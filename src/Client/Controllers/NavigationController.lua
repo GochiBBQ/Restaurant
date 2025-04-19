@@ -67,7 +67,7 @@ function NavigationController:InitBeam(model: Instance)
     -- Create or get model attachment
     local modelAttachment = model:FindFirstChild("beamAttachment")
     if not modelAttachment then
-        local primaryPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        local primaryPart = model:FindFirstChild("Navigation") or model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
         assert(primaryPart, "Model missing a suitable BasePart.")
         modelAttachment = Instance.new("Attachment")
         modelAttachment.Name = "beamAttachment"

@@ -31,7 +31,7 @@ local Panel: GuiObject = GochiUI:WaitForChild("TableManagementPanel")
 
 local Content: GuiObject = TableUI:WaitForChild("Content")
 
-local TableService, RankService, NotificationService, NavigationService
+local TableService, RankService, NotificationService, NavigationService, AnimationService
 local UIController
 
 local uiOpen: boolean = false
@@ -325,6 +325,7 @@ function TableController:KnitStart()
     RankService = Knit.GetService("RankService")
     NotificationService = Knit.GetService("NotificationService")
     NavigationService = Knit.GetService("NavigationService")
+    AnimationService = Knit.GetService("AnimationService")
     UIController = Knit.GetController("UIController")
 
     local Functionality = workspace:WaitForChild("Functionality")
@@ -473,14 +474,14 @@ function TableController:InitRegisters()
                             uiOpen = true
                             activeRegister = register
                             UIController:Open(TableUI)
-                            TableService:TabletInit(register)
+                            AnimationService:PlayAnimation("Tablet", "Init", register)
                         else
                             TableService:GetInfo(currentTable):andThen(function(tableData)
                                 if tableData then
                                     selectedOption = 'Existing'
                                     uiOpen = true
                                     activeRegister = register
-                                    TableService:TabletInit(register)
+                                    AnimationService:PlayAnimation("Tablet", "Init", register)
 
                                     local panelContent = Panel.Content
                                     panelContent.Section.Text = `Section: <b>{tableData.Category}</b>`
@@ -513,7 +514,7 @@ function TableController:InitRegisters()
 
                     local function checkUIVisibility()
                         if not uiOpen and activeRegister then
-                            TableService:TabletEnd(activeRegister)
+                            AnimationService:StopAnimation()
                             activeRegister = nil
                         end
                     end
