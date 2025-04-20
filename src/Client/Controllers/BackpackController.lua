@@ -32,6 +32,7 @@ local toolToNumber = {}
 -- Create Knit Controller
 local BackpackController = Knit.CreateController {
     Name = "BackpackController",
+	BackpackEnabled = true,
     InputKeys = {
         [1] = "One",
         [2] = "Two",
@@ -212,6 +213,11 @@ function BackpackController:InitializeBackpackUI()
 
 	for _, Button in pairs(PlayerGui:WaitForChild("Backpack").Frame:GetDescendants()) do
 		if Button:IsA("ImageButton") then
+			-- Skip if connections are already added (basic way to avoid duplicates if reused)
+			if self._uiTrove:Find(Button) then
+				continue
+			end
+
 			local enterConn = Button.MouseEnter:Connect(function()
 				UIHover:Play()
 				AnimNation.target(Button.Parent, {s = 8, d = 0.8}, { Size = UDim2.fromScale(0.7, 1.3) })
@@ -233,6 +239,7 @@ function BackpackController:InitializeBackpackUI()
 		end
 	end
 end
+
 
 function BackpackController:ResetConnections()
 	self._characterTrove:Clean()
@@ -278,12 +285,28 @@ function BackpackController:KnitStart()
 	end)
 
 	self._trove:Add(charConn)
-end
 
-function BackpackController:Shutdown()
-	self._trove:Clean()
-	self._characterTrove:Clean()
-	self._uiTrove:Clean()
+	Player:GetAttributeChangedSignal("BackpackEnabled"):Connect(function()
+		self.BackpackEnabled = Player:GetAttribute("BackpackEnabled")
+	
+		local backpackUI = PlayerGui:FindFirstChild("Backpack")
+		if backpackUI then
+			if self.BackpackEnabled then
+				backpackUI.Enabled = true
+				AnimNation.target(backpackUI.Frame, {s = 10}, {Position = UDim2.new(0.5, 0,0.967, 0)}):AndThen(function()
+					self:InitializeBackpackUI()
+					self:UpdateUI()		
+					self:ResetConnections()
+				end)
+			else
+				AnimNation.target(backpackUI.Frame, {s = 10}, {Position = UDim2.new(0.5, 0,1.5, 0)}):AndThen(function()
+					backpackUI.Enabled = false
+					self._uiTrove:Clean()
+					self._characterTrove:Clean()
+				end)
+			end
+		end
+	end)	
 end
 
 return BackpackController

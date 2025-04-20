@@ -6,6 +6,7 @@ For: Gochi
 ]]
 
 -- Services
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -13,7 +14,7 @@ local Players = game:GetService("Players")
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
+local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 
 -- Create Knit Service
 local BlacklistService = Knit.CreateService {

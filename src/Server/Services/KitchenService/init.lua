@@ -6,9 +6,11 @@ For: Gochi
 ]]
 
 -- Services
-local HttpService = game:GetService("HttpService")
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
+local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
 -- Modules
@@ -20,9 +22,9 @@ local Classes = Knit.Classes
 local Recipes = require(script.Recipes)
 
 -- Data Structures
-local TableMap = require(Knit.Structures.TableMap) -- @module TableMap
-local HashSet = require(Knit.Structures.HashSet) -- @module HashSet
-local Queue = require(Knit.Structures.Queue) -- @module Queue
+local TableMap = require(ServerScriptService.Structures.TableMap) -- @module TableMap
+local HashSet = require(ServerScriptService.Structures.HashSet) -- @module HashSet
+local Queue = require(ServerScriptService.Structures.Queue) -- @module Queue
 
 -- Create Service
 local KitchenService = Knit.CreateService {
@@ -143,6 +145,29 @@ function KitchenService:SelectItem(Player: Player, Item: string)
 	Recipes[Item](Player)
 end
 
+function KitchenService:_assignToolToCharacter(Player: Player, Item: string)
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	local Tool = ServerStorage:WaitForChild("Food"):FindFirstChild(Item)
+	if Tool then
+		local Clone = Tool:Clone()
+		Clone.Parent = Character
+		Player:SetAttribute("BackpackEnabled", false)
+	else
+		warn("Tool not found in ServerStorage:", Item)
+	end
+end
+
+function KitchenService:_removeToolFromCharacter(Player: Player, Item: string)
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	local Tool = Character:FindFirstChild(Item)
+	if Tool then
+		Tool:Destroy()
+		Player:SetAttribute("BackpackEnabled", true)
+	else
+		warn("Tool not found in character:", Item)
+	end
+end
+
 ------------------------------------------------------------
 -- Tasks
 ------------------------------------------------------------
@@ -224,8 +249,65 @@ function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
 	end)
 end
 
+function KitchenService:_rollItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local PreparationAreas = Cooking:WaitForChild("Preparation Areas")
+		local children = PreparationAreas:GetChildren()
+		local available = {}
+		
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if available == 0 then
+			print("No available preparation areas. Adding player to queue.")
+			local queue = self.ModelQueues:get("Roller Board") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Roller Board", queue)
+			self.Client.QueueNotification:Fire(Player, "All preparation areas are busy. You've been queued.")
+			return
+		end
+
+		local selectedArea = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedArea)
+		if not success then return reject("Failed to beam to preparation area") end
+
+		local task = self:_assignTask(Player, "PreparationArea", "rollItem", selectedArea, Item)
+		if not task then return reject("Player already has a task or preparation area in use") end
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
+function KitchenService:_submitItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local finishOrder = Cooking:WaitForChild("FinishOrder")
+
+		local success = NavigationService:InitBeam(Player, finishOrder)
+		if not success then return reject("Failed to beam to finish order") end
+
+		local task = self:_assignTask(Player, "FinishOrder", "submitItem", finishOrder, Item)
+		if not task then return reject("Player already has a task in progress") end
+
+		self:_assignToolToCharacter(Player, Item)
+
+		task.Complete:Wait()
+		self:_removeToolFromCharacter(Player, Item)
+		resolve(true)
+	end)
+end
 
 -- Client Functions
+function KitchenService.Client:AssignTool(Player: Player, Item: string)
+	self.Server:_assignToolToCharacter(Player, Item)
+end
+
+function KitchenService.Client:RemoveTool(Player: Player, Item: string)
+	self.Server:_removeToolFromCharacter(Player, Item)
+end
+
 function KitchenService.Client:SelectReceipe(Player: Player, Stove: Instance, Item: string)
 	Recipes[Item](Player, Stove)
 end

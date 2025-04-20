@@ -474,14 +474,14 @@ function TableController:InitRegisters()
                             uiOpen = true
                             activeRegister = register
                             UIController:Open(TableUI)
-                            AnimationService:PlayAnimation("Tablet", "Init", register)
+                            AnimationService:PlayAnimation("Tablet", "Init", register, true)
                         else
                             TableService:GetInfo(currentTable):andThen(function(tableData)
                                 if tableData then
                                     selectedOption = 'Existing'
                                     uiOpen = true
                                     activeRegister = register
-                                    AnimationService:PlayAnimation("Tablet", "Init", register)
+                                    AnimationService:PlayAnimation("Tablet", "Init", register, true)
 
                                     local panelContent = Panel.Content
                                     panelContent.Section.Text = `Section: <b>{tableData.Category}</b>`

@@ -6,13 +6,14 @@ For: Gochi
 ]]
 
 -- Services
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local NametagList = require(Knit.Data.NametagList) -- @module NametagList
-local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
+local TableMap = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local InventoryService = Knit.CreateService {

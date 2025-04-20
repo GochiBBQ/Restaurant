@@ -6,14 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local HttpService = game:GetService('HttpService')
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local HttpService = game:GetService('HttpService')
 local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
-local TableMap = require(Knit.Structures.TableMap) --- @module TableMap
+local TableMap = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local RankService = Knit.CreateService {
@@ -47,14 +48,14 @@ function RankService:GetRank(Player)
     repeat task.wait() until Player:GetAttribute("Loaded")
 
     local data = self.PlayerTable:get(Player.UserId)
-    return data and data.Rank or 0
+    return (data and data.Rank) or Player:GetRankInGroup(5874921)
 end
 
 function RankService:GetRole(Player)
     repeat task.wait() until Player:GetAttribute("Loaded")
 
     local data = self.PlayerTable:get(Player.UserId)
-    return data and data.Role or ""
+    return data and data.Role or Player:GetRoleInGroup(5874921)
 end
 
 function RankService:Update(Player)

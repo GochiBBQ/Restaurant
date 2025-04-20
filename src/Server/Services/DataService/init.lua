@@ -18,7 +18,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local ProfileService = require(Knit.Modules.ProfileService)
 local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
+local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 local template = require(script.template)
 
 -- Create Knit Service

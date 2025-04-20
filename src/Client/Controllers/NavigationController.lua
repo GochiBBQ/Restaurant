@@ -39,7 +39,7 @@ function NavigationController:KnitStart()
 end
 
 function NavigationController:InitBeam(model: Instance)
-    assert(model and model:IsA("Model"), "Invalid model provided.")
+    assert(model and model:IsA("Model") or model:IsA("BasePart"), "Invalid model provided.")
     assert(Beam and PlayerStorage, "Missing Beam or PlayerStorage references.")
 
     -- Clean up any existing beam first
@@ -67,7 +67,7 @@ function NavigationController:InitBeam(model: Instance)
     -- Create or get model attachment
     local modelAttachment = model:FindFirstChild("beamAttachment")
     if not modelAttachment then
-        local primaryPart = model:FindFirstChild("Navigation") or model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+        local primaryPart = model:FindFirstChild("Navigation") or model:FindFirstChildWhichIsA("BasePart") or model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
         assert(primaryPart, "Model missing a suitable BasePart.")
         modelAttachment = Instance.new("Attachment")
         modelAttachment.Name = "beamAttachment"

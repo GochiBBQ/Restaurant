@@ -1,18 +1,17 @@
 --[[
-
 Author: alreadyfans
 For: Gochi
-
 ]]
 
 -- Services
+local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local TableMap = require(Knit.Structures.TableMap) -- @module TableMap
+local TableMap = require(ServerScriptService.Structures.TableMap) -- @module TableMap
 
 -- Variables
 local Animations = ServerStorage:WaitForChild("Animations")
@@ -24,10 +23,11 @@ local AnimationService = Knit.CreateService {
 }
 
 -- Private State
-local ongoingAnimations = TableMap.new()
+local ongoingAnimations = TableMap.new()           -- Player -> AnimationTrack
+local ongoingModelAnimations = TableMap.new()      -- Player -> Model's AnimationTrack
 
 -- Utility: Load and return AnimationTrack
-local function LoadAnimation(Character: Instance, Animation: Animation)
+local function loadAnimation(Character: Instance, Animation: Animation)
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
 	if not Humanoid then return end
 
@@ -38,7 +38,7 @@ local function LoadAnimation(Character: Instance, Animation: Animation)
 end
 
 -- Utility: Lock or unlock a player to a model
-local function LockPlayerToModel(Player: Player, Model: Model, State: boolean)
+local function lockPlayer(Player: Player, Model: Model, State: boolean)
 	local Character = Player.Character or Player.CharacterAdded:Wait()
 	local HRP = Character:FindFirstChild("HumanoidRootPart")
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
@@ -60,71 +60,122 @@ local function LockPlayerToModel(Player: Player, Model: Model, State: boolean)
 	end
 end
 
--- Public: Play animation with optional lock
-function AnimationService:_playAnimation(Player: Player, Animation: Animation, AttachToModel: Model?)
-	local Character = Player.Character or Player.CharacterAdded:Wait()
-	self:_stopAnimation(Player) -- Stop any ongoing animation
+function AnimationService:_playAnimation(Player: Player, Animation: Animation, AttachToModel: Model?, Looped: boolean?)
+	if Looped == nil then
+		Looped = false
+	end
 
-	-- Load animation for player
-	local track = LoadAnimation(Character, Animation)
-	if not track then
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	self:_stopAnimation(Player)
+
+	-- Load animation for the player
+	local playerTrack = loadAnimation(Character, Animation)
+	if not playerTrack then
 		warn("Failed to load animation for player:", Animation.Name)
 		return
 	end
-	print("Loaded animation:", Animation.Name)
 
-	ongoingAnimations:set(Player, track)
+	playerTrack.Looped = Looped or false
+	playerTrack.Priority = Enum.AnimationPriority.Action4
+	playerTrack:Play()
+
+	ongoingAnimations:set(Player, playerTrack)
+
+	local modelTrack
 
 	if AttachToModel then
 		AttachToModel:SetAttribute("InUse", true)
-		LockPlayerToModel(Player, AttachToModel, true)
+		lockPlayer(Player, AttachToModel, true)
+
+		-- Try to load animation on the model if it has an AnimationController
+		local controller = AttachToModel:FindFirstChildOfClass("AnimationController")
+		if not controller then
+			controller = Instance.new("AnimationController")
+			controller.Name = "AnimationController"
+			controller.Parent = AttachToModel
+		end
+
+		local ok, result = pcall(function()
+			return controller:LoadAnimation(Animation)
+		end)
+		if ok and result then
+			modelTrack = result
+			modelTrack.Looped = Looped or false
+			modelTrack.Priority = Enum.AnimationPriority.Action4
+			modelTrack:Play()
+			ongoingModelAnimations:set(Player, modelTrack)
+		else
+			warn("Failed to load animation on model:", AttachToModel.Name)
+		end
 	end
 
-    track.Priority = Enum.AnimationPriority.Action4
-	track:Play()
-
-	track.Stopped:Connect(function()
+	playerTrack.Stopped:Connect(function()
 		if AttachToModel then
 			AttachToModel:SetAttribute("InUse", false)
-			LockPlayerToModel(Player, AttachToModel, false)
+			lockPlayer(Player, AttachToModel, false)
+
+			if modelTrack then
+				modelTrack:Stop()
+				ongoingModelAnimations:remove(Player)
+			end
 		end
 		ongoingAnimations:remove(Player)
 	end)
 end
 
-
 function AnimationService:_stopAnimation(Player: Player)
-    local currentTrack = ongoingAnimations:get(Player)
-    if currentTrack then
-        currentTrack:Stop()
-        ongoingAnimations:remove(Player)
-    end
-    
+	local Character = Player.Character
+	if Character then
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		if Humanoid then
+			local Animator = Humanoid:FindFirstChildOfClass("Animator")
+			if Animator then
+				for _, track in ipairs(Animator:GetPlayingAnimationTracks()) do
+					track:Stop()
+				end
+			end
+		end
+	end
+
+	local playerTrack = ongoingAnimations:get(Player)
+	if playerTrack then
+		playerTrack:Stop()
+		ongoingAnimations:remove(Player)
+	end
+
+	local modelTrack = ongoingModelAnimations:get(Player)
+	if modelTrack then
+		modelTrack:Stop()
+		ongoingModelAnimations:remove(Player)
+	end
 end
 
 -- Cleanup on player leave
 function AnimationService:KnitStart()
 	Players.PlayerRemoving:Connect(function(player)
-		local current = ongoingAnimations:get(player)
-		if current then
-			current:Stop()
-			ongoingAnimations:remove(player)
-		end
+		self:_stopAnimation(player)
 	end)
 end
 
 -- Client Functions
-function AnimationService.Client:PlayAnimation(Player: Player, FolderName: string, AnimationName: string, AttachToModel: Model?)
-    local Animation = Animations:FindFirstChild(FolderName):FindFirstChild(AnimationName)
-    if not Animation then
-        warn("Animation not found:", AnimationName)
-        return
-    end
-    self.Server:_playAnimation(Player, Animation, AttachToModel)    
+function AnimationService.Client:PlayAnimation(Player: Player, FolderName: string, AnimationName: string, AttachToModel: Model?, Looped: boolean?)
+	local AnimationFolder = Animations:FindFirstChild(FolderName)
+	if not AnimationFolder then
+		warn("Animation folder not found:", FolderName)
+		return
+	end
+
+	local Animation = AnimationFolder:FindFirstChild(AnimationName)
+	if not Animation then
+		warn("Animation not found:", AnimationName)
+		return
+	end
+
+	self.Server:_playAnimation(Player, Animation, AttachToModel, Looped)
 end
 
 function AnimationService.Client:StopAnimation(Player: Player)
-    self.Server:_stopAnimation(Player)
+	self.Server:_stopAnimation(Player)
 end
 
 return AnimationService

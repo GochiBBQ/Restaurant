@@ -1,3 +1,4 @@
+local ServerScriptService = game:GetService("ServerScriptService")
 --[[
 
 Author: alreadyfans
@@ -8,6 +9,7 @@ For: Gochi
 -- Services
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -18,7 +20,7 @@ local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
 
 local BadgeList = require(Knit.Data.BadgesList) -- @module BadgesList
 local NametagList = require(Knit.Data.NametagList) -- @module NametagList
-local HashSet = require(Knit.Structures.HashSet) --- @module HashSet
+local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 
 -- Variables
 local PlayerStorage = workspace:WaitForChild("PlayerStorage")
