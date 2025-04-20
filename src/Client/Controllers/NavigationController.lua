@@ -67,7 +67,12 @@ function NavigationController:InitBeam(model: Instance)
     -- Create or get model attachment
     local modelAttachment = model:FindFirstChild("beamAttachment")
     if not modelAttachment then
-        local primaryPart = model:FindFirstChild("Navigation") or model:FindFirstChildWhichIsA("BasePart") or model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        local primaryPart
+        if model:IsA("BasePart") then
+            primaryPart = model
+        else
+            primaryPart = model:FindFirstChild("Navigation") or model:FindFirstChildWhichIsA("BasePart") or model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        end 
         assert(primaryPart, "Model missing a suitable BasePart.")
         modelAttachment = Instance.new("Attachment")
         modelAttachment.Name = "beamAttachment"
@@ -83,7 +88,12 @@ function NavigationController:InitBeam(model: Instance)
     -- Store the beam + any connections in the trove
     self._beamTrove:Add(beamClone)
 
-    local primaryPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
+    local primaryPart
+        if model:IsA("BasePart") then
+            primaryPart = model
+        else
+            primaryPart = model:FindFirstChild("Navigation") or model:FindFirstChildWhichIsA("BasePart") or model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+        end 
     local connection = game:GetService("RunService").Heartbeat:Connect(function()
         if primaryPart then
             local distance = (humanoidRootPart.Position - primaryPart.Position).Magnitude
