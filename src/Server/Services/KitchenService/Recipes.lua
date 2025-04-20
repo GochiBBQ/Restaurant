@@ -32,6 +32,7 @@ return {
 		-- 7. Roller Board
 		-- 8. Oil (Oil Thingy)
 
+		Player:SetAttribute("BackpackEnabled", false)
 		KitchenService:_getPlate(Player)
 			:andThen(function()
 				task.wait(1)
@@ -55,7 +56,9 @@ return {
 			end)
 			:andThen(function()
 				task.wait(1)
-				return KitchenService:_submitItem(Player, "Kimbap")
+				return KitchenService:_submitItem(Player, "Kimbap"):andThen(function()
+					Player:SetAttribute("BackpackEnabled", true)
+				end)
 			end)
 	end,
 	["Tteokbokki"] = function(Player: Player, Stove: Instance)

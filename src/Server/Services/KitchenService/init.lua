@@ -112,8 +112,6 @@ function KitchenService:_completeTask(Player)
 			self.ModelLocks:remove(model)
 		end
 
-		print("Task completed for", Player.Name)
-
 		-- Handle model-based queue
 		local queue = self.ModelQueues:get(task.TaskType)
 		if queue and not queue:isEmpty() then
@@ -141,7 +139,6 @@ end
 
 
 function KitchenService:SelectItem(Player: Player, Item: string)
-	print("SelectItem", Player, Item)
 	Recipes[Item](Player)
 end
 
@@ -151,7 +148,6 @@ function KitchenService:_assignToolToCharacter(Player: Player, Item: string)
 	if Tool then
 		local Clone = Tool:Clone()
 		Clone.Parent = Character
-		Player:SetAttribute("BackpackEnabled", false)
 	else
 		warn("Tool not found in ServerStorage:", Item)
 	end
@@ -162,7 +158,6 @@ function KitchenService:_removeToolFromCharacter(Player: Player, Item: string)
 	local Tool = Character:FindFirstChild(Item)
 	if Tool then
 		Tool:Destroy()
-		Player:SetAttribute("BackpackEnabled", true)
 	else
 		warn("Tool not found in character:", Item)
 	end
