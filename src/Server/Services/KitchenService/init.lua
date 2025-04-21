@@ -9,8 +9,8 @@ For: Gochi
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
-local HttpService = game:GetService("HttpService")
 local ServerStorage = game:GetService("ServerStorage")
+local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
 
 -- Modules
@@ -50,8 +50,10 @@ local KitchenService = Knit.CreateService {
 	}
 }
 
--- Runtime State
+-- Variables
 local Cooking = Workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
+local KitchenModels = ServerStorage:WaitForChild("KitchenModels")
+
 local NavigationService
 
 -- Player Tasks
@@ -244,6 +246,38 @@ function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
 	end)
 end
 
+function KitchenService:_getStorageItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Storage = Cooking:WaitForChild("Storage")
+		local children = Storage:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available storage. Adding player to queue.")
+			local queue = self.ModelQueues:get("Storage") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Storage", queue)
+			self.Client.QueueNotification:Fire(Player, "All storage areas are busy. You've been queued.")
+			return
+		end
+
+		local selectedStorage = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedStorage)
+		if not success then return reject("Failed to beam to storage") end
+
+		local task = self:_assignTask(Player, "Storage", "getItem", selectedStorage, Item)
+		if not task then return reject("Player already has a task or storage in use") end
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
 function KitchenService:_rollItem(Player: Player, Item: string)
 	return Promise.new(function(resolve, reject)
 		local PreparationAreas = Cooking:WaitForChild("Preparation Areas")
@@ -274,6 +308,157 @@ function KitchenService:_rollItem(Player: Player, Item: string)
 		task.Complete:Wait()
 		resolve(true)
 	end)
+end
+
+function KitchenService:_fryItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Stoves = Cooking:WaitForChild("Stoves")
+		local children = Stoves:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available stoves. Adding player to queue.")
+			local queue = self.ModelQueues:get("Stove") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Stove", queue)
+			self.Client.QueueNotification:Fire(Player, "All stoves are busy. You've been queued.")
+			return
+		end
+
+		local selectedStove = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedStove)
+		if not success then return reject("Failed to beam to stove") end
+
+		local task = self:_assignTask(Player, "Stove", "fryItem", selectedStove, Item)
+		if not task then return reject("Player already has a task or stove in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
+function KitchenService:_deepFryItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Fryers = Cooking:WaitForChild("Fryers")
+		local children = Fryers:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available fryers. Adding player to queue.")
+			local queue = self.ModelQueues:get("Fryer") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Fryer", queue)
+			self.Client.QueueNotification:Fire(Player, "All fryers are busy. You've been queued.")
+			return
+		end
+
+		local selectedFryer = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedFryer)
+		if not success then return reject("Failed to beam to fryer") end
+
+		local task = self:_assignTask(Player, "Fryer", "deepFryItem", selectedFryer, Item)
+		if not task then return reject("Player already has a task or fryer in use") end
+
+		for _, part in pairs(selectedFryer.fryer:GetChildren()) do
+			if part:IsA("BasePart") then
+				part.Transparency = 1
+			end
+		end
+
+		task.Complete:Wait()
+		for _, part in pairs(selectedFryer.fryer:GetChildren()) do
+			if part:IsA("BasePart") then
+				part.Transparency = part:GetAttribute("Transparency")
+			end
+		end
+		resolve(true)
+	end)
+end
+
+function KitchenService:_createModel(Player: Player, Model: string)
+	if Model == "Frying Pan" then
+		local FryingPan = KitchenModels.Models:WaitForChild("Frying Pan"):Clone()
+		FryingPan.Parent = Player.Character
+
+		local RightHand = Player.Character:WaitForChild("RightHand")
+
+		local Motor6D = KitchenModels.Motors:WaitForChild("FryingPanMotor"):Clone()
+		Motor6D.Part0 = RightHand
+		Motor6D.Part1 = FryingPan
+		Motor6D.Parent = RightHand
+	elseif Model == "Fryer" then
+		local Fryer = KitchenModels.Models:WaitForChild("Fryer"):Clone()
+		Fryer.Parent = Player.Character
+
+		local LeftHand = Player.Character:WaitForChild("LeftHand")
+
+		local Motor6D = KitchenModels.Motors:WaitForChild("FryerMotor"):Clone()
+		Motor6D.Part0 = LeftHand
+		Motor6D.Part1 = Fryer.Handle
+		Motor6D.Parent = LeftHand
+	elseif Model == "Hotdog" then
+		local Hotdog = KitchenModels.Models:WaitForChild("Hotdog"):Clone()
+		Hotdog.Parent = Player.Character
+
+		local RightHand = Player.Character:WaitForChild("RightHand")
+
+		local Motor6D = KitchenModels.Motors:WaitForChild("HotdogMotor"):Clone()
+		Motor6D.Part0 = RightHand
+		Motor6D.Part1 = Hotdog.stick
+		Motor6D.Parent = RightHand
+	else
+		warn("Model not recognized:", Model)
+	end
+end
+
+function KitchenService:_removeModel(Player: Player, Model: string)
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+
+	if Model == "Frying Pan" then
+		local FryingPan = Character:FindFirstChild("Frying Pan")
+		if FryingPan then
+			FryingPan:Destroy()
+		end
+
+		local Motor6D = Character:WaitForChild("RightHand"):FindFirstChild("FryingPanMotor")
+		if Motor6D then
+			Motor6D:Destroy()
+		end
+	elseif Model == "Fryer" then
+		local Fryer = Character:FindFirstChild("Fryer")
+		if Fryer then
+			Fryer:Destroy()
+		end
+
+		local Motor6D = Character:WaitForChild("LeftHand"):FindFirstChild("FryerMotor")
+		if Motor6D then
+			Motor6D:Destroy()
+		end
+	elseif Model == "Hotdog" then
+		local Hotdog = Character:FindFirstChild("Hotdog")
+		if Hotdog then
+			Hotdog:Destroy()
+		end
+
+		local Motor6D = Character:WaitForChild("RightHand"):FindFirstChild("HotdogMotor")
+		if Motor6D then
+			Motor6D:Destroy()
+		end
+	else
+		warn("Model not recognized:", Model)
+	end
 end
 
 function KitchenService:_submitItem(Player: Player, Item: string)
@@ -314,6 +499,14 @@ function KitchenService.Client:CompleteTask(Player: Player, TaskName: string, Ta
 	else
 		warn("Invalid or already completed task for", Player.Name)
 	end
+end
+
+function KitchenService.Client:CreateModel(Player: Player, Model: string)
+	self.Server:_createModel(Player, Model)
+end
+
+function KitchenService.Client:RemoveModel(Player: Player, Model: string)
+	self.Server:_removeModel(Player, Model)	
 end
 
 -- Return the service to Knit

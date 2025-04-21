@@ -23,6 +23,7 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI = PlayerGui:WaitForChild("GochiUI")
 local FridgeUI = GochiUI:WaitForChild("Fridge")
+local StorageUI = GochiUI:WaitForChild("Storage")
 
 local TaskUI = GochiUI:WaitForChild("Task")
 
@@ -62,6 +63,152 @@ KitchenController.TaskHandlers.FinishOrder = {
 			ProximityPrompt.Enabled = false
 		end)
 		
+	end
+}
+
+-- Handle fryer tasks
+KitchenController.TaskHandlers.Fryer = {
+	deepFryItem = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the fryer and deep fry <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.Enabled = true
+ 
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+			KitchenService:CreateModel("Fryer")
+			KitchenService:CreateModel("Hotdog")
+			AnimationService:PlayAnimation("Fryer", "DeepFry", model)
+			task.delay(4, function()
+				KitchenService:RemoveModel("Fryer")
+				KitchenService:RemoveModel("Hotdog")
+				KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+			end)
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+		
+	end
+}
+
+-- Handle stove task: fryItem
+KitchenController.TaskHandlers.Stove = {
+	fryItem = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the stove and fry <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+			KitchenService:CreateModel("Frying Pan")
+			AnimationService:PlayAnimation("Stove", "Fry", model)
+			task.delay(4, function()
+				KitchenService:RemoveModel("Frying Pan")
+				KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+			end)
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end
+}
+
+KitchenController.TaskHandlers.Storage = {
+	getItem = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the storage and get <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+
+			local button = StorageUI.Content.Ingredients:FindFirstChild(Task.Ingredient)
+
+			if button then
+				button.UIGradient.Enabled = true
+				StorageUI.Content.Ingredients.Visible = true
+				UIController:Open(StorageUI)
+
+				local buttonConn
+				buttonConn = button.Activated:Connect(function()
+					UIController:Close(StorageUI)
+					StorageUI.Content.Ingredients.Visible = false
+					button.UIGradient.Enabled = false
+					KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+					self:HideTaskNotif()
+					if conn then conn:Disconnect() end
+					if buttonConn then buttonConn:Disconnect() end
+				end)
+
+				TaskTrove:Add(buttonConn)
+			else
+				self:HideTaskNotif()
+				warn("Ingredient button not found in StorageUI")
+				if conn then conn:Disconnect() end
+			end
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
 	end
 }
 
