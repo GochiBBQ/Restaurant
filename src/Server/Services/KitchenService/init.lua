@@ -19,7 +19,8 @@ local Promise = require(Knit.Util.Promise)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local Classes = Knit.Classes
-local Recipes = require(script.Recipes)
+local Recipes = require(script.Recipes) --- @module Recipes
+local Minigames = require(script.Minigames) --- @module Minigames
 
 -- Data Structures
 local TableMap = require(ServerScriptService.Structures.TableMap) -- @module TableMap
@@ -33,17 +34,8 @@ local KitchenService = Knit.CreateService {
 	Client = {
 		Tasks = Knit.CreateSignal(),
 		Games = Knit.CreateSignal(),
+		MinigameComplete = Knit.CreateSignal(),
         QueueNotification = Knit.CreateSignal(),
-
-		Fridges = Knit.CreateSignal(),
-		Stoves = Knit.CreateSignal(),
-		RiceCookers = Knit.CreateSignal(),
-		DrinkMachines = Knit.CreateSignal(),
-		DrinkMixers = Knit.CreateSignal(),
-		Fryers = Knit.CreateSignal(),
-		WaffleMakers = Knit.CreateSignal(),
-		TrashCans = Knit.CreateSignal(),
-		PreparationAreas = Knit.CreateSignal(),
 
 		Complete = Knit.CreateSignal(),
 		Alerts = Knit.CreateSignal()
@@ -169,7 +161,7 @@ end
 -- Tasks
 ------------------------------------------------------------
 
-function KitchenService:_getPlate(Player)
+function KitchenService:_getPlate(Player: Player)
 	return Promise.new(function(resolve, reject)
 		local Plates = Cooking:WaitForChild("Plates")
 		local children = Plates:GetChildren()
@@ -212,6 +204,73 @@ function KitchenService:_getPlate(Player)
 		task.Complete:Wait()
 		resolve(true)
 	end)
+end
+
+function KitchenService:_getBowl(Player: Player)
+	return Promise.new(function(resolve, reject)
+		local Bowls = Cooking:WaitForChild("Bowls")
+		local children = Bowls:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available bowls. Adding player to queue.")
+			local queue = self.ModelQueues:get("Bowl") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Bowl", queue)
+			self.Client.QueueNotification:Fire(Player, "All bowls are busy. You've been queued.")
+			return
+		end
+
+		local selectedBowl = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedBowl)
+		if not success then return reject("Failed to beam to bowl") end
+
+		local task = self:_assignTask(Player, "Bowl", "getBowl", selectedBowl)
+		if not task then return reject("Player already has a task or bowl in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
+function KitchenService:_cookRice(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local RiceCookers = Cooking:WaitForChild("Rice Cookers")
+		local children = RiceCookers:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available rice cookers. Adding player to queue.")
+			local queue = self.ModelQueues:get("RiceCooker") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("RiceCooker", queue)
+			self.Client.QueueNotification:Fire(Player, "All rice cookers are busy. You've been queued.")
+			return
+		end
+
+		local selectedRiceCooker = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedRiceCooker)
+		if not success then return reject("Failed to beam to rice cooker") end
+
+		local task = self:_assignTask(Player, "RiceCooker", "cookRice", selectedRiceCooker, Item)
+		if not task then return reject("Player already has a task or rice cooker in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
 end
 
 function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
@@ -343,6 +402,40 @@ function KitchenService:_fryItem(Player: Player, Item: string)
 	end)
 end
 
+function KitchenService:_boilItem(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Stoves = Cooking:WaitForChild("Stoves")
+		local children = Stoves:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available stoves. Adding player to queue.")
+			local queue = self.ModelQueues:get("Stove") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Stove", queue)
+			self.Client.QueueNotification:Fire(Player, "All stoves are busy. You've been queued.")
+			return
+		end
+
+		local selectedStove = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedStove)
+		if not success then return reject("Failed to beam to stove") end
+
+		local task = self:_assignTask(Player, "Stove", "boilItem", selectedStove, Item)
+		if not task then return reject("Player already has a task or stove in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
+end
+
 function KitchenService:_deepFryItem(Player: Player, Item: string)
 	return Promise.new(function(resolve, reject)
 		local Fryers = Cooking:WaitForChild("Fryers")
@@ -388,9 +481,15 @@ function KitchenService:_deepFryItem(Player: Player, Item: string)
 end
 
 function KitchenService:_createModel(Player: Player, Model: string)
+
+	print("Creating model:", Model)
+
 	if Model == "Frying Pan" then
 		local FryingPan = KitchenModels.Models:WaitForChild("Frying Pan"):Clone()
 		FryingPan.Parent = Player.Character
+
+		print("Frying Pan created:", FryingPan.Name)
+		print("Frying Pan parent:", FryingPan.Parent.Name)
 
 		local RightHand = Player.Character:WaitForChild("RightHand")
 
@@ -418,6 +517,25 @@ function KitchenService:_createModel(Player: Player, Model: string)
 		Motor6D.Part0 = RightHand
 		Motor6D.Part1 = Hotdog.stick
 		Motor6D.Parent = RightHand
+	elseif Model == "Pot" then
+		local Pot = KitchenModels.Models:WaitForChild("Pot"):Clone()
+		local Ladle = KitchenModels.Models:WaitForChild("Ladle"):Clone()
+		Pot.Parent = Player.Character
+		Ladle.Parent = Player.Character
+
+		local RightHand = Player.Character:WaitForChild("RightHand")
+		local LeftHand = Player.Character:WaitForChild("LeftHand")
+
+		local PotMotor6D = KitchenModels.Motors:WaitForChild("PotMotor"):Clone()
+		PotMotor6D.Part0 = RightHand
+		PotMotor6D.Part1 = Pot.default
+		PotMotor6D.Parent = RightHand
+
+		local LadleMotor6D = KitchenModels.Motors:WaitForChild("LadleMotor"):Clone()
+		LadleMotor6D.Part0 = LeftHand
+		LadleMotor6D.Part1 = Ladle
+		LadleMotor6D.Parent = LeftHand
+
 	else
 		warn("Model not recognized:", Model)
 	end
@@ -455,6 +573,26 @@ function KitchenService:_removeModel(Player: Player, Model: string)
 		local Motor6D = Character:WaitForChild("RightHand"):FindFirstChild("HotdogMotor")
 		if Motor6D then
 			Motor6D:Destroy()
+		end
+	elseif Model == "Pot" then
+		local Pot = Character:FindFirstChild("Pot")
+		if Pot then
+			Pot:Destroy()
+		end
+
+		local Ladle = Character:FindFirstChild("Ladle")
+		if Ladle then
+			Ladle:Destroy()
+		end
+
+		local PotMotor6D = Character:WaitForChild("RightHand"):FindFirstChild("PotMotor")
+		if PotMotor6D then
+			PotMotor6D:Destroy()
+		end
+
+		local LadleMotor6D = Character:WaitForChild("LeftHand"):FindFirstChild("LadleMotor")
+		if LadleMotor6D then
+			LadleMotor6D:Destroy()
 		end
 	else
 		warn("Model not recognized:", Model)
@@ -507,6 +645,14 @@ end
 
 function KitchenService.Client:RemoveModel(Player: Player, Model: string)
 	self.Server:_removeModel(Player, Model)	
+end
+
+function KitchenService.Client:StartMinigame(Player: Player)
+	return Minigames:startRandomMinigame(Player)
+end
+
+function KitchenService.Client:FinishMinigame(Player: Player)
+	Minigames:Complete(Player)
 end
 
 -- Return the service to Knit

@@ -80,6 +80,7 @@ function AnimationService:_playAnimation(Player: Player, Animation: Animation, A
 	playerTrack:Play()
 
 	ongoingAnimations:set(Player, playerTrack)
+	Player:SetAttribute("AnimationLength", playerTrack.Length)
 
 	local modelTrack
 
@@ -120,6 +121,7 @@ function AnimationService:_playAnimation(Player: Player, Animation: Animation, A
 			end
 		end
 		ongoingAnimations:remove(Player)
+		Player:SetAttribute("AnimationLength", nil)
 	end)
 end
 
@@ -141,6 +143,7 @@ function AnimationService:_stopAnimation(Player: Player)
 	if playerTrack then
 		playerTrack:Stop()
 		ongoingAnimations:remove(Player)
+		Player:SetAttribute("AnimationLength", nil)
 	end
 
 	local modelTrack = ongoingModelAnimations:get(Player)

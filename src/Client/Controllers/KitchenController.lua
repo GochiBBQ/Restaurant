@@ -25,6 +25,10 @@ local GochiUI = PlayerGui:WaitForChild("GochiUI")
 local FridgeUI = GochiUI:WaitForChild("Fridge")
 local StorageUI = GochiUI:WaitForChild("Storage")
 
+-- Minigame Elements
+local MathUI = GochiUI:WaitForChild("CookingPuzzleMath")
+local PuzzleUI = GochiUI:WaitForChild("CookingPuzzleSelection")
+
 local TaskUI = GochiUI:WaitForChild("Task")
 
 local KitchenService
@@ -93,13 +97,27 @@ KitchenController.TaskHandlers.Fryer = {
 		conn = prompt.Triggered:Connect(function()
 			prompt.Enabled = false
 			self:HideTaskNotif()
-			KitchenService:CreateModel("Fryer")
-			KitchenService:CreateModel("Hotdog")
-			AnimationService:PlayAnimation("Fryer", "DeepFry", model)
-			task.delay(4, function()
-				KitchenService:RemoveModel("Fryer")
-				KitchenService:RemoveModel("Hotdog")
-				KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						KitchenService:CreateModel("Fryer")
+						KitchenService:CreateModel("Hotdog")
+						AnimationService:PlayAnimation("Fryer", "DeepFry", model, false)
+						task.delay(Player:GetAttribute("AnimationLength"), function()
+							KitchenService:RemoveModel("Fryer")
+							KitchenService:RemoveModel("Hotdog")
+							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+						end)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
 			end)
 		end)
 
@@ -138,11 +156,25 @@ KitchenController.TaskHandlers.Stove = {
 		conn = prompt.Triggered:Connect(function()
 			prompt.Enabled = false
 			self:HideTaskNotif()
-			KitchenService:CreateModel("Frying Pan")
-			AnimationService:PlayAnimation("Stove", "Fry", model)
-			task.delay(4, function()
-				KitchenService:RemoveModel("Frying Pan")
-				KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						KitchenService:CreateModel("Frying Pan")
+						AnimationService:PlayAnimation("Stove", "Fry", model)
+						task.delay(Player:GetAttribute("AnimationLength"), function()
+							KitchenService:RemoveModel("Frying Pan")
+							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+						end)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
 			end)
 		end)
 
@@ -150,7 +182,59 @@ KitchenController.TaskHandlers.Stove = {
 		TaskTrove:Add(function()
 			prompt.Enabled = false
 		end)
-	end
+	end,
+	boilItem = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the stove and boil <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						KitchenService:CreateModel("Pot")
+						AnimationService:PlayAnimation("Stove", "Boil", model)
+						task.delay(Player:GetAttribute("AnimationLength"), function()
+							KitchenService:RemoveModel("Pot")
+							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+						end)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
+			end)
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end,
 }
 
 KitchenController.TaskHandlers.Storage = {
@@ -167,7 +251,7 @@ KitchenController.TaskHandlers.Storage = {
 			return
 		end
 
-		local notif = self:CreateTaskNotif(`Go to the storage and get <b>{Task.Ingredient}</b>.`)
+		local notif = self:CreateTaskNotif(`Go to storage and get <b>{Task.Ingredient}</b>.`)
 		if not notif then
 			warn("Failed to create notification")
 			return
@@ -240,7 +324,7 @@ KitchenController.TaskHandlers.Fridge = {
 			AnimationService:PlayAnimation("Fridge", "Open", model)
 			prompt.Enabled = false
 
-			task.delay(1.2, function()
+			task.delay(Player:GetAttribute("AnimationLength"), function()
 				AnimationService:PlayAnimation("Fridge", "Idle", model, true)
 			end)
 
@@ -305,10 +389,24 @@ KitchenController.TaskHandlers.PreparationArea = {
 		conn = prompt.Triggered:Connect(function()
 			prompt.Enabled = false
 			self:HideTaskNotif()
-			AnimationService:PlayAnimation("Preparation", "Roll", model)
-			task.delay(1.33, function()
-				KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
-			end)
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						AnimationService:PlayAnimation("Preparation", "Roll", model)
+						task.delay(Player:GetAttribute("AnimationLength"), function()
+							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+						end)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
+			end)			
 		end)
 
 		TaskTrove:Add(conn)
@@ -346,6 +444,91 @@ KitchenController.TaskHandlers.Plate = {
             self:HideTaskNotif()
 			KitchenService:CompleteTask(task.TaskName, task.TaskID)
 			if conn then conn:Disconnect() end
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end
+}
+
+KitchenController.TaskHandlers.Bowl = {
+	getBowl = function(self, task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif("Go to the counter and get a bowl.")
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+			KitchenService:CompleteTask(task.TaskName, task.TaskID)
+			if conn then conn:Disconnect() end
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end
+}
+
+KitchenController.TaskHandlers.RiceCooker = {
+	cookRice = function(self, task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the rice cooker and get <b>Rice</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						KitchenService:CompleteTask(task.TaskName, task.TaskID)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
+			end)			
 		end)
 
 		TaskTrove:Add(conn)
@@ -393,6 +576,75 @@ function KitchenController:HideTaskNotif()
     end)
 end
 
+function KitchenController:Minigame(task)
+	if task == "Math" then
+		local operators = { "+", "-", "*", "/" }
+		local operator = operators[math.random(1, #operators)]
+		
+		local num1, num2
+
+		if operator == "+" then
+			num1 = math.random(1, 50)
+			num2 = math.random(1, 50)
+		elseif operator == "-" then
+			num1 = math.random(10, 50)
+			num2 = math.random(1, num1)  -- ensures non-negative result
+		elseif operator == "*" then
+			num1 = math.random(1, 12)
+			num2 = math.random(1, 12)
+		elseif operator == "/" then
+			num2 = math.random(1, 12)
+			num1 = num2 * math.random(1, 12)  -- ensures integer division
+		end
+
+		local question = `What is {num1} {operator} {num2}?`
+		local answer
+
+		if operator == "+" then
+			answer = tonumber(num1 + num2)
+		elseif operator == "-" then
+			answer = tonumber(num1 - num2)
+		elseif operator == "*" then
+			answer = tonumber(num1 * num2)
+		elseif operator == "/" then
+			answer = math.floor(num1 / num2)
+		end
+
+		MathUI.Content.Question.Text = question
+		MathUI.Content.TypeHereBox.TextBox.Text = ""
+		MathUI.Content.TypeHereBox.TextBox.PlaceholderText = "Type your answer here"
+		UIController:Open(MathUI)
+
+		local conn
+		conn = MathUI.Content.SubmitButton.Activated:Connect(function()
+				-- Check if the answer is correct
+				if MathUI.Content.TypeHereBox.TextBox.Text == "" then
+					MathUI.Content.TypeHereBox.TextBox.PlaceholderText = "Please enter a number"
+					return
+				end
+
+				-- Convert the input to a number and compare with the answer
+			local userInput = string.gsub(MathUI.Content.TypeHereBox.TextBox.Text, "^%s*(.-)%s*$", "%1")
+			local userAnswer = tonumber(userInput)
+			
+				if userAnswer == answer then
+					KitchenService:FinishMinigame()
+					UIController:Close(MathUI)
+					conn:Disconnect()
+				else
+					MathUI.Content.TypeHereBox.TextBox.Text = ""
+					MathUI.Content.TypeHereBox.TextBox.PlaceholderText = "Try again!"
+				end
+		end)
+		TaskTrove:Add(conn)
+	elseif task == "PuzzleSelection" then
+		-- Handle Puzzle Selection Minigame
+	else
+		warn("No minigame found")
+	end
+end
+
+
 -- Knit Lifecycle
 function KitchenController:KnitStart()
 	KitchenService = Knit.GetService("KitchenService")
@@ -406,6 +658,10 @@ function KitchenController:KnitStart()
     KitchenService.QueueNotification:Connect(function(task)
         self:CreateTaskNotif(task)
     end)
+
+	KitchenService.Games:Connect(function(task)
+		self:Minigame(task)
+	end)
 end
 
 -- Return Controller to Knit
