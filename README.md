@@ -1,15 +1,36 @@
-# Restaurant
-It's important to note the following when coding for Gochi, this is to ensure everyone's code is efficent and similar to each other.
 
--- CLIENT CODE --
-1. Knit.Modules is referenced to the Client Modules. These include spr, UIEffects, Confetti, etc.
-2. DO NOT USE THE PACKAGES.SIGNALS, Knit:CreateSignal() is the PROPER way.
-3. Do not use TweenService, use spr. However, spr does not support Camera Tweens, so use TweenService instead for camera manipulation. TEMPLATE: (spr.target(Instance, Spring Frequency, Speed)
+![4](https://github.com/user-attachments/assets/469b8c3c-c2e8-46a2-b64b-fc96de2cb89d)
+# 🍽️ Gochi BBQ Restaurant
 
--- SERVER CODE --
-1. Use TROVE to disconnect any unused remote events from the server. If you're unsure how, ask Morgan. trove:Add() doesn't automatically disconnect it, so if you're stuck on this, ask!
-2. DO NOT USE THE PACKAGES.SIGNALS, Knit:CreateSignal() is the PROPER way.
-3. It is preferred to use RemoteFunctions instead of RemoteEvents if you are sending from the client grabbing from the server then returning back to the client. However, RemoteEvents are better than RemoteFunctions when you are sending from the server to the client.
-4. Please for the love of god, use RateManager, it is used to rate limit for a reason.
-5. Make sure that memory usage is ALWAYS down. I don't want to hear complaints about lag on release. Remember to look in game tho, Roblox Studio uses ur PC not Roblox Servers
-6. Please make your template at least similar to everyone elses with the spacers n stuff, it cleans code a lot moreeeee
+A Roblox-based simulation of a Korean BBQ restaurant. This project brings an interactive and immersive dining experience to life, complete with custom UIs, grill interactions, and a server-client communication system.
+
+## 📸 Preview
+
+*Coming soon – GIFs and screenshots of gameplay and UI.*
+
+## 🧰 Tech Stack
+
+- Roblox Studio (Luau)
+- Rojo
+- Knit framework
+- Wally & Aftman (dependency management)
+
+## 🚀 Features
+
+- 🍢 Interactive grill tables and seating
+- 🧑‍🍳 Staff and customer roles
+- 📦 Modular code with Knit and Spring (`spr`)
+- 📊 Rate-limited server communications via `RateManager`
+
+## File Structure
+
+```arduino
+├── src/
+│   ├── Client/
+│   ├── Server/
+│   └── Shared/
+├── .vscode/
+├── aftman.toml
+├── wally.toml
+└── default.project.json
+```
