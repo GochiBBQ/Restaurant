@@ -481,15 +481,9 @@ function KitchenService:_deepFryItem(Player: Player, Item: string)
 end
 
 function KitchenService:_createModel(Player: Player, Model: string)
-
-	print("Creating model:", Model)
-
 	if Model == "Frying Pan" then
 		local FryingPan = KitchenModels.Models:WaitForChild("Frying Pan"):Clone()
 		FryingPan.Parent = Player.Character
-
-		print("Frying Pan created:", FryingPan.Name)
-		print("Frying Pan parent:", FryingPan.Parent.Name)
 
 		local RightHand = Player.Character:WaitForChild("RightHand")
 
