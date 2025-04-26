@@ -481,21 +481,40 @@ function KitchenService:_deepFryItem(Player: Player, Item: string)
 end
 
 function KitchenService:_createModel(Player: Player, Model: string)
+
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+
+	if not Character.Parent then
+		local timeout = 5 -- seconds
+		local startTime = os.clock()
+		repeat
+			task.wait()
+		until Character.Parent or (os.clock() - startTime) > timeout
+
+		if not Character.Parent then
+			warn("Character.Parent was not set within the timeout period.")
+			return
+		end
+	end
+
 	if Model == "Frying Pan" then
 		local FryingPan = KitchenModels.Models:WaitForChild("Frying Pan"):Clone()
-		FryingPan.Parent = Player.Character
 
-		local RightHand = Player.Character:WaitForChild("RightHand")
+		FryingPan.Archivable = true
+		FryingPan.Parent = Character
+
+		local RightHand = Character:WaitForChild("RightHand")
 
 		local Motor6D = KitchenModels.Motors:WaitForChild("FryingPanMotor"):Clone()
+		Motor6D.Archivable = true
 		Motor6D.Part0 = RightHand
 		Motor6D.Part1 = FryingPan
 		Motor6D.Parent = RightHand
 	elseif Model == "Fryer" then
 		local Fryer = KitchenModels.Models:WaitForChild("Fryer"):Clone()
-		Fryer.Parent = Player.Character
+		Fryer.Parent = Character
 
-		local LeftHand = Player.Character:WaitForChild("LeftHand")
+		local LeftHand = Character:WaitForChild("LeftHand")
 
 		local Motor6D = KitchenModels.Motors:WaitForChild("FryerMotor"):Clone()
 		Motor6D.Part0 = LeftHand
@@ -503,9 +522,9 @@ function KitchenService:_createModel(Player: Player, Model: string)
 		Motor6D.Parent = LeftHand
 	elseif Model == "Hotdog" then
 		local Hotdog = KitchenModels.Models:WaitForChild("Hotdog"):Clone()
-		Hotdog.Parent = Player.Character
+		Hotdog.Parent = Character
 
-		local RightHand = Player.Character:WaitForChild("RightHand")
+		local RightHand = Character:WaitForChild("RightHand")
 
 		local Motor6D = KitchenModels.Motors:WaitForChild("HotdogMotor"):Clone()
 		Motor6D.Part0 = RightHand
@@ -513,12 +532,15 @@ function KitchenService:_createModel(Player: Player, Model: string)
 		Motor6D.Parent = RightHand
 	elseif Model == "Pot" then
 		local Pot = KitchenModels.Models:WaitForChild("Pot"):Clone()
+		Pot.Archivable = true
 		local Ladle = KitchenModels.Models:WaitForChild("Ladle"):Clone()
-		Pot.Parent = Player.Character
-		Ladle.Parent = Player.Character
+		Ladle.Archivable = true
+		
+		Pot.Parent = Character
+		Ladle.Parent = Character
 
-		local RightHand = Player.Character:WaitForChild("RightHand")
-		local LeftHand = Player.Character:WaitForChild("LeftHand")
+		local RightHand = Character:WaitForChild("RightHand")
+		local LeftHand = Character:WaitForChild("LeftHand")
 
 		local PotMotor6D = KitchenModels.Motors:WaitForChild("PotMotor"):Clone()
 		PotMotor6D.Part0 = RightHand
@@ -529,7 +551,6 @@ function KitchenService:_createModel(Player: Player, Model: string)
 		LadleMotor6D.Part0 = LeftHand
 		LadleMotor6D.Part1 = Ladle
 		LadleMotor6D.Parent = LeftHand
-
 	else
 		warn("Model not recognized:", Model)
 	end
@@ -634,6 +655,7 @@ function KitchenService.Client:CompleteTask(Player: Player, TaskName: string, Ta
 end
 
 function KitchenService.Client:CreateModel(Player: Player, Model: string)
+	print("Creating model:", Model)
 	self.Server:_createModel(Player, Model)
 end
 

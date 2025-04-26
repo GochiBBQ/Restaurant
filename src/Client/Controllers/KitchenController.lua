@@ -107,10 +107,17 @@ KitchenController.TaskHandlers.Fryer = {
 					end
 			
 					if result then
+						AnimationService:PlayAnimation("Fryer", "DeepFry", model, false)
 						KitchenService:CreateModel("Fryer")
 						KitchenService:CreateModel("Hotdog")
-						AnimationService:PlayAnimation("Fryer", "DeepFry", model, false)
-						task.delay(Player:GetAttribute("AnimationLength"), function()
+
+						local animationLength = Player:GetAttribute("AnimationLength")
+						if not animationLength then
+							Player:GetAttributeChangedSignal("AnimationLength"):Wait()
+							animationLength = Player:GetAttribute("AnimationLength")
+						end
+
+						task.delay(animationLength, function()
 							KitchenService:RemoveModel("Fryer")
 							KitchenService:RemoveModel("Hotdog")
 							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
@@ -166,9 +173,16 @@ KitchenController.TaskHandlers.Stove = {
 					end
 			
 					if result then
-						KitchenService:CreateModel("Frying Pan")
 						AnimationService:PlayAnimation("Stove", "Fry", model)
-						task.delay(Player:GetAttribute("AnimationLength"), function()
+						KitchenService:CreateModel("Frying Pan")
+
+						local animationLength = Player:GetAttribute("AnimationLength")
+						if not animationLength then
+							Player:GetAttributeChangedSignal("AnimationLength"):Wait()
+							animationLength = Player:GetAttribute("AnimationLength")
+						end
+
+						task.delay(animationLength, function()
 							KitchenService:RemoveModel("Frying Pan")
 							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
 						end)
@@ -218,9 +232,16 @@ KitchenController.TaskHandlers.Stove = {
 					end
 			
 					if result then
-						KitchenService:CreateModel("Pot")
 						AnimationService:PlayAnimation("Stove", "Boil", model)
-						task.delay(Player:GetAttribute("AnimationLength"), function()
+						KitchenService:CreateModel("Pot")
+						
+						local animationLength = Player:GetAttribute("AnimationLength")
+						if not animationLength then
+							Player:GetAttributeChangedSignal("AnimationLength"):Wait()
+							animationLength = Player:GetAttribute("AnimationLength")
+						end
+						
+						task.delay(animationLength, function()
 							KitchenService:RemoveModel("Pot")
 							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
 						end)

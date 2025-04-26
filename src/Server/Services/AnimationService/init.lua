@@ -4,6 +4,7 @@ For: Gochi
 ]]
 
 -- Services
+local ContentProvider = game:GetService("ContentProvider")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -34,7 +35,10 @@ local function loadAnimation(Character: Instance, Animation: Animation)
 	local Animator = Humanoid:FindFirstChildOfClass("Animator")
 	if not Animator then return end
 
-	return Animator:LoadAnimation(Animation)
+	local loadedAnim = Animator:LoadAnimation(Animation)
+	ContentProvider:PreloadAsync({ Animation })
+
+	return loadedAnim
 end
 
 -- Utility: Lock or unlock a player to a model
@@ -75,12 +79,13 @@ function AnimationService:_playAnimation(Player: Player, Animation: Animation, A
 		return
 	end
 
+	repeat task.wait() until playerTrack.Length > 0
+	Player:SetAttribute("AnimationLength", playerTrack.Length)
 	playerTrack.Looped = Looped or false
 	playerTrack.Priority = Enum.AnimationPriority.Action4
 	playerTrack:Play()
 
 	ongoingAnimations:set(Player, playerTrack)
-	Player:SetAttribute("AnimationLength", playerTrack.Length)
 
 	local modelTrack
 
