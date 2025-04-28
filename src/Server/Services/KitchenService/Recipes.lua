@@ -60,7 +60,7 @@ return {
 			end)
 			:andThen(function()
 				task.wait(1)
-				return KitchenService:_getDrinkIngredient(Player, "Strawberries")
+				return KitchenService:_getDrinkIngredient(Player, "Strawberry")
 			end)
 			:andThen(function()
 				task.wait(1)

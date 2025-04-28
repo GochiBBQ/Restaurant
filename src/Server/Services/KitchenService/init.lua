@@ -820,6 +820,16 @@ function KitchenService:_removeModel(Player: Player, Model: string)
 		if LadleMotor6D then
 			LadleMotor6D:Destroy()
 		end
+	elseif Model == "Cup" then
+		local Cup = Character:FindFirstChild("Cup")
+		if Cup then
+			Cup:Destroy()
+		end
+
+		local Motor6D = Character:WaitForChild("LeftHand"):FindFirstChild("CupMotor")
+		if Motor6D then
+			Motor6D:Destroy()
+		end
 	else
 		warn("Model not recognized:", Model)
 	end

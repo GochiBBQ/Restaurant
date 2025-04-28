@@ -24,6 +24,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI = PlayerGui:WaitForChild("GochiUI")
 local FridgeUI = GochiUI:WaitForChild("Fridge")
 local StorageUI = GochiUI:WaitForChild("Storage")
+local DrinkMachineUI = GochiUI:WaitForChild("DrinkDispenser")
 
 -- Minigame Elements
 local MathUI = GochiUI:WaitForChild("CookingPuzzleMath")
@@ -87,7 +88,7 @@ KitchenController.TaskHandlers.IceMachine = {
 			return
 		end
 
-		local notif = self:CreateTaskNotif(`Go to the ice machine and get <b>{Task.Ingredient}</b>.`)
+		local notif = self:CreateTaskNotif(`Go to the ice machine and get <b>Ice</b>.`)
 		if not notif then
 			warn("Failed to create notification")
 			return
@@ -598,10 +599,36 @@ KitchenController.TaskHandlers.DrinkMachine = {
 					if result then
 						AnimationService:PlayAnimation("DrinkMachine", "Pour", model)
 						KitchenService:CreateModel("Cup")
+
+
 						task.delay(Player:GetAttribute("AnimationLength"), function()
 							KitchenService:RemoveModel("Cup")
-							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
 						end)
+
+						local button = DrinkMachineUI.Content.Drinks:FindFirstChild(Task.Ingredient)
+
+						if button then
+							button.UIGradient.Enabled = true
+							DrinkMachineUI.Content.Drinks.Visible = true
+							UIController:Open(DrinkMachineUI)
+
+							local buttonConn
+							buttonConn = button.Activated:Connect(function()
+								UIController:Close(DrinkMachineUI)
+								DrinkMachineUI.Content.Drinks.Visible = false
+								button.UIGradient.Enabled = false
+								KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+								self:HideTaskNotif()
+								if conn then conn:Disconnect() end
+								if buttonConn then buttonConn:Disconnect() end
+							end)
+
+							TaskTrove:Add(buttonConn)
+						else
+							self:HideTaskNotif()
+							warn("Ingredient button not found in FridgeUI")
+							if conn then conn:Disconnect() end
+						end
 					end
 				end)
 				TaskTrove:Add(minigameConn)
