@@ -354,12 +354,77 @@ KitchenController.TaskHandlers.Fridge = {
 			if button then
 				button.UIGradient.Enabled = true
 				FridgeUI.Content.Ingredients.Visible = true
+				FridgeUI.Content.Drinks.Visible = false
 				UIController:Open(FridgeUI)
 
 				local buttonConn
 				buttonConn = button.Activated:Connect(function()
 					UIController:Close(FridgeUI)
 					FridgeUI.Content.Ingredients.Visible = false
+					button.UIGradient.Enabled = false
+					AnimationService:StopAnimation()
+					AnimationService:PlayAnimation("Fridge", "Close", model)
+					KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+					self:HideTaskNotif()
+					if conn then conn:Disconnect() end
+					if buttonConn then buttonConn:Disconnect() end
+				end)
+
+				TaskTrove:Add(buttonConn)
+			else
+				self:HideTaskNotif()
+				warn("Ingredient button not found in FridgeUI")
+				if conn then conn:Disconnect() end
+			end
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end,
+	getDrinkIngredient = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("main")
+		if not promptHolder then
+			warn("Missing main in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder['main door']:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in main door")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the fridge and get <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			AnimationService:PlayAnimation("Fridge", "Open", model)
+			prompt.Enabled = false
+
+			task.delay(Player:GetAttribute("AnimationLength"), function()
+				AnimationService:PlayAnimation("Fridge", "Idle", model, true)
+			end)
+
+			local button = FridgeUI.Content.Drinks:FindFirstChild(Task.Ingredient)
+
+			if button then
+				button.UIGradient.Enabled = true
+				FridgeUI.Content.Ingredients.Visible = false
+				FridgeUI.Content.Drinks.Visible = true
+				UIController:Open(FridgeUI)
+
+				local buttonConn
+				buttonConn = button.Activated:Connect(function()
+					UIController:Close(FridgeUI)
+					FridgeUI.Content.Drinks.Visible = false
 					button.UIGradient.Enabled = false
 					AnimationService:StopAnimation()
 					AnimationService:PlayAnimation("Fridge", "Close", model)

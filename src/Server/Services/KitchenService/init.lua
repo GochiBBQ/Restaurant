@@ -305,6 +305,38 @@ function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
 	end)
 end
 
+function KitchenService:_getDrinkIngredient(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Fridges = Cooking:WaitForChild("Fridges")
+		local children = Fridges:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available fridges. Adding player to queue.")
+			local queue = self.ModelQueues:get("Fridge") or Queue.new()
+			queue:push({Player = Player, Item = Item})
+			self.ModelQueues:set("Fridge", queue)
+			self.Client.QueueNotification:Fire(Player, "All fridges are busy. You've been queued.")
+			return
+		end
+
+		local selectedFridge = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedFridge)
+		if not success then return reject("Failed to beam to fridge") end
+
+		local task = self:_assignTask(Player, "Fridge", "getDrinkIngredient", selectedFridge, Item)
+		if not task then return reject("Player already has a task or fridge in use") end
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
 function KitchenService:_getStorageItem(Player: Player, Item: string)
 	return Promise.new(function(resolve, reject)
 		local Storage = Cooking:WaitForChild("Storage")

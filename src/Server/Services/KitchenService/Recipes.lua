@@ -19,8 +19,83 @@ Knit.OnStart():andThen(function()
 end)
 
 return {
+	-- Drinks
+	["Spring Water"] = function(Player: Player)
+		
+	end,
+	["Hwachae"] = function(Player: Player)
+		
+	end,
+	["Watermelon Ade"] = function(Player: Player)
+		
+	end,
+	["Lemonade"] = function(Player: Player)
+		
+	end,
+	["Pink Lemonade"] = function(Player: Player)
+		
+	end,
+	["Orange Sunrise"] = function(Player: Player)
+		
+	end,
+	["Dalgona Coffee"] = function(Player: Player)
+		
+	end,
+	["Jeju Matcha Latte"] = function(Player: Player)
+		
+	end,
+	["Oksusucha"] = function(Player: Player)
+		
+	end,
+	["Boricha"] = function(Player: Player)
+		
+	end,
+	["Omijacha"] = function(Player: Player)
+		
+	end,
+	["Original Ramune"] = function(Player: Player)
+		Player:SetAttribute("BackpackEnabled", false)
+		KitchenService:_getDrinkIngredient(Player, "Original Ramune")
+			:andThen(function()
+				task.wait(1)
+				return KitchenService:_submitItem(Player, "Original Ramune"):andThen(function()
+					Player:SetAttribute("BackpackEnabled", true)
+				end)
+			end)
+	end,
+	["Mango Ramune"] = function(Player: Player)
+		Player:SetAttribute("BackpackEnabled", false)
+		KitchenService:_getDrinkIngredient(Player, "Mango Ramune")
+			:andThen(function()
+				task.wait(1)
+				return KitchenService:_submitItem(Player, "Mango Ramune"):andThen(function()
+					Player:SetAttribute("BackpackEnabled", true)
+				end)
+			end)
+	end,
+	["Melon Ramune"] = function(Player: Player)
+		Player:SetAttribute("BackpackEnabled", false)
+		KitchenService:_getDrinkIngredient(Player, "Melon Ramune")
+			:andThen(function()
+				task.wait(1)
+				return KitchenService:_submitItem(Player, "Melon Ramune"):andThen(function()
+					Player:SetAttribute("BackpackEnabled", true)
+				end)
+			end)
+	end,
+	["Blueberry Ramune"] = function(Player: Player)
+		Player:SetAttribute("BackpackEnabled", false)
+		KitchenService:_getDrinkIngredient(Player, "Blueberry Ramune")
+			:andThen(function()
+				task.wait(1)
+				return KitchenService:_submitItem(Player, "Blueberry Ramune"):andThen(function()
+					Player:SetAttribute("BackpackEnabled", true)
+				end)
+			end)
+	end,
+
 	-- Appetizers
-	["Kimbap"] = function(Player: Player, Stove: Instance)
+	["Kimbap"] = function(Player: Player)
 		-- Description: An assorted medley of vegetables wrapped in a soft bed of white rice and a piece of seasoned laver with a dash of oil.
 		-- Number of steps: 7
 		-- Steps:
@@ -65,7 +140,7 @@ return {
 				end)
 			end)
 	end,
-	["Tteokbokki"] = function(Player: Player, Stove: Instance)
+	["Tteokbokki"] = function(Player: Player)
 		-- Description: Street food made from chewy rice cakes and fish cakes, stir-fried in a spicy and savory sauce, typically made with gochujang.
 		-- Number of steps: 6
 		-- Steps:
@@ -104,7 +179,7 @@ return {
 			end)
 		end)
 	end,
-	["Classic Korean Hotdog"] = function(Player: Player, Stove: Instance)
+	["Classic Korean Hotdog"] = function(Player: Player)
 		-- Description: Crispy, deep-fried batter filled with sausage, mozzarella, or both. Lightly sweetened and served with ketchup and mustard.
 		-- Number of steps: 10
 		-- Steps:
@@ -168,7 +243,7 @@ return {
 				end)
 			end)
 	end,
-	["Potato Korean Hotdog"] = function(Player: Player, Stove: Instance)
+	["Potato Korean Hotdog"] = function(Player: Player)
 		-- Description: A crispy, deep-fried hotdog coated in diced potatoes, filled with sausage, mozzarella. Served with a spritz of ketchup and mustard for a crunchy, flavorful treat.
 		-- Number of steps: 13
 		-- Steps:
@@ -242,7 +317,7 @@ return {
 				end)
 			end)
 	end,
-	["Kimchi Fried Rice"] = function(Player: Player, Stove: Instance)
+	["Kimchi Fried Rice"] = function(Player: Player)
 		-- Description: Stir-fried rice with spicy, tangy kimchi, mixed with vegetables, and fried egg for a flavorful, hearty dish.
 		-- Number of steps: 9
 		-- Steps:
@@ -297,7 +372,7 @@ return {
 			end)
 
 	end,
-	["Kimchijeon"] = function(Player: Player, Stove: Instance)
+	["Kimchijeon"] = function(Player: Player)
 		-- Description: A savory, crispy pancake made with fermented kimchi and batter, pan-fried to golden perfection. Packed with bold flavors and a satisfying crunch.
 		-- Number of steps: 9
 		-- Steps:
@@ -347,7 +422,7 @@ return {
 				end)
 			end)
 	end,
-	["Japchae"] = function(Player: Player, Stove: Instance)
+	["Japchae"] = function(Player: Player)
 		-- Description: Stir-fried glass noodles with a mix of vegetables, thinly sliced beef, and a savory-sweet soy sauce. A flavorful and balanced dish with tender noodles and vibrant veggies.
 		-- Number of steps: 11
 		-- Steps:
@@ -416,7 +491,7 @@ return {
 			end)
 
 	end,
-	["Mandu"] = function(Player: Player, Stove: Instance)
+	["Mandu"] = function(Player: Player)
 		-- Description: Korean-style dumplings filled with a savory mix of meat, vegetables, and spices. Pan-fried for a crispy, tender bite. Served with a tangy dipping sauce.
 		-- Number of steps: 7
 		-- Steps:
@@ -463,7 +538,7 @@ return {
 	end,
 
 	-- Entrees
-	["Korean Fried Chicken"] = function(Player: Player, Stove: Instance)
+	["Korean Fried Chicken"] = function(Player: Player)
 		-- Description: A popular dish among teenagers, this rendition of fried chicken brings the heat into the meat. With assortments of wings and drumsticks, each piece is carefully seasoned and fried to be crispy.
 		-- Number of steps: 11
 		-- Steps:
@@ -528,7 +603,7 @@ return {
 				end)
 			end)
 	end,
-	["Bibimbap"] = function(Player: Player, Stove: Instance)
+	["Bibimbap"] = function(Player: Player)
 		-- Description: One of the most iconic dishes of South Korea, a mix of rice and a huge variety of vegetables with hints of beef, topped off with a fragile egg yolk.
 		-- Number of steps: 12
 		-- Steps:
@@ -592,7 +667,7 @@ return {
 				end)
 			end)
 	end,
-	["Classic Ramyeon"] = function(Player: Player, Stove: Instance)
+	["Classic Ramyeon"] = function(Player: Player)
 		-- Description: A comforting bowl of spicy Korean noodle soup with chewy noodles, a rich broth, and various toppings like vegetables, egg, and meat.
 		-- Number of steps: 8
 		-- Steps:
