@@ -239,6 +239,40 @@ function KitchenService:_getBowl(Player: Player)
 	end)
 end
 
+function KitchenService:_getCup(Player: Player)
+	return Promise.new(function(resolve, reject)
+		local Cups = Cooking:WaitForChild("Cups")
+		local children = Cups:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available cups. Adding player to queue.")
+			local queue = self.ModelQueues:get("Cup") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Cup", queue)
+			self.Client.QueueNotification:Fire(Player, "All cups are busy. You've been queued.")
+			return
+		end
+
+		local selectedCup = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedCup)
+		if not success then return reject("Failed to beam to cup") end
+
+		local task = self:_assignTask(Player, "Cup", "getCup", selectedCup)
+		if not task then return reject("Player already has a task or cup in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
+end
+
 function KitchenService:_cookRice(Player: Player, Item: string)
 	return Promise.new(function(resolve, reject)
 		local RiceCookers = Cooking:WaitForChild("Rice Cookers")
@@ -266,6 +300,141 @@ function KitchenService:_cookRice(Player: Player, Item: string)
 
 		local task = self:_assignTask(Player, "RiceCooker", "cookRice", selectedRiceCooker, Item)
 		if not task then return reject("Player already has a task or rice cooker in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
+end
+
+function KitchenService:_mixDrink(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local Mixers = Cooking:WaitForChild("Drink Mixers")
+		local children = Mixers:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available drink mixers. Adding player to queue.")
+			local queue = self.ModelQueues:get("Mixer") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Mixer", queue)
+			self.Client.QueueNotification:Fire(Player, "All drink mixers are busy. You've been queued.")
+			return
+		end
+
+		local selectedMixer = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedMixer)
+		if not success then return reject("Failed to beam to mixer") end
+
+		local task = self:_assignTask(Player, "DrinkMixer", "mixDrink", selectedMixer, Item)
+		if not task then return reject("Player already has a task or mixer in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
+end
+
+function KitchenService:_getDrink(Player: Player, Item: string)
+	return Promise.new(function(resolve, reject)
+		local DrinkDispenser = Cooking:WaitForChild("Drink Machines")
+		local children = DrinkDispenser:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available drink dispensers. Adding player to queue.")
+			local queue = self.ModelQueues:get("DrinkDispenser") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("DrinkDispenser", queue)
+			self.Client.QueueNotification:Fire(Player, "All drink dispensers are busy. You've been queued.")
+			return
+		end
+
+		local selectedDrinkDispenser = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedDrinkDispenser)
+		if not success then return reject("Failed to beam to drink dispenser") end
+
+		local task = self:_assignTask(Player, "DrinkMachine", "getDrink", selectedDrinkDispenser, Item)
+		if not task then return reject("Player already has a task or drink dispenser in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+	
+end
+
+function KitchenService:_getIce(Player: Player)
+	return Promise.new(function(resolve, reject)
+		local Ice = Cooking:WaitForChild("Ice Machines")
+		local children = Ice:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available ice machines. Adding player to queue.")
+			local queue = self.ModelQueues:get("Ice") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Ice", queue)
+			self.Client.QueueNotification:Fire(Player, "All ice machines are busy. You've been queued.")
+			return
+		end
+
+		local selectedIce = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedIce)
+		if not success then return reject("Failed to beam to ice") end
+
+		local task = self:_assignTask(Player, "IceMachine", "getIce", selectedIce)
+		if not task then return reject("Player already has a task or ice in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
+function KitchenService:_getCoffee(Player: Player)
+	return Promise.new(function(resolve, reject)
+		local Coffee = Cooking:WaitForChild("Coffee Machines")
+		local children = Coffee:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available coffee machines. Adding player to queue.")
+			local queue = self.ModelQueues:get("Coffee") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("Coffee", queue)
+			self.Client.QueueNotification:Fire(Player, "All coffee machines are busy. You've been queued.")
+			return
+		end
+
+		local selectedCoffee = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedCoffee)
+		if not success then return reject("Failed to beam to coffee machine") end
+
+		local task = self:_assignTask(Player, "CoffeeMachine", "getCoffee", selectedCoffee)
+		if not task then return reject("Player already has a task or coffee machine in use") end
 
 		task.Complete:Wait()
 		resolve(true)
@@ -583,6 +752,16 @@ function KitchenService:_createModel(Player: Player, Model: string)
 		LadleMotor6D.Part0 = LeftHand
 		LadleMotor6D.Part1 = Ladle
 		LadleMotor6D.Parent = LeftHand
+	elseif Model == "Cup" then
+		local Cup = KitchenModels.Models:WaitForChild("Cup"):Clone()
+		Cup.Parent = Character
+
+		local LeftHand = Character:WaitForChild("LeftHand")
+
+		local Motor6D = KitchenModels.Motors:WaitForChild("CupMotor"):Clone()
+		Motor6D.Part0 = LeftHand
+		Motor6D.Part1 = Cup.BASECUP
+		Motor6D.Parent = LeftHand
 	else
 		warn("Model not recognized:", Model)
 	end
