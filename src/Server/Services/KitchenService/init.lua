@@ -442,6 +442,39 @@ function KitchenService:_getCoffee(Player: Player)
 	
 end
 
+function KitchenService:_makeWaffle(Player: Player)
+	return Promise.new(function(resolve, reject)
+		local WaffleIron = Cooking:WaitForChild("Waffle Makers")
+		local children = WaffleIron:GetChildren()
+		local available = {}
+
+		for _, model in ipairs(children) do
+			if not self.ModelLocks:contains(model) then
+				table.insert(available, model)
+			end
+		end
+
+		if #available == 0 then
+			print("No available waffle makers. Adding player to queue.")
+			local queue = self.ModelQueues:get("WaffleIron") or Queue.new()
+			queue:push(Player)
+			self.ModelQueues:set("WaffleIron", queue)
+			self.Client.QueueNotification:Fire(Player, "All waffle makers are busy. You've been queued.")
+			return
+		end
+
+		local selectedWaffleIron = available[math.random(1, #available)]
+		local success = NavigationService:InitBeam(Player, selectedWaffleIron)
+		if not success then return reject("Failed to beam to waffle maker") end
+
+		local task = self:_assignTask(Player, "WaffleMaker", "makeWaffle", selectedWaffleIron)
+		if not task then return reject("Player already has a task or waffle iron in use") end
+
+		task.Complete:Wait()
+		resolve(true)
+	end)
+end
+
 function KitchenService:_getFridgeIngredient(Player: Player, Item: string)
 	return Promise.new(function(resolve, reject)
 		local Fridges = Cooking:WaitForChild("Fridges")

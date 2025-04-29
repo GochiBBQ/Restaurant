@@ -642,6 +642,60 @@ KitchenController.TaskHandlers.DrinkMachine = {
 	end
 }
 
+KitchenController.TaskHandlers.WaffleMaker = {
+	makeWaffle = function(self, Task, model)
+		local promptHolder = model:FindFirstChild("PromptHolder")
+		if not promptHolder then
+			warn("Missing PromptHolder in model:", model.Name)
+			return
+		end
+
+		local prompt = promptHolder:FindFirstChild("ProximityPrompt")
+		if not prompt then
+			warn("Missing ProximityPrompt in PromptHolder")
+			return
+		end
+
+		local notif = self:CreateTaskNotif(`Go to the waffle maker and make <b>{Task.Ingredient}</b>.`)
+		if not notif then
+			warn("Failed to create notification")
+			return
+		end
+
+		prompt.ObjectText = "Waffle Maker"
+		prompt.ActionText = "Make Waffle"
+		prompt.Enabled = true
+
+		local conn
+		conn = prompt.Triggered:Connect(function()
+			prompt.Enabled = false
+			self:HideTaskNotif()
+
+			KitchenService:StartMinigame():andThen(function()
+				local minigameConn
+				minigameConn = KitchenService.MinigameComplete:Connect(function(result, err)
+					if err then
+						warn("Minigame error:", err)
+						return
+					end
+			
+					if result then
+						task.delay(Player:GetAttribute("AnimationLength"), function()
+							KitchenService:CompleteTask(Task.TaskName, Task.TaskID)
+						end)
+					end
+				end)
+				TaskTrove:Add(minigameConn)
+			end)			
+		end)
+
+		TaskTrove:Add(conn)
+		TaskTrove:Add(function()
+			prompt.Enabled = false
+		end)
+	end
+}
+
 KitchenController.TaskHandlers.CoffeeMachine = {
 	getCoffee = function(self, Task, model)
 		local promptHolder = model:FindFirstChild("PromptHolder")
@@ -656,7 +710,7 @@ KitchenController.TaskHandlers.CoffeeMachine = {
 			return
 		end
 
-		local notif = self:CreateTaskNotif(`Go to the coffee machine and brew <b>{Task.Ingredient}</b>.`)
+		local notif = self:CreateTaskNotif(`Go to the coffee machine and brew <b>Espresso</b>.`)
 		if not notif then
 			warn("Failed to create notification")
 			return
