@@ -551,7 +551,9 @@ function TableController:AreaSelected(Area: string)
     ResetPartyData(true) -- Reset global variables
 
     UIController:Close(TableUI)
-    UIController:Open(Panel)
+    UIController:Open(Panel, false)
+    Panel.Draggable = true
+    Panel.Active = true
 
     local GuestSelection = Panel:WaitForChild("GuestSelection")
     local panelContent = Panel.Content
@@ -617,10 +619,7 @@ function TableController:AreaSelected(Area: string)
                 NewParty()
                 selectedOption = 'New'
             end
-
-            --[[ TODO:
-                - Submit logic that handles different cases
-            ]]
+            
             panelContent.OrderOptions.Confirm.Activated:Connect(function()
 
                 if #PlayersToAdd == 0 then
