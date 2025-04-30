@@ -65,6 +65,7 @@ function KitchenService:_assignTask(Player, TaskType, TaskName, Model, Ingredien
 		self.TaskQueues[Player] = self.TaskQueues[Player] or {}
 		table.insert(self.TaskQueues[Player], {TaskType = TaskType, TaskName = TaskName, Model = Model})
 		self.Client.QueueNotification:Fire(Player, `You're busy. Queued task: {TaskName}`)
+		print(`[Kitchen] Queued task "{TaskName}" for {Player.Name} because they're already active.`)
 		return nil
 	end
 
@@ -109,28 +110,89 @@ function KitchenService:_completeTask(Player)
 		-- Handle model-based queue
 		local queue = self.ModelQueues:get(task.TaskType)
 		if queue and not queue:isEmpty() then
-			local nextPlayer = queue:pop()
-			task.TaskType = task.TaskType -- trigger pattern match
+			local nextEntry = queue:pop()
+			local nextPlayer = typeof(nextEntry) == "table" and nextEntry.Player or nextEntry
+			local nextItem = typeof(nextEntry) == "table" and nextEntry.Item or nil
+
+			print(`[Kitchen] Resuming queued task of type {task.TaskType} for {nextPlayer.Name}`)
+
 			if task.TaskType == "Plate" then
 				self:_getPlate(nextPlayer)
+			elseif task.TaskType == "Fridge" then
+				self:_getFridgeIngredient(nextPlayer, nextItem)
+			elseif task.TaskType == "DrinkDispenser" then
+				self:_getDrink(nextPlayer, nextItem)
+			elseif task.TaskType == "DrinkMixer" then
+				self:_mixDrink(nextPlayer, nextItem)
+			elseif task.TaskType == "Storage" then
+				self:_getStorageItem(nextPlayer, nextItem)
+			elseif task.TaskType == "Bowl" then
+				self:_getBowl(nextPlayer)
+			elseif task.TaskType == "Cup" then
+				self:_getCup(nextPlayer)
+			elseif task.TaskType == "Ice" then
+				self:_getIce(nextPlayer)
+			elseif task.TaskType == "CoffeeMachine" or task.TaskType == "Coffee" then
+				self:_getCoffee(nextPlayer)
+			elseif task.TaskType == "Fryer" then
+				self:_deepFryItem(nextPlayer, nextItem)
+			elseif task.TaskType == "Stove" then
+				self:_fryItem(nextPlayer, nextItem)
+			elseif task.TaskType == "Roller Board" or task.TaskType == "PreparationArea" then
+				self:_rollItem(nextPlayer, nextItem)
+			else
+				warn(`[Kitchen] Unhandled model queue task type: {task.TaskType}`)
 			end
-			-- Extend with other task types as needed
+		else
+			print(`[Kitchen] No queued players for model type: {task.TaskType}`)
 		end
 
 		-- Handle queued tasks for this player
 		local personalQueue = self.TaskQueues[Player]
 		if personalQueue and #personalQueue > 0 then
 			local nextTask = table.remove(personalQueue, 1)
-			task = self:_assignTask(Player, nextTask.TaskType, nextTask.TaskName, nextTask.Model)
-			if task then
-				task.Complete:Wait() -- start task immediately
+
+			print(`[Kitchen] Resuming personal queued task: {nextTask.TaskName} ({nextTask.TaskType}) for {Player.Name}`)
+
+			if nextTask.Model == nil then
+				if nextTask.TaskType == "Plate" then
+					self:_getPlate(Player)
+				elseif nextTask.TaskType == "Fridge" then
+					self:_getFridgeIngredient(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "DrinkDispenser" then
+					self:_getDrink(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "DrinkMixer" then
+					self:_mixDrink(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "Storage" then
+					self:_getStorageItem(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "Bowl" then
+					self:_getBowl(Player)
+				elseif nextTask.TaskType == "Cup" then
+					self:_getCup(Player)
+				elseif nextTask.TaskType == "Ice" then
+					self:_getIce(Player)
+				elseif nextTask.TaskType == "CoffeeMachine" or nextTask.TaskType == "Coffee" then
+					self:_getCoffee(Player)
+				elseif nextTask.TaskType == "Fryer" then
+					self:_deepFryItem(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "Stove" then
+					self:_fryItem(Player, nextTask.Ingredient or nextTask.Item)
+				elseif nextTask.TaskType == "Roller Board" or nextTask.TaskType == "PreparationArea" then
+					self:_rollItem(Player, nextTask.Ingredient or nextTask.Item)
+				else
+					warn(`[Kitchen] Unhandled personal queued task type: {nextTask.TaskType}`)
+				end
+			else
+				local resumedTask = self:_assignTask(Player, nextTask.TaskType, nextTask.TaskName, nextTask.Model, nextTask.Ingredient or nextTask.Item)
+				if resumedTask then
+					resumedTask.Complete:Wait()
+				end
 			end
 		end
 	else
 		warn("No active task for", Player.Name)
 	end
 end
-
 
 function KitchenService:SelectItem(Player: Player, Item: string)
 	Recipes[Item](Player)
