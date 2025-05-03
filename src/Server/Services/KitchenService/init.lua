@@ -14,9 +14,9 @@ local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Promise = require(Knit.Util.Promise)
-local Signal = require(ReplicatedStorage.Packages.Signal)
+local Knit = require(ReplicatedStorage.Packages.Knit) --- @module Knit
+local Promise = require(Knit.Util.Promise) --- @module Promise
+local Signal = require(ReplicatedStorage.Packages.Signal) --- @module Signal
 
 local Classes = Knit.Classes
 local Recipes = require(script.Recipes) --- @module Recipes
@@ -43,8 +43,8 @@ local KitchenService = Knit.CreateService {
 }
 
 -- Variables
-local Cooking = Workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
-local KitchenModels = ServerStorage:WaitForChild("KitchenModels")
+local Cooking: Folder = Workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
+local KitchenModels: Folder = ServerStorage:WaitForChild("KitchenModels")
 
 local NavigationService
 local OrderService
