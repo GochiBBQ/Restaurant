@@ -6,26 +6,26 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DataStoreService = game:GetService("DataStoreService")
-local ServerStorage = game:GetService("ServerStorage")
-local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService: DataStoreService = game:GetService("DataStoreService")
+local ServerStorage: ServerStorage = game:GetService("ServerStorage")
+local HttpService: HttpService = game:GetService("HttpService")
+local Workspace: Workspace = game:GetService("Workspace")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit) --- @module Knit
-local Promise = require(Knit.Util.Promise) --- @module Promise
-local Signal = require(ReplicatedStorage.Packages.Signal) --- @module Signal
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) --- @module Knit
+local Promise: ModuleScript = require(Knit.Util.Promise) --- @module Promise
+local Signal: ModuleScript = require(ReplicatedStorage.Packages.Signal) --- @module Signal
 
-local Classes = Knit.Classes
-local Recipes = require(script.Recipes) --- @module Recipes
-local Minigames = require(script.Minigames) --- @module Minigames
+local Classes: Folder = Knit.Classes
+local Recipes: ModuleScript = require(script.Recipes) --- @module Recipes
+local Minigames: ModuleScript = require(script.Minigames) --- @module Minigames
 
 -- Data Structures
-local TableMap = require(ServerScriptService.Structures.TableMap) -- @module TableMap
-local HashSet = require(ServerScriptService.Structures.HashSet) -- @module HashSet
-local Queue = require(ServerScriptService.Structures.Queue) -- @module Queue
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) -- @module TableMap
+local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) -- @module HashSet
+local Queue: ModuleScript = require(ServerScriptService.Structures.Queue) -- @module Queue
 
 -- Create Service
 local KitchenService = Knit.CreateService {

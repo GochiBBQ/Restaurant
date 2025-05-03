@@ -6,9 +6,8 @@ For: Gochi
 ]]
 
 -- Services
-local Players = game:GetService('Players')
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService('Players')
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -22,7 +21,7 @@ local NavigationService = Knit.CreateService {
 }
 
 -- Variables
-local PlayerStorage = workspace:WaitForChild("PlayerStorage")
+local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
 
 -- Server Functions
 function NavigationService:KnitStart()

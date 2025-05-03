@@ -4,15 +4,15 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
-local Teams = game:GetService("Teams")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
+local Teams: Teams = game:GetService("Teams")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local TableMap = require(ServerScriptService.Structures.TableMap) --- @module TableMap
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Variables
 local RankService

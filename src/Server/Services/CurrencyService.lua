@@ -6,14 +6,12 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Signal = require(ReplicatedStorage.Packages.Signal)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 
 -- Create Knit Service
 local CurrencyService = Knit.CreateService({
@@ -100,7 +98,6 @@ function CurrencyService:Remove(Player, Amount)
 	end
 end
 
--- ————————— 🂡 —————————
 -- Client Functions
 
 function CurrencyService.Client:GetCoins(Player)
@@ -111,6 +108,5 @@ function CurrencyService.Client:GiveCoins(Player, XP)
 	self.Server:Give(Player, XP)
 end
 
--- ————————— 🂡 —————————
 -- Return Service to Knit.
 return CurrencyService

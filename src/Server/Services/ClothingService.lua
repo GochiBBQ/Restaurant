@@ -6,15 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local HttpService: HttpService = game:GetService("HttpService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 
 -- Create Knit Service
 local ClothingService = Knit.CreateService {
@@ -24,7 +24,7 @@ local ClothingService = Knit.CreateService {
 
 -- Trove instances per player
 local PlayerTroves = HashSet.new()
-local TroveMap = {} -- Player → Trove
+local TroveMap: table = {} -- Player → Trove
 
 -- Server Functions
 function ClothingService:KnitStart()

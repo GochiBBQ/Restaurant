@@ -6,15 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local HttpService: HttpService = game:GetService("HttpService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 
 -- Create Knit Service
 local BlacklistService = Knit.CreateService {
@@ -23,8 +23,8 @@ local BlacklistService = Knit.CreateService {
 }
 
 -- Variables
-local url = "http://138.197.80.59:3001"
-local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
+local url: string = "http://138.197.80.59:3001"
+local key: string = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
 -- Use HashSet to track player troves safely
 local PlayerTroves = HashSet.new()

@@ -6,14 +6,14 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local NametagList = require(Knit.Data.NametagList) -- @module NametagList
-local TableMap = require(ServerScriptService.Structures.TableMap) --- @module TableMap
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local NametagList: ModuleScript = require(Knit.Data.NametagList) -- @module NametagList
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local InventoryService = Knit.CreateService {
@@ -32,7 +32,7 @@ local InventoryService = Knit.CreateService {
 }
 
 -- Variables
-local PlayerStorage = workspace:WaitForChild("PlayerStorage")
+local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
 local OverheadService
 local RankService
 

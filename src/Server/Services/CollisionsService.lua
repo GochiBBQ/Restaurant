@@ -6,12 +6,12 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local PhysicsService = game:GetService("PhysicsService")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local PhysicsService: PhysicsService = game:GetService("PhysicsService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 
 -- Create Knit Service
 local CollisionsService = Knit.CreateService {

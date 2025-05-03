@@ -1,4 +1,3 @@
-local ServerScriptService = game:GetService("ServerScriptService")
 --[[
 
 Author: alreadyfans
@@ -7,24 +6,24 @@ For: Gochi
 ]]
 
 -- Services
-local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-ServerScriptService = game:GetService("ServerScriptService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local TweenService: TweenService = game:GetService("TweenService")
+local RunService: RunService = game:GetService("RunService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit) -- @module Knit
-local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) -- @module Knit
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
 
-local BadgeList = require(Knit.Data.BadgesList) -- @module BadgesList
-local NametagList = require(Knit.Data.NametagList) -- @module NametagList
-local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
+local BadgeList: ModuleScript = require(Knit.Data.BadgesList) -- @module BadgesList
+local NametagList: ModuleScript = require(Knit.Data.NametagList) -- @module NametagList
+local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) --- @module HashSet
 
 -- Variables
-local PlayerStorage = workspace:WaitForChild("PlayerStorage")
-local NametagTemplate = script.Rank
+local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
+local NametagTemplate: GuiObject = script.Rank
 
 local RankService
 local InventoryService

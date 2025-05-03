@@ -6,15 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local TextChatService = game:GetService("TextChatService")
-local TextService = game:GetService("TextService")
-local Players = game:GetService('Players')
-local Chat = game:GetService("Chat")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local TextChatService: TextChatService = game:GetService("TextChatService")
+local TextService: TextService = game:GetService("TextService")
+local Players: Players = game:GetService('Players')
+local Chat: Chat = game:GetService("Chat")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Signal = require(ReplicatedStorage.Packages.Signal)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Signal: ModuleScript = require(ReplicatedStorage.Packages.Signal)
 
 -- Create Knit Service
 local GreetingService = Knit.CreateService({
@@ -29,7 +29,7 @@ local GreetingService = Knit.CreateService({
 })
 
 -- Variables
-local defaultMessages = {
+local defaultMessages: table = {
 	welcomeMessage = "Greetings, welcome to Gochí! I'll be assisting you today. How many people are in your party?",
 	areaMessage = "Would you prefer to be arranged indoors, outdoors, or in our underwater dining?",
 	seatingMessage = "Where would you liked to be seated? We offer tables and booths.",

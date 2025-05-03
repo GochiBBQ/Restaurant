@@ -4,19 +4,18 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local DataStoreService = game:GetService("DataStoreService")
-local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local DataStoreService: DataStoreService = game:GetService("DataStoreService")
+local HttpService: HttpService = game:GetService("HttpService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local TipUtil = require(ReplicatedStorage.Util.TipUtil)
-local TableMap = require(ServerScriptService.Structures.TableMap) --- @module TableMap
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
+local TipUtil: ModuleScript = require(ReplicatedStorage.Util.TipUtil)
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
 local TippingService = Knit.CreateService {
@@ -27,11 +26,11 @@ local TippingService = Knit.CreateService {
 }
 
 -- Variables
-local url = "http://138.197.80.59:3001"
-local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
+local url: string = "http://138.197.80.59:3001"
+local key: string = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
-local TopTippers = DataStoreService:GetOrderedDataStore("TopTippers")
-local TopReceivers = DataStoreService:GetOrderedDataStore("TopReceivers")
+local TopTippers: OrderedDataStore = DataStoreService:GetOrderedDataStore("TopTippers")
+local TopReceivers: OrderedDataStore = DataStoreService:GetOrderedDataStore("TopReceivers")
 
 local PassesToPlayers = TableMap.new() -- gamePassId → Player
 local PlayerTroveMap = TableMap.new() -- Player → Trove

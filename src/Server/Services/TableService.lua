@@ -6,15 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local ServerStorage = game:GetService("ServerStorage")
-local Players = game:GetService("Players")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local ServerStorage: ServerStorage = game:GetService("ServerStorage")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local TableClass = require(Knit.Classes.Table)
-local TableMap = require(ServerScriptService.Structures.TableMap)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local TableClass: ModuleScript = require(Knit.Classes.Table)
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap)
 
 -- Create Knit Service
 local TableService = Knit.CreateService {
@@ -29,52 +29,14 @@ local TableService = Knit.CreateService {
 }
 
 -- Variables
-local TableFolder = workspace:WaitForChild("Functionality"):WaitForChild("Tables")
+local TableFolder: Folder = workspace:WaitForChild("Functionality"):WaitForChild("Tables")
 local Tables = TableMap.new()
-local Animations = ServerStorage:WaitForChild("Animations")
-local ongoingAnimations = TableMap.new()
 
-local DisconnectedPlayers = {} -- [UserId] = { timestamp, table, wasServer }
-local RejoinGraceTime = 60 -- seconds
-
-local AnimationService
--- Utility
-local function LoadAnimation(Character: Instance, Animation: Animation)
-	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-	if Humanoid then
-		local Animator = Humanoid:FindFirstChildOfClass("Animator")
-		if Animator then
-			local AnimationTrack = Animator:LoadAnimation(Animation)
-			return AnimationTrack
-		end
-	end
-end
-
-local function LockPlayerToModel(Player: Player, Model: Model, State: boolean)
-	local Character = Player.Character or Player.CharacterAdded:Wait()
-	local HRP = Character:FindFirstChild("HumanoidRootPart")
-	local Humanoid = Character:FindFirstChild("Humanoid")
-	local ModelRoot = Model:FindFirstChild("HumanoidRootPart")
-
-	if not HRP or not Humanoid or not ModelRoot then return end
-
-	if State then
-		Humanoid.WalkSpeed = 0
-		Humanoid.JumpPower = 0
-		Humanoid.PlatformStand = true
-		HRP.Anchored = true
-		HRP.CFrame = ModelRoot.CFrame
-	else
-		Humanoid.PlatformStand = false
-		HRP.Anchored = false
-		Humanoid.WalkSpeed = (Player:GetAttribute("Walkspeed") and 32) or 16
-		Humanoid.JumpPower = 50
-	end
-end
+local DisconnectedPlayers: table = {} -- [UserId] = { timestamp, table, wasServer }
+local RejoinGraceTime: IntValue = 60 -- seconds
 
 -- Knit Start
 function TableService:KnitStart()
-	AnimationService = Knit.GetService("AnimationService")
 
 	if not TableFolder then
 		warn("TableService: TableFolder not found.")

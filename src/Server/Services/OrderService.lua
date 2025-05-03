@@ -6,16 +6,16 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
+local HttpService: HttpService = game:GetService("HttpService")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 
 -- Structures
-local Queue = require(Knit.Structures.Queue)
-local HashSet = require(Knit.Structures.HashSet)
+local Queue: ModuleScript = require(Knit.Structures.Queue)
+local HashSet: ModuleScript = require(Knit.Structures.HashSet)
 
 -- Create Knit Service
 local OrderService = Knit.CreateService {
@@ -36,7 +36,7 @@ local queuedUserIds = HashSet.new()
 local joinTimes = {} -- [userId] = os.time()
 
 -- Active Orders
-local activeOrders = {} -- [orderId] = { Player, Table, Items, Assignments, Completed }
+local activeOrders: table = {} -- [orderId] = { Player, Table, Items, Assignments, Completed }
 
 -- Variables
 local KitchenService
