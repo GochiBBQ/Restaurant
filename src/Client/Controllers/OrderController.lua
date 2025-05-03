@@ -4,15 +4,15 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local RunService = game:GetService('RunService')
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local RunService: RunService = game:GetService('RunService')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit) -- @module Knit
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) -- @module Knit
 
-local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
-local Trove = require(ReplicatedStorage.Packages.Trove) -- @module Trove
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) -- @module Trove
 
 -- Create Knit Controller
 local OrderController = Knit.CreateController {

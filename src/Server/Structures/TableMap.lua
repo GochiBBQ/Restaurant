@@ -59,4 +59,16 @@ function TableMap:clear()
 	end
 end
 
+export type TableMap<T> = {
+	_store: { [any]: T },
+	set: (self: TableMap<T>, key: any, value: T) -> nil,
+	get: (self: TableMap<T>, key: any) -> T | nil,
+	remove: (self: TableMap<T>, key: any) -> nil,
+	contains: (self: TableMap<T>, key: any) -> boolean,
+	keys: (self: TableMap<T>) -> { any },
+	values: (self: TableMap<T>) -> { T },
+	entries: (self: TableMap<T>) -> (any, T),
+	clear: (self: TableMap<T>) -> nil
+}
+
 return TableMap

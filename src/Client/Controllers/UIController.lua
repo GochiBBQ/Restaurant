@@ -6,19 +6,17 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ContentProvider = game:GetService("ContentProvider")
-local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
-local Teams = game:GetService("Teams")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService: RunService = game:GetService("RunService")
+local SoundService: SoundService = game:GetService("SoundService")
+local Lighting: Lighting = game:GetService("Lighting")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit) --- @module Knit
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local Icon = require(Knit.Modules.Icon)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) --- @module Knit
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Icon: ModuleScript = require(Knit.Modules.Icon)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local UIController = Knit.CreateController {
@@ -27,19 +25,20 @@ local UIController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
 
-local UISelect = SoundService.UISelect
-local UIHover = SoundService.UIHover
+local UISelect: Sound = SoundService.UISelect
+local UIHover: Sound = SoundService.UIHover
 
-local ColorCorrection
-local CurrentFrame = nil
-local RankService
-local HUDOpen = true
+local ColorCorrection: ColorCorrectionEffect = nil
+local CurrentFrame: Frame = nil
+local HUDOpen: boolean = true
 
-local Positions = {}
+local Positions: table = {}
 local trove = Trove.new()
+
+local RankService
 
 -- Client Functions
 local function FormatNumber(amount)

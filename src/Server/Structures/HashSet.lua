@@ -51,4 +51,14 @@ function HashSet:size()
 	return count
 end
 
+export type HashSet<T> = {
+	_items: { [any]: boolean },
+	add: (self: HashSet<T>, value: T) -> nil,
+	remove: (self: HashSet<T>, value: T) -> nil,
+	contains: (self: HashSet<T>, value: T) -> boolean,
+	values: (self: HashSet<T>) -> { T },
+	clear: (self: HashSet<T>) -> nil,
+	size: (self: HashSet<T>) -> number,
+}
+
 return HashSet

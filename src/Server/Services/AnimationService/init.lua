@@ -4,15 +4,15 @@ For: Gochi
 ]]
 
 -- Services
-local ContentProvider = game:GetService("ContentProvider")
-local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
-local Players = game:GetService("Players")
+local ContentProvider: ContentProvider = game:GetService("ContentProvider")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage: ServerStorage = game:GetService("ServerStorage")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local TableMap = require(ServerScriptService.Structures.TableMap) -- @module TableMap
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) -- @module TableMap
 
 -- Variables
 local Animations = ServerStorage:WaitForChild("Animations")

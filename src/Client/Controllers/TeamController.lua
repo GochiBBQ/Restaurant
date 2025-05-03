@@ -6,41 +6,41 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local RunService = game:GetService('RunService')
-local UserInputService = game:GetService('UserInputService')
-local SoundService = game:GetService("SoundService")
-local StarterGui = game:GetService('StarterGui')
-local Players = game:GetService('Players')
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local RunService: RunService = game:GetService('RunService')
+local UserInputService: UserInputService = game:GetService('UserInputService')
+local SoundService: SoundService = game:GetService("SoundService")
+local StarterGui: StarterGui = game:GetService('StarterGui')
+local Players: Players = game:GetService('Players')
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Signal = require(ReplicatedStorage.Packages.Signal)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Signal: ModuleScript = require(ReplicatedStorage.Packages.Signal)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Variables
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer: Player = Players.LocalPlayer
 local UIController, LoadingController
 local RankService, TeamService, NotificationService
 
-local onCooldown = false
-local toggled = true
+local onCooldown: boolean = false
+local toggled: boolean = true
 
-local UISelect = SoundService.UISelect
-local UIHover = SoundService.UIHover
+local UISelect: Sound = SoundService.UISelect
+local UIHover: SoundGroup = SoundService.UIHover
 
 -- GUI Variables
-local PlayerGui = LocalPlayer:WaitForChild('PlayerGui')
-local GochiUI = PlayerGui:WaitForChild('GochiUI')
-local TeamUI = GochiUI:WaitForChild('Teams')
+local PlayerGui: PlayerGui = LocalPlayer:WaitForChild('PlayerGui')
+local GochiUI: GuiObject = PlayerGui:WaitForChild('GochiUI')
+local TeamUI: GuiObject = GochiUI:WaitForChild('Teams')
 
-local LeaderboardUI = PlayerGui:WaitForChild('Leaderboard').Main
-local Scroll = LeaderboardUI:WaitForChild('Scroll')
-local Template = LeaderboardUI:WaitForChild('Template')
+local LeaderboardUI: GuiObject = PlayerGui:WaitForChild('Leaderboard').Main
+local Scroll: GuiObject = LeaderboardUI:WaitForChild('Scroll')
+local Template: GuiObject = LeaderboardUI:WaitForChild('Template')
 
-local ShownPlayers = {}
-local AllowedTeams = {}
+local ShownPlayers: table = {}
+local AllowedTeams: table = {}
 
 -- Knit Controller
 local TeamController = Knit.CreateController {

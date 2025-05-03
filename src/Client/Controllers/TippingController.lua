@@ -6,17 +6,14 @@ For: Gochi
 ]]
 
 -- Services
-local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
+local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService: RunService = game:GetService("RunService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local spr = require(Knit.Modules.spr)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local TippingController = Knit.CreateController {
@@ -25,13 +22,13 @@ local TippingController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local Camera = workspace:WaitForChild("Camera")
+local Player: Player = Players.LocalPlayer
+local Camera: Camera = workspace:WaitForChild("Camera")
 
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local TippingUI = GochiUI:WaitForChild("Tipping")
-local TipsContainer = TippingUI:WaitForChild("Content"):WaitForChild("List")
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local TippingUI: GuiObject = GochiUI:WaitForChild("Tipping")
+local TipsContainer: GuiObject = TippingUI:WaitForChild("Content"):WaitForChild("List")
 
 local TippingService, RankService, NotificationService
 local UIController

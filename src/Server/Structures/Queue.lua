@@ -52,4 +52,16 @@ function Queue:clear()
 	self.back = 0
 end
 
+export type Queue<T> = {
+	_queue: { [number]: T },
+	front: number,
+	back: number,
+	push: (self: Queue<T>, value: T) -> nil,
+	pop: (self: Queue<T>) -> T | nil,
+	peek: (self: Queue<T>) -> T | nil,
+	isEmpty: (self: Queue<T>) -> boolean,
+	size: (self: Queue<T>) -> number,
+	clear: (self: Queue<T>) -> nil
+}
+
 return Queue

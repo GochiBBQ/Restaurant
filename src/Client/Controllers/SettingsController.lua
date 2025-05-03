@@ -6,16 +6,15 @@ For: Gochi
 ]]
 
 -- Services
-local MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
+local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local TweenService: TweenService = game:GetService("TweenService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local spr = require(Knit.Modules.spr)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
 
 -- Create Knit Controller
 local SettingsController = Knit.CreateController {
@@ -25,15 +24,15 @@ local SettingsController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local SettingsUI = GochiUI:WaitForChild("Settings")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local SettingsUI: GuiObject = GochiUI:WaitForChild("Settings")
 
 local DataService, GamepassService
 local _trove = Trove.new()
 
-local Toggles = {
+local Toggles: table = {
     Selected = {
         Image = 'rbxassetid://101748321328124',
         Position = UDim2.fromScale(0.7, 0.5)
@@ -44,7 +43,7 @@ local Toggles = {
     }
 }
 
-local Gamepasses = {
+local Gamepasses: table = {
     ["Headless"] = { ID = 1002697699 },
     ["Korblox"] = { ID = 1004797619 },
     ["Walkspeed"] = { ID = 1003057662 },

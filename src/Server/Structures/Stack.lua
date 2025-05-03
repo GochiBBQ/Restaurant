@@ -41,4 +41,14 @@ function Stack:clear()
 	table.clear(self._stack)
 end
 
+export type Stack<T> = {
+	_stack: { [number]: T },
+	push: (self: Stack<T>, value: T) -> nil,
+	pop: (self: Stack<T>) -> T | nil,
+	peek: (self: Stack<T>) -> T | nil,
+	isEmpty: (self: Stack<T>) -> boolean,
+	size: (self: Stack<T>) -> number,
+	clear: (self: Stack<T>) -> nil
+}
+
 return Stack

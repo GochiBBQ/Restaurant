@@ -6,10 +6,10 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 
 -- Create Knit Service
 local NotificationService = Knit.CreateService {

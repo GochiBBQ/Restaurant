@@ -6,28 +6,27 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local UserInputService = game:GetService('UserInputService')
-local SoundService = game:GetService("SoundService")
-local StarterGui = game:GetService('StarterGui')
-local Players = game:GetService('Players')
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local UserInputService: UserInputService = game:GetService('UserInputService')
+local SoundService: SoundService = game:GetService("SoundService")
+local StarterGui: StarterGui = game:GetService('StarterGui')
+local Players: Players = game:GetService('Players')
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local ViewportManager = require(Knit.Modules.ViewportManager)
-local spr = require(Knit.Modules.spr)
-local AnimNation = require(Knit.Modules.AnimNation)
-local Trove = require(ReplicatedStorage.Packages.Trove)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local ViewportManager: ModuleScript = require(Knit.Modules.ViewportManager)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
 
-local UISelect = SoundService.UISelect
-local UIHover = SoundService.UIHover
+local UISelect: Sound = SoundService.UISelect
+local UIHover: Sound = SoundService.UIHover
 
-local assignedNumbers = {}
-local toolToNumber = {}
+local assignedNumbers: table = {}
+local toolToNumber: table = {}
 
 -- Create Knit Controller
 local BackpackController = Knit.CreateController {

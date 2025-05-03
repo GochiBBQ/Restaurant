@@ -3,7 +3,7 @@
     This table contains various fields to track player progress, settings, inventory, and quests.
 ]]
     
-local template = {
+local template: table = {
     Points = 0,
 
     TipsReceived = 0,

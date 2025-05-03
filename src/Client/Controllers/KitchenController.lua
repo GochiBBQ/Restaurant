@@ -6,31 +6,31 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit) -- @module Knit
-local Trove = require(ReplicatedStorage.Packages.Trove) -- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) -- @module Knit
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) -- @module Trove
 
-local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
 
 -- Create Controller
 local KitchenController = Knit.CreateController { Name = "KitchenController" }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local FridgeUI = GochiUI:WaitForChild("Fridge")
-local StorageUI = GochiUI:WaitForChild("Storage")
-local DrinkMachineUI = GochiUI:WaitForChild("DrinkDispenser")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local FridgeUI: GuiObject = GochiUI:WaitForChild("Fridge")
+local StorageUI: GuiObject = GochiUI:WaitForChild("Storage")
+local DrinkMachineUI: GuiObject = GochiUI:WaitForChild("DrinkDispenser")
 
 -- Minigame Elements
-local MathUI = GochiUI:WaitForChild("CookingPuzzleMath")
-local PuzzleUI = GochiUI:WaitForChild("CookingPuzzleSelection")
+local MathUI: GuiObject = GochiUI:WaitForChild("CookingPuzzleMath")
+local PuzzleUI: GuiObject = GochiUI:WaitForChild("CookingPuzzleSelection")
 
-local TaskUI = GochiUI:WaitForChild("Task")
+local TaskUI: GuiObject = GochiUI:WaitForChild("Task")
 
 local KitchenService
 local TaskTrove = Trove.new()

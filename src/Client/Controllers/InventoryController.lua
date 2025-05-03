@@ -6,14 +6,14 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 
-local AnimNation = require(Knit.Modules.AnimNation) -- @module AnimNation
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local InventoryController = Knit.CreateController {
@@ -21,14 +21,14 @@ local InventoryController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
 
-local InventoryUI = GochiUI:WaitForChild("Inventory")
+local InventoryUI: GuiObject = GochiUI:WaitForChild("Inventory")
 
-local Buttons = InventoryUI.Buttons
-local Pages = InventoryUI.Pages
+local Buttons: GuiObject = InventoryUI.Buttons
+local Pages: GuiObject = InventoryUI.Pages
 
 local UIController
 

@@ -6,13 +6,13 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService: TextChatService = game:GetService("TextChatService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) --- @module Knit
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local GreetingController = Knit.CreateController {
@@ -22,10 +22,10 @@ local GreetingController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: Player = Player:WaitForChild("PlayerGui")
 
-local defaultMessages = {
+local defaultMessages: table = {
 	welcomeMessage = "Greetings, welcome to Gochí! I'll be assisting you today. How many people are in your party?",
 	areaMessage = "Would you prefer to be arranged indoors, outdoors, or in our underwater dining?",
 	seatingMessage = "Where would you liked to be seated? We offer tables and booths.",
@@ -40,8 +40,8 @@ local defaultMessages = {
 local GreetingService
 
 -- UI Elements
-local GreetingUI = PlayerGui:WaitForChild("GochiUI"):WaitForChild("Greetings")
-local ScrollingFrame = GreetingUI.Main.ScrollingFrame
+local GreetingUI: GuiObject = PlayerGui:WaitForChild("GochiUI"):WaitForChild("Greetings")
+local ScrollingFrame: GuiObject = GreetingUI.Main.ScrollingFrame
 
 -- Client Functions
 function GreetingController:KnitStart()

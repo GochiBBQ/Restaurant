@@ -6,13 +6,13 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
 
 -- Create Knit Controller
 local StoreController = Knit.CreateController {
@@ -21,13 +21,13 @@ local StoreController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local StoreUI = GochiUI:WaitForChild("Store")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local StoreUI: GuiObject = GochiUI:WaitForChild("Store")
 
-local Buttons = StoreUI.Buttons
-local Pages = StoreUI.Pages
+local Buttons: GuiObject = StoreUI.Buttons
+local Pages: GuiObject = StoreUI.Pages
 
 local UIController
 local _trove = Trove.new()

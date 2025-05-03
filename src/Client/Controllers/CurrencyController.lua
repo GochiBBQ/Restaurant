@@ -6,14 +6,13 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local RunService: RunService = game:GetService("RunService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local CurrencyController = Knit.CreateController {
@@ -21,13 +20,13 @@ local CurrencyController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: Player = Player:WaitForChild("PlayerGui")
 
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local Profiler = GochiUI:WaitForChild("Profiler")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local Profiler: GuiObject = GochiUI:WaitForChild("Profiler")
 
-local Headshot = Profiler.Content.ProfileBase.Headshot
+local Headshot: GuiObject = Profiler.Content.ProfileBase.Headshot
 
 local thumbType = Enum.ThumbnailType.HeadShot
 local thumbSize = Enum.ThumbnailSize.Size420x420
@@ -35,7 +34,7 @@ local content, isReady = Players:GetUserThumbnailAsync(Player.UserId, thumbType,
 
 local RankService, CurrencyService
 
-local activeLerpConn = nil
+local activeLerpConn: boolean = nil
 
 -- Trove Instance
 CurrencyController._trove = Trove.new()

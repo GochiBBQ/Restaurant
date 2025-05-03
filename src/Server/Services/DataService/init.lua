@@ -6,20 +6,19 @@ For: Gochi
 ]]
 
 -- Services
-local ServerScriptService = game:GetService("ServerScriptService")
-local DataStoreService = game:GetService("DataStoreService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local Teams = game:GetService("Teams")
+local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService: HttpService = game:GetService("HttpService")
+local Players: Players = game:GetService("Players")
+local Teams: Teams = game:GetService("Teams")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Signal = require(ReplicatedStorage.Packages.Signal)
-local ProfileService = require(Knit.Modules.ProfileService)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local HashSet = require(ServerScriptService.Structures.HashSet) --- @module HashSet
-local template = require(script.template)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Signal: ModuleScript = require(ReplicatedStorage.Packages.Signal)
+local ProfileService: ModuleScript = require(Knit.Modules.ProfileService)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) --- @module HashSet
+local template: ModuleScript = require(script.template)
 
 -- Create Knit Service
 local DataService = Knit.CreateService({
@@ -39,13 +38,13 @@ Knit.Profiles = {}
 
 -- Use HashSet to manage PlayerTroves
 local PlayerTroves = HashSet.new()
-local TroveMap = {} -- maps Player → Trove instance
+local TroveMap: ModuleScript = {} -- maps Player → Trove instance
 
 local RankService
 local GamepassService
 
-local url = "http://138.197.80.59:3001"
-local key = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
+local url: string = "http://138.197.80.59:3001"
+local key: string = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
 -- Server Functions
 function DataService:LoadProfile(Player: Player)

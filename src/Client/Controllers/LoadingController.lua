@@ -6,39 +6,37 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local ContentProvider = game:GetService("ContentProvider")
-local RunService = game:GetService('RunService')
-local StarterGui = game:GetService("StarterGui")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local StarterGui: StarterGui = game:GetService("StarterGui")
+local Lighting: Lighting = game:GetService("Lighting")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Signal = require(ReplicatedStorage.Packages.Signal)
-local AnimNation = require(Knit.Modules.AnimNation) --- @module AnimNation
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Signal: ModuleScript = require(ReplicatedStorage.Packages.Signal)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) --- @module AnimNation
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Variables
-local Player = Players.LocalPlayer
+local Player: Player = Players.LocalPlayer
 
-local Skipped = false
+local Skipped: boolean = false
 
 local NotificationService, TeamService, RankService, DataService
 local TeamController, UIController
 
 -- GUI assets
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
-local TeamUI = GochiUI:WaitForChild("Teams")
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
+local TeamUI: GuiObject = GochiUI:WaitForChild("Teams")
 
-local LoadingUI = PlayerGui:WaitForChild("LoadingScreen"):WaitForChild("LoadingScreen")
-local Content = LoadingUI:WaitForChild("Content")
-local ProgressHolder = Content:WaitForChild("Progress")
-local ProgressBar = ProgressHolder:WaitForChild("Filler")
-local Skip = Content:WaitForChild("Skip")
-local LoadedText = Content:WaitForChild("Loaded")
-local Percentage = Content:WaitForChild("Percentage")
+local LoadingUI: GuiObject = PlayerGui:WaitForChild("LoadingScreen"):WaitForChild("LoadingScreen")
+local Content: GuiObject = LoadingUI:WaitForChild("Content")
+local ProgressHolder: GuiObject = Content:WaitForChild("Progress")
+local ProgressBar: GuiObject = ProgressHolder:WaitForChild("Filler")
+local Skip: GuiObject = Content:WaitForChild("Skip")
+local LoadedText: GuiObject = Content:WaitForChild("Loaded")
+local Percentage: GuiObject = Content:WaitForChild("Percentage")
 
 -- Create Knit Controller
 local LoadingController = Knit.CreateController {
@@ -49,9 +47,6 @@ local LoadingController = Knit.CreateController {
 local trove = Trove.new() -- Create a Trove instance
 
 -- Client Functions
---[[ 
-    Initializes the loading process for the game, displaying a loading screen with progress updates.
-]]
 function LoadingController:KnitStart()
     UIController = Knit.GetController("UIController")
     TeamController = Knit.GetController("TeamController")

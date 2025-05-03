@@ -6,17 +6,17 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
 
 -- Variables
-local Player = Players.LocalPlayer
+local Player: PlayerGui = Players.LocalPlayer
 
-local PlayerStorage = workspace:WaitForChild("PlayerStorage")
+local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
 local Beam: Beam = ReplicatedStorage:WaitForChild("Static"):WaitForChild("Beam")
 
 local NavigationService

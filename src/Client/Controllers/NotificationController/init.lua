@@ -6,13 +6,13 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
-local AnimNation = require(Knit.Modules.AnimNation)
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation)
 
 -- Create Knit Controller
 local NotificationController = Knit.CreateController {
@@ -20,18 +20,18 @@ local NotificationController = Knit.CreateController {
 }
 
 -- Active announcements (max 2 visible)
-local ActiveNotifications = {}
+local ActiveNotifications: table = {}
 
 -- Queue for waiting messages
-local NotificationQueue = {}
+local NotificationQueue: table = {}
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
 
-local Container = GochiUI:WaitForChild("Notifications")
-local AnnouncementTemplate = Container:WaitForChild("Tip")
+local Container: GuiObject = GochiUI:WaitForChild("Notifications")
+local AnnouncementTemplate: GuiObject = Container:WaitForChild("Tip")
 
 local NotificationService
 

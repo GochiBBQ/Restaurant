@@ -6,13 +6,13 @@ For: Gochi
 ]]
 
 -- Services
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local TextChatService = game:GetService("TextChatService")
-local Players = game:GetService("Players")
+local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
+local TextChatService: TextChatService = game:GetService("TextChatService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 
 -- Create Knit Controller
 local ChatController = Knit.CreateController {
@@ -20,22 +20,22 @@ local ChatController = Knit.CreateController {
 }
 
 -- Constants
-local ChatMessageToFormat = "<font color='#%s'>%s</font>"
-local PrefixToFormat = "<font color='#%s'>[%s]</font> %s"
+local ChatMessageToFormat: string = "<font color='#%s'>%s</font>"
+local PrefixToFormat: string = "<font color='#%s'>[%s]</font> %s"
 
-local Tags = {
+local Tags: table = {
     [106192999] = { -- arjun
         BackgroundColor = Color3.fromHex("393b3d"),
         MessageColor = Color3.fromHex("89cff0"),
     },
 }
 
-local PremiumTag = {
+local PremiumTag: table = {
     PrefixColor = Color3.fromRGB(92, 66, 100),
     Prefix = "VIP"
 }
 
-local BoosterTag = {
+local BoosterTag: table = {
     PrefixColor = Color3.fromRGB(228, 151, 208),
     Prefix = "BOOSTER"
 }
