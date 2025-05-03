@@ -22,7 +22,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 -- Variables
 local LocalPlayer = Players.LocalPlayer
 local UIController, LoadingController
-local RankService, TeamService
+local RankService, TeamService, NotificationService
 
 local onCooldown = false
 local toggled = true
@@ -57,6 +57,7 @@ function TeamController:KnitStart()
 
     RankService = Knit.GetService('RankService')
     TeamService = Knit.GetService('TeamService')
+    NotificationService = Knit.GetService('NotificationService')
     UIController = Knit.GetController('UIController')
     LoadingController = Knit.GetController('LoadingController')
 
@@ -226,25 +227,35 @@ end
 
 function TeamController:ButtonSelected(Team: string)
     if table.find(AllowedTeams, Team) then
-        TeamService:TeamSelected(Team)
-        self.TeamSelected:Fire(Team)
-
-        for _, frame in pairs(TeamUI.List:GetChildren()) do
-            if frame:IsA("Frame") then
-                frame.Background.Image = 'rbxassetid://90244196390560'
-                frame.Select.Image = 'rbxassetid://134624810349389'
-                frame.Select.Label.Text = (table.find(AllowedTeams, frame.Name) and 'Select' or 'Locked')
-                frame.Select.Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TeamService:TeamSelected(Team):andThen(function(success, errorMessage)
+            if success ~= nil and not success then
+                if errorMessage then
+                    NotificationService:CreateNotif(LocalPlayer, errorMessage)
+                else
+                    NotificationService:CreateNotif(LocalPlayer, "An error occurred while selecting the team.")
+                end
+                return
             end
-        end
 
-        local selectedFrame = TeamUI.List[Team]
-        if selectedFrame then
-            selectedFrame.Background.Image = 'rbxassetid://92560465279538'
-            selectedFrame.Select.Label.Text = 'Selected'
-            selectedFrame.Select.Label.TextColor3 = Color3.fromRGB(30, 30, 30)
-            selectedFrame.Select.Image = 'rbxassetid://134713465405556'
-        end
+            self.TeamSelected:Fire(Team)
+
+                for _, frame in pairs(TeamUI.List:GetChildren()) do
+                    if frame:IsA("Frame") then
+                        frame.Background.Image = 'rbxassetid://90244196390560'
+                        frame.Select.Image = 'rbxassetid://134624810349389'
+                        frame.Select.Label.Text = (table.find(AllowedTeams, frame.Name) and 'Select' or 'Locked')
+                        frame.Select.Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    end
+                end
+        
+                local selectedFrame = TeamUI.List[Team]
+                if selectedFrame then
+                    selectedFrame.Background.Image = 'rbxassetid://92560465279538'
+                    selectedFrame.Select.Label.Text = 'Selected'
+                    selectedFrame.Select.Label.TextColor3 = Color3.fromRGB(30, 30, 30)
+                    selectedFrame.Select.Image = 'rbxassetid://134713465405556'
+                end
+        end)
     end
 end
 

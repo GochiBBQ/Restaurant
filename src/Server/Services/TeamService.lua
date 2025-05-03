@@ -45,10 +45,34 @@ function TeamService.Client:TeamSelected(player: Player, team: string)
     local role = RankService:GetRole(player) or "Unknown"
     local rank = RankService:GetRank(player) or 0
 
+    -- Count players in each team
+    local chefTeam = Teams:FindFirstChild("Chef")
+    local serverTeam = Teams:FindFirstChild("Server")
+    local chefCount = chefTeam and #chefTeam:GetPlayers() or 0
+    local serverCount = serverTeam and #serverTeam:GetPlayers() or 0
+
+    -- Enforce ratio after both teams have at least one player
+    if chefCount == 0 or serverCount == 0 then
+        -- Allow players to join either team until both have at least one member
+        print("One team is still empty. Allowing team join without ratio enforcement.")
+    else
+        -- Enforce 2 servers to 1 chef ratio
+        if team == "Server" and serverCount >= chefCount * 2 then
+            warn("Cannot assign player to Server team. Ratio exceeded.")
+            return false, "Server team is full."
+        elseif team == "Chef" and chefCount >= math.floor(serverCount / 2) then
+            warn("Cannot assign player to Chef team. Ratio exceeded.")
+            return false, "Chef team is full."
+        end
+    end
+
+
+    -- Set player attributes
     player:SetAttribute("Team", team)
     player:SetAttribute("Rank", rank)
     player:SetAttribute("Role", role)
 
+    -- Assign player to the team
     local teamObj = Teams:FindFirstChild(team)
     if teamObj then
         player.Team = teamObj
@@ -57,6 +81,7 @@ function TeamService.Client:TeamSelected(player: Player, team: string)
         return
     end
 
+    -- Manage Trove for cleanup
     local trove = playerTroveMap:get(player)
     if not trove then
         trove = Trove.new()
@@ -65,6 +90,7 @@ function TeamService.Client:TeamSelected(player: Player, team: string)
         trove:Clean()
     end
 
+    -- Notify clients
     self.AssignTeam:FireAll(player, team, rank, role)
 end
 
