@@ -24,6 +24,7 @@ local OrderService = Knit.CreateService {
         UpdateQueue = Knit.CreateSignal(),
         UpdateOrder = Knit.CreateSignal(), -- Fired to assigned chefs
         OrderCompleted = Knit.CreateSignal(), -- Fired to original player
+        ItemCompleted = Knit.CreateSignal(), -- Fired to assigned chefs
         UpdateUI = Knit.CreateSignal(), -- Fired to player
     },
 }
@@ -83,19 +84,13 @@ local function assignChefsToOrder(self, orderDetails)
     local assignments = {}
     for i = 1, #orderDetails.Items do
         local chef = self:GetNextPlayer()
-        print(chef)
         if not chef then break end
 
         assignments[i] = chef
         
         KitchenService:SelectItem(chef, orderDetails.Items[i])
+        chef:SetAttribute("OrderId", orderDetails.OrderId)
 
-        self.Client.UpdateOrder:FireAll({
-            orderId = orderDetails.OrderId, -- Pass the orderId for context
-            Action = "AssignChef", -- Action type for the clients to handle
-            Chef = chef, -- The player assigned to this item
-            Item = orderDetails.Items[i], -- The item being assigned
-        })
     end
     return assignments
 end
@@ -148,29 +143,45 @@ function OrderService:_submit(server: Player, orderDetails: table): boolean
     return true
 end
 
-function OrderService:_markItemDone(chef: Player, orderId: string, itemIndex: number): boolean
-    local orderData = activeOrders[orderId]
-    if not orderData then return false end
+function OrderService:_markItemDone(chef: Player, orderId: string, itemName: string): boolean
+	local orderData = activeOrders[orderId]
+	if not orderData then return false end
 
-    local assignedChef = orderData.Assignments[itemIndex]
-    if assignedChef ~= chef then
-        warn("Chef is not assigned to this item.")
-        return false
-    end
+	local foundIndex = nil
+	for index, assignedChef in ipairs(orderData.Assignments) do
+		if assignedChef == chef and orderData.Items[index] == itemName and not orderData.Completed[index] then
+			foundIndex = index
+			break
+		end
+	end
 
-    orderData.Completed[itemIndex] = true
+	if not foundIndex then
+		warn(`Chef {chef.Name} is not assigned to item "{itemName}" or it's already completed.`)
+		return false
+	end
 
-    -- Check if full order is done
-    if isOrderComplete(orderData) then
-        self.Client.OrderCompleted:Fire(orderData.Player, {
-            Table = orderData.Table,
-            Items = orderData.Items,
-        })
-        activeOrders[orderId] = nil -- Clean up
-    end
+	orderData.Completed[foundIndex] = true
 
-    return true
+	-- Check if full order is done
+	if isOrderComplete(orderData) then
+		self.Client.OrderCompleted:Fire(orderData.Player, {
+			Table = orderData.Table,
+			Items = orderData.Items,
+		})
+		activeOrders[orderId] = nil -- Clean up
+	end
+
+    self.Client.UpdateOrder:FireAll({
+        OrderId = orderId,
+        ItemName = itemName,
+        Action = "CompleteItem",
+    })
+
+    chef:SetAttribute("OrderId", nil) -- Clear the OrderId attribute for the chef
+
+	return true
 end
+
 
 function OrderService:_joinQueue(Player: Player, Purchased: boolean?): boolean
     local userId = Player.UserId

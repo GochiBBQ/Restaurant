@@ -47,6 +47,7 @@ local Cooking = Workspace:WaitForChild("Functionality"):WaitForChild("Cooking")
 local KitchenModels = ServerStorage:WaitForChild("KitchenModels")
 
 local NavigationService
+local OrderService
 
 -- Player Tasks
 KitchenService.Tasks = TableMap.new() -- Player → Task
@@ -57,6 +58,7 @@ KitchenService.ModelQueues = TableMap.new() -- TaskType → Queue<Player>
 -- Server Functions
 function KitchenService:KnitStart()
 	NavigationService = Knit.GetService("NavigationService")
+	OrderService = Knit.GetService("OrderService")
 end
 
 function KitchenService:_assignTask(Player, TaskType, TaskName, Model, Ingredient: string?)
@@ -944,6 +946,9 @@ function KitchenService:_submitItem(Player: Player, Item: string)
 
 		task.Complete:Wait()
 		self:_removeToolFromCharacter(Player, Item)
+
+		OrderService:_markItemDone(Player, Player:GetAttribute("OrderId"), Item)
+
 		resolve(true)
 	end)
 end

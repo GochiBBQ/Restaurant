@@ -5,8 +5,8 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players = game:GetService("Players")
 local RunService = game:GetService('RunService')
+local Players = game:GetService("Players")
 
 -- Modules
 local Knit = require(ReplicatedStorage.Packages.Knit) -- @module Knit
@@ -24,29 +24,29 @@ local OrderController = Knit.CreateController {
 }
 
 -- Variables
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local GochiUI = PlayerGui:WaitForChild("GochiUI")
+local Player: Player = Players.LocalPlayer
+local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
+local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
 
-local CreateOrder = GochiUI:WaitForChild("CreateOrder") -- @type ImageButton
-local ChefQueue = GochiUI:WaitForChild("ChefQueue") -- @type ImageButton
+local CreateOrder: ImageButton = GochiUI:WaitForChild("CreateOrder") -- @type ImageButton
+local ChefQueue: ImageButton = GochiUI:WaitForChild("ChefQueue") -- @type ImageButton
+local OrderCreation: Frame = GochiUI:WaitForChild("OrderCreation") -- @type Frame
+local Buttons: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('Buttons') -- @type Frame
+local Pages: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('MainContent') -- @type Frame
+local Queue: Frame = GochiUI:WaitForChild("Queue") -- @type Frame
 
-local OrderCreation = GochiUI:WaitForChild("OrderCreation") -- @type Frame
-local Buttons = OrderCreation:WaitForChild('Content'):WaitForChild('Buttons') -- @type Frame
-local Pages = OrderCreation:WaitForChild('Content'):WaitForChild('MainContent') -- @type Frame
-
-local Queue = GochiUI:WaitForChild("Queue") -- @type Frame
-
-local OrderBoard = PlayerGui:WaitForChild("SurfaceUIs"):WaitForChild("OrderBoard") -- @type SurfaceGui
+local OrderBoard: SurfaceGui = PlayerGui:WaitForChild("SurfaceUIs"):WaitForChild("OrderBoard") -- @type SurfaceGui
 
 local OrderService
 local TableService
 local NotificationService
-
 local UIController
 
-local queueUIEntries = {} -- [UserId] = { Frame = Template, JoinTime = time }
-local orderUIEntries = {} -- [OrderId] = { Frame = Template, OrderDetails = orderDetails }
+local queueUIEntries: table = {} -- [UserId] = { Frame = Template, JoinTime = time }
+local orderUIEntries: table = {} -- [OrderId] = { Frame = Template, OrderDetails = orderDetails }
+
+local timerRunning: boolean = false
+local orderTimer: boolean = false
 
 -- Helper to clean up previous visuals
 function OrderController:ClearSelections()
@@ -85,12 +85,6 @@ function OrderController:KnitStart()
     OrderService.UpdateQueue:Connect(self.UpdateQueue)
     OrderService.UpdateOrder:Connect(self.UpdateOrders)
 end
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-
-local queueUIEntries = {} -- Tracks current UI entries
-local timerRunning = false
 
 OrderController.UpdateQueue = function(queueInfo: table): nil
     -- Clear old UI elements
@@ -156,9 +150,31 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
     end
 end
 
-local orderTimer = false
 OrderController.UpdateOrders = function(orderDetails: table): nil
-    warn(orderDetails)
+
+    if not orderDetails or not orderDetails.OrderId then
+        warn("Invalid order details received")
+        return
+    end
+
+    if orderUIEntries[orderDetails.OrderId] then
+        -- If the order already exists, update it instead of creating a new one
+        local existingOrder = orderUIEntries[orderDetails.OrderId]
+        
+        if orderDetails.Action == "CompleteItem" then
+            -- Update the item in the existing order
+            local itemLabel = existingOrder.Frame.Items:FindFirstChild(orderDetails.ItemName)
+            if itemLabel then
+                itemLabel.Text = `✅ {orderDetails.ItemName}` -- Mark as completed
+            else
+                warn(`Item label not found for {orderDetails.ItemName} in existing order`)
+            end
+        elseif orderDetails.Action == "CompleteOrder" then
+            
+        end
+        return
+    end
+
     local Template = OrderBoard.OrderTemplate -- @type Frame
 
     if not Template then
@@ -187,6 +203,7 @@ OrderController.UpdateOrders = function(orderDetails: table): nil
         -- Create an entry for each item in the order
         local itemLabel = clone.Items:FindFirstChild("Item_" .. tostring(index)) -- Assuming Item1, Item2, etc. in the template
         if itemLabel then
+            itemLabel.Name = item -- Set the name to the item name
             itemLabel.Text = `❌ {item}` -- Set the text to the item name
             itemLabel.Visible = true -- Ensure it's visible
         else
@@ -364,6 +381,14 @@ function OrderController:InitChefQueue()
 
     OrderService.UpdateUI:Connect(function(action)
         if action == 'LeaveQueue' then
+            Queue.Join.TextLabel.Text = 'Join queue'
+        end
+    end)
+
+    Player:GetAttributeChangedSignal("OrderId"):Connect(function()
+        if Player:GetAttribute("OrderId") ~= nil then
+           Queue.Join.TextLabel.Text = 'Leave queue'
+        else
             Queue.Join.TextLabel.Text = 'Join queue'
         end
     end)
