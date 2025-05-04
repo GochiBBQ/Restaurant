@@ -22,10 +22,10 @@ local OrderService = Knit.CreateService {
     Name = "OrderService",
     Client = {
         UpdateQueue = Knit.CreateSignal(),
-        UpdateOrder = Knit.CreateSignal(), -- Fired to assigned chefs
-        OrderCompleted = Knit.CreateSignal(), -- Fired to original player
-        ItemCompleted = Knit.CreateSignal(), -- Fired to assigned chefs
-        UpdateUI = Knit.CreateSignal(), -- Fired to player
+        UpdateOrder = Knit.CreateSignal(),
+        OrderCompleted = Knit.CreateSignal(),
+        ItemCompleted = Knit.CreateSignal(),
+        UpdateUI = Knit.CreateSignal(),
     },
 }
 
@@ -33,15 +33,15 @@ local OrderService = Knit.CreateService {
 local priorityQueue = Queue.new()
 local normalQueue = Queue.new()
 local queuedUserIds = HashSet.new()
-local joinTimes = {} -- [userId] = os.time()
+local joinTimes = {}
 
 -- Active Orders
-local activeOrders: table = {} -- [orderId] = { Player, Table, Items, Assignments, Completed }
+local activeOrders: table = {}
+local retryQueue = {} -- For fallback
 
 -- Variables
 local KitchenService
 
--- Helper: Rebuild a queue excluding a specific UserId
 local function rebuildQueueExcluding(queue, excludeUserId)
     local newQueue = Queue.new()
     while not queue:isEmpty() do
@@ -53,7 +53,6 @@ local function rebuildQueueExcluding(queue, excludeUserId)
     return newQueue
 end
 
--- Converts queue to array with join times
 local function queueToTableWithJoinTimes(queue)
     local result = {}
     local tempQueue = Queue.new()
@@ -71,7 +70,6 @@ local function queueToTableWithJoinTimes(queue)
     return result
 end
 
--- Broadcast queue to clients
 local function broadcastQueueUpdate(self)
     self.Client.UpdateQueue:FireAll({
         priority = queueToTableWithJoinTimes(priorityQueue),
@@ -79,23 +77,6 @@ local function broadcastQueueUpdate(self)
     })
 end
 
--- Assign chefs to items in order
-local function assignChefsToOrder(self, orderDetails)
-    local assignments = {}
-    for i = 1, #orderDetails.Items do
-        local chef = self:GetNextPlayer()
-        if not chef then break end
-
-        assignments[i] = chef
-        
-        KitchenService:SelectItem(chef, orderDetails.Items[i])
-        chef:SetAttribute("OrderId", orderDetails.OrderId)
-
-    end
-    return assignments
-end
-
--- Check if an order is fully completed
 local function isOrderComplete(orderData)
     for i = 1, #orderData.Items do
         if not orderData.Completed[i] then
@@ -105,71 +86,96 @@ local function isOrderComplete(orderData)
     return true
 end
 
--- Server Functions
+local function tryAssignPendingOrders(self)
+    for orderId, orderData in pairs(activeOrders) do
+        for index, item in ipairs(orderData.Items) do
+            if not orderData.Completed[index] and not orderData.Assignments[index] then
+                local chef = self:PeekNextPlayer()
+                if chef then
+                    chef = self:PopNextPlayer()
+                    if chef then
+                        orderData.Assignments[index] = chef
+                        KitchenService:SelectItem(chef, item)
+                        chef:SetAttribute("OrderId", orderId)
+
+                        self.Client.UpdateOrder:FireAll({
+                            OrderId = orderId,
+                            Action = "AssignItem",
+                            Index = index,
+                            Chef = chef,
+                            Item = item,
+                        })
+                        broadcastQueueUpdate(self)
+                    end
+                else
+                    table.insert(retryQueue, {
+                        OrderId = orderId,
+                        Index = index,
+                        Item = item,
+                    })
+                end
+            end
+        end
+    end
+end
 
 function OrderService:_submit(server: Player, orderDetails: table): boolean
-    assert(server:IsA("Player"), "Expected a Player instance for 'server'")
-    assert(type(orderDetails) == "table", "Expected a table for 'orderDetails'")
-    assert(server:GetAttribute("Table"), "Server must have a valid Table attribute")
-    assert(server:GetAttribute("Server"), "Server must have a valid Server attribute")
-    assert(orderDetails.Player and orderDetails.Table and orderDetails.Items, "Missing order fields")
+    assert(server:IsA("Player"))
+    assert(type(orderDetails) == "table")
+    assert(server:GetAttribute("Table") and server:GetAttribute("Server"))
+    assert(orderDetails.Player and orderDetails.Table and orderDetails.Items)
 
     local orderId = HttpService:GenerateGUID(false)
-    orderDetails.OrderId = orderId -- Store the generated orderId in orderDetails for reference
-    local assignments = assignChefsToOrder(self, orderDetails)
+    orderDetails.OrderId = orderId
 
     activeOrders[orderId] = {
         Player = orderDetails.Player,
-        Server = server, -- The server that submitted the order
+        Server = server,
         Table = orderDetails.Table,
         Items = orderDetails.Items,
-        Assignments = assignments,
-        Completed = {}, -- [index] = true when done
+        Assignments = {},
+        Completed = {},
     }
 
+    tryAssignPendingOrders(self)
     broadcastQueueUpdate(self)
 
     self.Client.UpdateOrder:FireAll({
-        OrderId = orderId, -- The unique ID for this order
-        Server = server, -- The server that submitted the order
-        Player = orderDetails.Player, -- The player who made the order
-        Action = "NewOrder", -- Action type for the clients to handle
+        OrderId = orderId,
+        Server = server,
+        Player = orderDetails.Player,
+        Action = "NewOrder",
         Table = orderDetails.Table,
-        Items = orderDetails.Items, -- Pass the items in the order
-        Assignments = assignments, -- Pass the chef assignments for each item
-        Time = os.time(), -- Optional
+        Items = orderDetails.Items,
+        Assignments = {},
+        Time = os.time(),
     })
 
     return true
 end
 
 function OrderService:_markItemDone(chef: Player, orderId: string, itemName: string): boolean
-	local orderData = activeOrders[orderId]
-	if not orderData then return false end
+    local orderData = activeOrders[orderId]
+    if not orderData then return false end
 
-	local foundIndex = nil
-	for index, assignedChef in ipairs(orderData.Assignments) do
-		if assignedChef == chef and orderData.Items[index] == itemName and not orderData.Completed[index] then
-			foundIndex = index
-			break
-		end
-	end
+    local foundIndex
+    for index, assignedChef in ipairs(orderData.Assignments) do
+        if assignedChef == chef and orderData.Items[index] == itemName and not orderData.Completed[index] then
+            foundIndex = index
+            break
+        end
+    end
 
-	if not foundIndex then
-		warn(`Chef {chef.Name} is not assigned to item "{itemName}" or it's already completed.`)
-		return false
-	end
+    if not foundIndex then return false end
+    orderData.Completed[foundIndex] = true
 
-	orderData.Completed[foundIndex] = true
-
-	-- Check if full order is done
-	if isOrderComplete(orderData) then
-		self.Client.OrderCompleted:Fire(orderData.Player, {
-			Table = orderData.Table,
-			Items = orderData.Items,
-		})
-		activeOrders[orderId] = nil -- Clean up
-	end
+    if isOrderComplete(orderData) then
+        self.Client.OrderCompleted:Fire(orderData.Player, {
+            Table = orderData.Table,
+            Items = orderData.Items,
+        })
+        activeOrders[orderId] = nil
+    end
 
     self.Client.UpdateOrder:FireAll({
         OrderId = orderId,
@@ -177,17 +183,15 @@ function OrderService:_markItemDone(chef: Player, orderId: string, itemName: str
         Action = "CompleteItem",
     })
 
-    chef:SetAttribute("OrderId", nil) -- Clear the OrderId attribute for the chef
+    chef:SetAttribute("OrderId", nil)
+    tryAssignPendingOrders(self)
 
-	return true
+    return true
 end
-
 
 function OrderService:_joinQueue(Player: Player, Purchased: boolean?): boolean
     local userId = Player.UserId
-    if queuedUserIds:contains(userId) then
-        return false
-    end
+    if queuedUserIds:contains(userId) then return false end
 
     if Purchased then
         priorityQueue:push(userId)
@@ -197,35 +201,41 @@ function OrderService:_joinQueue(Player: Player, Purchased: boolean?): boolean
 
     joinTimes[userId] = os.time()
     queuedUserIds:add(userId)
-
     broadcastQueueUpdate(self)
+    tryAssignPendingOrders(self)
 
     return true
 end
 
 function OrderService:_leaveQueue(Player: Player): boolean
     local userId = Player.UserId
-    if not queuedUserIds:contains(userId) then
-        return false
-    end
+    if not queuedUserIds:contains(userId) then return false end
 
     priorityQueue = rebuildQueueExcluding(priorityQueue, userId)
     normalQueue = rebuildQueueExcluding(normalQueue, userId)
     queuedUserIds:remove(userId)
     joinTimes[userId] = nil
-
     broadcastQueueUpdate(self)
-    self.Client.UpdateUI:Fire(Player, {
-        Action = "LeaveQueue",
-    })
+    self.Client.UpdateUI:Fire(Player, { Action = "LeaveQueue" })
 
     return true
 end
 
-function OrderService:GetNextPlayer(): Player?
+function OrderService:PeekNextPlayer(): Player?
+    local userId
+    if not priorityQueue:isEmpty() then
+        userId = priorityQueue:peek()
+    elseif not normalQueue:isEmpty() then
+        userId = normalQueue:peek()
+    end
 
-    print(priorityQueue, normalQueue)
+    if userId then
+        return Players:GetPlayerByUserId(userId)
+    end
+    return nil
+end
 
+function OrderService:PopNextPlayer(): Player?
     local userId
     if not priorityQueue:isEmpty() then
         userId = priorityQueue:pop()
@@ -242,12 +252,10 @@ function OrderService:GetNextPlayer(): Player?
         end
         return player
     end
-
     return nil
 end
 
 function OrderService:KnitStart()
-
     KitchenService = Knit.GetService("KitchenService")
 
     Players.PlayerRemoving:Connect(function(player)
@@ -256,15 +264,48 @@ function OrderService:KnitStart()
 
     Players.PlayerAdded:Connect(function(player)
         player:GetAttributeChangedSignal("Team"):Connect(function()
-            if player:GetAttribute("Team") ~= "Chef" or player:GetAttribute("Team") ~= "Management" then
+            if player:GetAttribute("Team") ~= "Chef" and player:GetAttribute("Team") ~= "Management" then
                 self:_leaveQueue(player)
             end
         end)
     end)
+
+    task.spawn(function()
+        while true do
+            task.wait(5)
+            local stillUnassigned = {}
+            for _, pending in ipairs(retryQueue) do
+                local orderData = activeOrders[pending.OrderId]
+                if orderData and not orderData.Completed[pending.Index] and not orderData.Assignments[pending.Index] then
+                    local chef = self:PeekNextPlayer()
+                    if chef then
+                        chef = self:PopNextPlayer()
+                        if chef then
+                            orderData.Assignments[pending.Index] = chef
+                            KitchenService:SelectItem(chef, pending.Item)
+                            chef:SetAttribute("OrderId", pending.OrderId)
+
+                            self.Client.UpdateOrder:FireAll({
+                                OrderId = pending.OrderId,
+                                Action = "AssignItem",
+                                Index = pending.Index,
+                                Chef = chef,
+                                Item = pending.Item,
+                            })
+
+                            broadcastQueueUpdate(self)
+                        end
+                    else
+                        table.insert(stillUnassigned, pending)
+                    end
+                end
+            end
+            retryQueue = stillUnassigned
+        end
+    end)
 end
 
--- Client Functions
-
+-- Client endpoints
 function OrderService.Client:Submit(server: Player, orderDetails: table)
     return self.Server:_submit(server, orderDetails)
 end
@@ -285,5 +326,4 @@ function OrderService.Client:MarkItemDone(chef: Player, orderId: string, itemInd
     return self.Server:_markItemDone(chef, orderId, itemIndex)
 end
 
--- Return to Knit
 return OrderService

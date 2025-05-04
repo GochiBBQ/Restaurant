@@ -633,7 +633,6 @@ function TableController:AreaSelected(Area: string)
                             NavigationService:Beam(tableData.Table):andThen(function(success)
                                 if success then
                                     UIController:Close(Panel)
-                                    TableService:TabletEnd(activeRegister)
                                     activeRegister = nil
                                     NotificationService:CreateNotif(Player, `Please take your guests to Table <b>{Name}</b> using the arrows.`)
 
@@ -667,7 +666,6 @@ function TableController:AreaSelected(Area: string)
     
                 -- End tablet session if active
                 if activeRegister then
-                    TableService:TabletEnd(activeRegister)
                     activeRegister = nil
                 end
     
