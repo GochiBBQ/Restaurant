@@ -234,13 +234,13 @@ function OrderService:_claimOrder(Server: Player, orderId: string)
     return true, "Order completed successfully"
 end
 
-function OrderService:_cancelOrder(Server: Player, orderId: string)
+function OrderService:_cancelOrder(Player: Player, orderId: string)
     local orderData = activeOrders[orderId]
     if not orderData then
         return false, "Order does not exist."
     end
 
-    if Server ~= Players:GetPlayerByUserId(orderData.Server.UserId) or RankService:GetRank(Server) < 7 then
+    if Player ~= Players:GetPlayerByUserId(orderData.Server.UserId) or RankService:GetRank(Player) < 7 then
         return false, "You do not have permission to cancel this order."
     end
 
@@ -353,7 +353,39 @@ function OrderService:KnitStart()
 
     Players.PlayerRemoving:Connect(function(player)
         self:_leaveQueue(player)
+    
+        -- Check if this player is involved in any active orders (as Server or Player)
+        for orderId, orderData in pairs(activeOrders) do
+            local isServerLeaving = orderData.Server == player
+            local isOrderingPlayerLeaving = orderData.Player == player
+    
+            if isServerLeaving or isOrderingPlayerLeaving then
+                -- Clean up the order
+                if orderTroves[orderId] then
+                    orderTroves[orderId]:Clean()
+                    orderTroves[orderId] = nil
+                end
+    
+                -- Remove assignments from chefs
+                for _, chef in pairs(orderData.Assignments) do
+                    if chef and chef:IsA("Player") then
+                        chef:SetAttribute("OrderId", nil)
+                    end
+                end
+    
+                -- Notify clients to remove the order
+                self.Client.UpdateOrder:FireAll({
+                    OrderId = orderId,
+                    Action = "CancelOrder",
+                })
+    
+                activeOrders[orderId] = nil
+    
+                warn(`Order #{orderId} auto-cancelled due to player leave: {player.Name}`)
+            end
+        end
     end)
+    
 
     Players.PlayerAdded:Connect(function(player)
         player:GetAttributeChangedSignal("Team"):Connect(function()
@@ -423,8 +455,8 @@ function OrderService.Client:ClaimOrder(Server: Player, orderId: string)
     return self.Server:_claimOrder(Server, orderId)
 end
 
-function OrderService.Client:CancelOrder(Server: Player, orderId: string)
-    return self.Server:_cancelOrder(Server, orderId)
+function OrderService.Client:CancelOrder(Player: Player, orderId: string)
+    return self.Server:_cancelOrder(Player, orderId)
 end
 
 return OrderService
