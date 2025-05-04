@@ -7,11 +7,13 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
-local Players: Players = game:GetService("Players")
+local ServerStorage: ServerStorage = game:GetService("ServerStorage")
 local HttpService: HttpService = game:GetService("HttpService")
+local Players: Players = game:GetService("Players")
 
 -- Modules
 local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
 
 -- Structures
 local Queue: ModuleScript = require(Knit.Structures.Queue)
@@ -38,9 +40,10 @@ local joinTimes = {}
 -- Active Orders
 local activeOrders: table = {}
 local retryQueue = {} -- For fallback
+local orderTroves = {} -- Trove cleanup for orders
 
 -- Variables
-local KitchenService
+local KitchenService, NavigationService, RankService, NotificationService
 
 local function rebuildQueueExcluding(queue, excludeUserId)
     local newQueue = Queue.new()
@@ -137,6 +140,8 @@ function OrderService:_submit(server: Player, orderDetails: table): boolean
         Completed = {},
     }
 
+    orderTroves[orderId] = Trove.new()
+
     tryAssignPendingOrders(self)
     broadcastQueueUpdate(self)
 
@@ -170,11 +175,12 @@ function OrderService:_markItemDone(chef: Player, orderId: string, itemName: str
     orderData.Completed[foundIndex] = true
 
     if isOrderComplete(orderData) then
-        self.Client.OrderCompleted:Fire(orderData.Player, {
+        self.Client.OrderCompleted:Fire(orderData.Server, {
+            OrderId = orderId,
             Table = orderData.Table,
-            Items = orderData.Items,
+            Player = orderData.Player,
         })
-        activeOrders[orderId] = nil
+        NotificationService:_createNotif(orderData.Server, `Order for <b>{orderData.Player.Name}</b> is ready!`)
     end
 
     self.Client.UpdateOrder:FireAll({
@@ -187,6 +193,90 @@ function OrderService:_markItemDone(chef: Player, orderId: string, itemName: str
     tryAssignPendingOrders(self)
 
     return true
+end
+
+function OrderService:_claimOrder(Server: Player, orderId: string)
+    local orderData = activeOrders[orderId]
+    if not orderData then return false end
+
+    if orderData.Server ~= Server then return false, `You are not the server for order #{orderId}` end
+    if not Players:GetPlayerByUserId(orderData.Player.UserId) then return false, "The player who placed the order is not in the server" end
+
+    for index, item in ipairs(orderData.Items) do
+        if not orderData.Completed[index] then
+            return false, "Not all items are completed"
+        end
+
+        local itemClone = ServerStorage.Food[item]:Clone()
+        if itemClone then
+            itemClone.Parent = Server.Backpack
+        else
+            return false, `Item {item} not found in ServerStorage`
+        end
+    end
+
+    self.Client.UpdateOrder:FireAll({
+        OrderId = orderId,
+        Action = "CompleteOrder",
+    })
+
+    local success = NavigationService:InitBeam(Server, orderData.Player.Character)
+    if not success then
+        return false, "Failed to initialize beam to the player"
+    end
+
+    if orderTroves[orderId] then
+        orderTroves[orderId]:Clean()
+        orderTroves[orderId] = nil
+    end
+
+    activeOrders[orderId] = nil
+    return true, "Order completed successfully"
+end
+
+function OrderService:_cancelOrder(Server: Player, orderId: string)
+    local orderData = activeOrders[orderId]
+    if not orderData then
+        return false, "Order does not exist."
+    end
+
+    if Server ~= Players:GetPlayerByUserId(orderData.Server.UserId) or RankService:GetRank(Server) < 7 then
+        return false, "You do not have permission to cancel this order."
+    end
+
+    -- Clear assigned chefs
+    for _, chef in pairs(orderData.Assignments) do
+        if chef and chef:IsA("Player") then
+            chef:SetAttribute("OrderId", nil)
+        end
+    end
+
+    -- Remove from retry queue
+    local newRetryQueue = {}
+    for _, pending in ipairs(retryQueue) do
+        if pending.OrderId ~= orderId then
+            table.insert(newRetryQueue, pending)
+        end
+    end
+    retryQueue = newRetryQueue
+
+    -- Cleanup trove
+    if orderTroves[orderId] then
+        orderTroves[orderId]:Clean()
+        orderTroves[orderId] = nil
+    end
+
+    -- Remove order
+    activeOrders[orderId] = nil
+
+    self.Client.UpdateOrder:FireAll({
+        OrderId = orderId,
+        Action = "CancelOrder",
+    })
+
+    broadcastQueueUpdate(self)
+
+    return true, "Order cancelled successfully."
 end
 
 function OrderService:_joinQueue(Player: Player, Purchased: boolean?): boolean
@@ -257,6 +347,9 @@ end
 
 function OrderService:KnitStart()
     KitchenService = Knit.GetService("KitchenService")
+    NavigationService = Knit.GetService("NavigationService")
+    RankService = Knit.GetService("RankService")
+    NotificationService = Knit.GetService("NotificationService")
 
     Players.PlayerRemoving:Connect(function(player)
         self:_leaveQueue(player)
@@ -324,6 +417,14 @@ end
 
 function OrderService.Client:MarkItemDone(chef: Player, orderId: string, itemIndex: number)
     return self.Server:_markItemDone(chef, orderId, itemIndex)
+end
+
+function OrderService.Client:ClaimOrder(Server: Player, orderId: string)
+    return self.Server:_claimOrder(Server, orderId)
+end
+
+function OrderService.Client:CancelOrder(Server: Player, orderId: string)
+    return self.Server:_cancelOrder(Server, orderId)
 end
 
 return OrderService

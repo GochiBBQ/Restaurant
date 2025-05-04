@@ -5,14 +5,12 @@ For: Gochi
 
 -- Services
 local ReplicatedStorage: ReplicatedStorage = game:GetService('ReplicatedStorage')
-local RunService: RunService = game:GetService('RunService')
 local Players: Players = game:GetService("Players")
 
 -- Modules
-local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) -- @module Knit
-
-local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
-local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove) -- @module Trove
+local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
+local AnimNation: ModuleScript = require(Knit.Modules.AnimNation)
+local Trove: ModuleScript = require(ReplicatedStorage.Packages.Trove)
 
 -- Create Knit Controller
 local OrderController = Knit.CreateController {
@@ -28,39 +26,35 @@ local Player: Player = Players.LocalPlayer
 local PlayerGui: PlayerGui = Player:WaitForChild("PlayerGui")
 local GochiUI: GuiObject = PlayerGui:WaitForChild("GochiUI")
 
-local CreateOrder: ImageButton = GochiUI:WaitForChild("CreateOrder") -- @type ImageButton
-local ChefQueue: ImageButton = GochiUI:WaitForChild("ChefQueue") -- @type ImageButton
-local OrderCreation: Frame = GochiUI:WaitForChild("OrderCreation") -- @type Frame
-local Buttons: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('Buttons') -- @type Frame
-local Pages: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('MainContent') -- @type Frame
-local Queue: Frame = GochiUI:WaitForChild("Queue") -- @type Frame
+local CreateOrder: ImageButton = GochiUI:WaitForChild("CreateOrder")
+local ChefQueue: ImageButton = GochiUI:WaitForChild("ChefQueue")
+local OrderCreation: Frame = GochiUI:WaitForChild("OrderCreation")
+local Buttons: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('Buttons')
+local Pages: Frame = OrderCreation:WaitForChild('Content'):WaitForChild('MainContent')
+local Queue: Frame = GochiUI:WaitForChild("Queue")
 
-local OrderBoard: SurfaceGui = PlayerGui:WaitForChild("SurfaceUIs"):WaitForChild("OrderBoard") -- @type SurfaceGui
+local OrderBoard: SurfaceGui = PlayerGui:WaitForChild("SurfaceUIs"):WaitForChild("OrderBoard")
 
-local OrderService
-local TableService
-local NotificationService
+local OrderService, TableService, NotificationService
 local UIController
 
-local queueUIEntries: table = {} -- [UserId] = { Frame = Template, JoinTime = time }
-local orderUIEntries: table = {} -- [OrderId] = { Frame = Template, OrderDetails = orderDetails }
+local queueUIEntries: table = {}
+local orderUIEntries: table = {}
 
 local timerRunning: boolean = false
 local orderTimer: boolean = false
 
--- Helper to clean up previous visuals
 function OrderController:ClearSelections()
-    self.Trove:Clean() -- Automatically destroys all previous SelectionBoxes and ClickDetectors
+    self.Trove:Clean()
     self.SelectionBoxes = {}
     self.ClickDetectors = {}
 end
 
--- Client Functions
 function OrderController:KnitStart()
-    OrderService = Knit.GetService("OrderService") -- @module OrderService
-    TableService = Knit.GetService("TableService") -- @module TableService
-    NotificationService = Knit.GetService("NotificationService") -- @module NotificationService
-    UIController = Knit.GetController("UIController") -- @module UIController
+    OrderService = Knit.GetService("OrderService")
+    TableService = Knit.GetService("TableService")
+    NotificationService = Knit.GetService("NotificationService")
+    UIController = Knit.GetController("UIController")
 
     for _, button in pairs(Buttons.List:GetChildren()) do
         if button:IsA("ImageButton") then
@@ -84,20 +78,40 @@ function OrderController:KnitStart()
 
     OrderService.UpdateQueue:Connect(self.UpdateQueue)
     OrderService.UpdateOrder:Connect(self.UpdateOrders)
+
+    OrderService.OrderCompleted:Connect(function(orderDetails: table): nil
+        local orderEntry = orderUIEntries[orderDetails.OrderId]
+
+        if not orderEntry then
+            warn("Order entry not found for orderId:", orderDetails.OrderId)
+            return
+        end
+
+        orderEntry.Frame.ClaimButton.Visible = true
+
+        local claimConn = orderEntry.Frame.ClaimButton.Activated:Connect(function()
+            OrderService:ClaimOrder(orderDetails.OrderId):andThen(function(success, errorMessage)
+                if success then
+                    NotificationService:CreateNotif(Player, `Order claimed successfully! Please deliver it to <b>{orderDetails.Player.Name}</b>.`)
+                else
+                    NotificationService:CreateNotif(Player, errorMessage or `Failed to claim order. Error: {errorMessage}`)
+                end
+            end)
+        end)
+
+        self.Trove:Add(claimConn)
+    end)
 end
 
 OrderController.UpdateQueue = function(queueInfo: table): nil
-    -- Clear old UI elements
     for _, child in ipairs(Queue.ScrollingFrame:GetChildren()) do
         if not child:IsA("UIListLayout") then
             child:Destroy()
         end
     end
 
-    -- Reset tracking
     queueUIEntries = {}
 
-    -- Create UI entry for each player
     local function CreatePlayer(chefId, time, position)
         local chef = Players:GetPlayerByUserId(chefId)
         if not chef then return end
@@ -110,9 +124,9 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
         local thumbSize = Enum.ThumbnailSize.Size420x420
         local content = Players:GetUserThumbnailAsync(chef.UserId, thumbType, thumbSize)
 
-        Template.ProfileBase.Headshot.Image = content
+        Template:WaitForChild("ProfileBase").Headshot.Image = content
         Template.Username.Text = chef.Name
-        Template.Title.Text = `#{position}` -- Set position here
+        Template.Title.Text = `#{position}`
         Template.Time.Text = "00:00 in queue"
         Template.Visible = true
 
@@ -122,7 +136,6 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
         }
     end
 
-    -- Add entries in order
     local position = 1
     for _, entry in ipairs(queueInfo.priority) do
         CreatePlayer(entry.UserId, entry.JoinTime, position)
@@ -134,7 +147,6 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
         position += 1
     end
 
-    -- Start or maintain a single timer loop
     if not timerRunning then
         timerRunning = true
         task.spawn(function()
@@ -151,61 +163,51 @@ OrderController.UpdateQueue = function(queueInfo: table): nil
 end
 
 OrderController.UpdateOrders = function(orderDetails: table): nil
-
     if not orderDetails or not orderDetails.OrderId then
         warn("Invalid order details received")
         return
     end
 
     if orderUIEntries[orderDetails.OrderId] then
-        -- If the order already exists, update it instead of creating a new one
         local existingOrder = orderUIEntries[orderDetails.OrderId]
-        
+
         if orderDetails.Action == "CompleteItem" then
-            -- Update the item in the existing order
             local itemLabel = existingOrder.Frame.Items:FindFirstChild(orderDetails.ItemName)
             if itemLabel then
-                itemLabel.Text = `✅ {orderDetails.ItemName}` -- Mark as completed
+                itemLabel.Text = `✅ {orderDetails.ItemName}`
             else
                 warn(`Item label not found for {orderDetails.ItemName} in existing order`)
             end
-        elseif orderDetails.Action == "CompleteOrder" then
-            
+        elseif orderDetails.Action == "CompleteOrder" or orderDetails.Action == "CancelOrder" then
+            existingOrder.Frame:Destroy()
+            orderUIEntries[orderDetails.OrderId] = nil
+        else
+            warn(`Unknown action {orderDetails.Action} for order {orderDetails.OrderId}`)
         end
         return
     end
 
-    local Template = OrderBoard.OrderTemplate -- @type Frame
-
-    if not Template then
-        warn("OrderBoard.OrderTemplate not found")
-        return
-    end
-
-    if not orderDetails or type(orderDetails) ~= "table" then
-        warn("Invalid order details received")
-        return
-    end
+    local Template = OrderBoard.OrderTemplate
+    if not Template then return warn("OrderBoard.OrderTemplate not found") end
 
     local thumbType = Enum.ThumbnailType.HeadShot
     local thumbSize = Enum.ThumbnailSize.Size420x420
 
     local clone = Template:Clone()
     clone.Name = `Order_{orderDetails.OrderId}`
-    clone.TableNumber.Text = `Table {string.match(orderDetails.Table, "%d+")}` -- Display the table number
+    clone.TableNumber.Text = `Table {string.match(orderDetails.Table, "%d+")}`
     clone.Server.Text = orderDetails.Server.Name
     clone.Server_Thumbnail.Image = Players:GetUserThumbnailAsync(orderDetails.Server.UserId, thumbType, thumbSize)
-    clone.OrderedPlayer.Image = orderDetails.Player.Headshot or "" -- Fallback to empty string if no headshot is provided
-    clone.Title.Text = orderDetails.Player.Occupant.Name -- Display the name of the player who made the order
-    clone.TimeElapsed.Text = "00:00" -- Placeholder, will be updated by timer
+    clone.OrderedPlayer.Image = Players:GetUserThumbnailAsync(orderDetails.Player.UserId, thumbType, thumbSize)
+    clone.Title.Text = orderDetails.Player.Name
+    clone.TimeElapsed.Text = "00:00"
 
     for index, item in ipairs(orderDetails.Items) do
-        -- Create an entry for each item in the order
-        local itemLabel = clone.Items:FindFirstChild("Item_" .. tostring(index)) -- Assuming Item1, Item2, etc. in the template
+        local itemLabel = clone.Items:FindFirstChild("Item_" .. tostring(index))
         if itemLabel then
-            itemLabel.Name = item -- Set the name to the item name
-            itemLabel.Text = `❌ {item}` -- Set the text to the item name
-            itemLabel.Visible = true -- Ensure it's visible
+            itemLabel.Name = item
+            itemLabel.Text = `❌ {item}`
+            itemLabel.Visible = true
         else
             warn(`Item label not found for index {index} in order template`)
         end
@@ -214,14 +216,9 @@ OrderController.UpdateOrders = function(orderDetails: table): nil
     clone.Parent = OrderBoard.Frame.ScrollingFrame
     clone.Visible = true
 
-    if not orderDetails.OrderId then
-        warn("OrderId is missing in orderDetails")
-        return
-    end
-
     orderUIEntries[orderDetails.OrderId] = {
         Frame = clone,
-        OrderDetails = orderDetails, -- Store the order details for future reference
+        OrderDetails = orderDetails,
     }
 
     if not orderTimer then
@@ -230,18 +227,32 @@ OrderController.UpdateOrders = function(orderDetails: table): nil
             while true do
                 local now = os.time()
                 for orderId, data in pairs(orderUIEntries) do
-                    local elapsed = now - data.OrderDetails.Time -- Use the time the order was created to calculate elapsed time
+                    local elapsed = now - data.OrderDetails.Time
                     data.Frame.TimeElapsed.Text = string.format("%02d:%02d", math.floor(elapsed / 60), elapsed % 60)
                 end
                 task.wait(1)
             end
         end)
     end
+
+    clone.CancelButton.Activated:Connect(function()
+        OrderService:CancelOrder(orderDetails.OrderId):andThen(function(success, errorMessage)
+            if success then
+                NotificationService:CreateNotif(Player, `Order #{orderDetails.OrderId} has been cancelled.`)
+                orderUIEntries[orderDetails.OrderId].Frame:Destroy()
+                orderUIEntries[orderDetails.OrderId] = nil
+            else
+                NotificationService:CreateNotif(Player, errorMessage or `Failed to cancel order. Error: {errorMessage}`)
+            end
+        end):catch(function(err)
+            warn("Error cancelling order:", err)
+            NotificationService:CreateNotif(Player, 'An error occurred while trying to cancel the order.')
+        end)
+    end)
 end
 
 function OrderController:InitOrders()
     CreateOrder.Activated:Connect(function()
-
         if self.SelectionActive then
             self:ClearSelections()
             self.SelectionActive = false
@@ -254,7 +265,9 @@ function OrderController:InitOrders()
                     return NotificationService:CreateNotif(Player, 'Your party has no occupants to serve.')
                 end
 
-                self:ClearSelections() -- Clear existing selection visuals before creating new ones
+                self:ClearSelections()
+                local SelectionTrove = Trove.new()
+                self.Trove:Add(SelectionTrove)
 
                 for _, Occupant in Occupants do
                     local Character = Occupant.Character or Occupant.CharacterAdded:Wait()
@@ -267,34 +280,32 @@ function OrderController:InitOrders()
                     SelectionBox.SurfaceTransparency = 0.5
                     SelectionBox.Parent = Character
 
-                    self.Trove:Add(SelectionBox)
+                    SelectionTrove:Add(SelectionBox)
                     table.insert(self.SelectionBoxes, SelectionBox)
 
                     local ClickDetector = Instance.new("ClickDetector")
                     ClickDetector.MaxActivationDistance = 20
                     ClickDetector.Parent = Character
 
-                    self.Trove:Add(ClickDetector)
+                    SelectionTrove:Add(ClickDetector)
                     table.insert(self.ClickDetectors, ClickDetector)
 
                     local mouseClickConn = ClickDetector.MouseClick:Connect(function()
+                        local OrderTrove = Trove.new()
+                        self.Trove:Add(OrderTrove)
 
                         local toSubmit: {string} = {}
-
                         self:ClearSelections()
 
                         local Table = Player:GetAttribute('Table')
-
                         local thumbType = Enum.ThumbnailType.HeadShot
                         local thumbSize = Enum.ThumbnailSize.Size420x420
-                        local content, isReady = Players:GetUserThumbnailAsync(Occupant.UserId, thumbType, thumbSize)
+                        local content = Players:GetUserThumbnailAsync(Occupant.UserId, thumbType, thumbSize)
 
                         OrderCreation.Content.PlayersInParty.ProfileBase.Headshot.Image = content
                         OrderCreation.Content.PlayersInParty.Username.Text = Occupant.Name
-
                         UIController:Open(OrderCreation)
 
-                        -- Clear previous order content but preserve UIListLayout
                         local OrderContentHolder = OrderCreation.Content.OrderContent.OrderContentHolder
                         for _, child in ipairs(OrderContentHolder:GetChildren()) do
                             if not child:IsA("UIListLayout") then
@@ -302,17 +313,16 @@ function OrderController:InitOrders()
                             end
                         end
 
-                        local closeConn = OrderCreation.Close.Activated:Connect(function()
+                        OrderTrove:Add(OrderCreation.Close.Activated:Connect(function()
                             UIController:Close(OrderCreation)
-                        end)
-                        self.Trove:Add(closeConn)
+                        end))
 
-                        local confirmConn = OrderCreation.Content.OrderOptions.Confirm.Activated:Connect(function()
+                        OrderTrove:Add(OrderCreation.Content.OrderOptions.Confirm.Activated:Connect(function()
                             if #toSubmit > 0 then
                                 OrderService:Submit({
                                     Player = {
-                                        Occupant = Occupant, -- @type Player
-                                        Headshot = content, -- @type string (URL to the thumbnail)
+                                        Occupant = Occupant,
+                                        Headshot = content,
                                     },
                                     Table = Table,
                                     Items = toSubmit
@@ -330,8 +340,7 @@ function OrderController:InitOrders()
                             else
                                 return NotificationService:CreateNotif(Player, 'You must submit atleast one item to create an order.')
                             end
-                        end)
-                        self.Trove:Add(confirmConn)
+                        end))
 
                         for _, page in pairs(OrderCreation.Content.MainContent:GetChildren()) do
                             if page:IsA("ScrollingFrame") then
@@ -339,33 +348,29 @@ function OrderController:InitOrders()
                                     if button:IsA("GuiButton") then
                                         local buttonConn = button.Activated:Connect(function()
                                             print('Button clicked:', button.Name)
-
                                             if #toSubmit >= 3 then
                                                 return NotificationService:CreateNotif(Player, 'You can only submit 3 items per player.')
                                             end
 
                                             local item = button.Name
-
                                             local OrderContent = OrderCreation.Content.OrderContent
                                             local Template = OrderContent.Template
-
                                             local Clone = Template:Clone()
                                             Clone.Name = item
                                             Clone.Text = item
-
                                             Clone.Visible = true
                                             Clone.Parent = OrderContent.OrderContentHolder
 
                                             table.insert(toSubmit, item)
                                         end)
-                                        self.Trove:Add(buttonConn)
+                                        OrderTrove:Add(buttonConn)
                                     end
                                 end
                             end
                         end
-
                     end)
-                    self.Trove:Add(mouseClickConn)
+
+                    SelectionTrove:Add(mouseClickConn)
                 end
             end)
         else
@@ -387,14 +392,13 @@ function OrderController:InitChefQueue()
 
     Player:GetAttributeChangedSignal("OrderId"):Connect(function()
         if Player:GetAttribute("OrderId") ~= nil then
-           Queue.Join.TextLabel.Text = 'Leave queue'
+            Queue.Join.TextLabel.Text = 'Leave queue'
         else
             Queue.Join.TextLabel.Text = 'Join queue'
         end
     end)
 
     Queue.Join.Activated:Connect(function()
-
         if Queue.Join.TextLabel.Text == 'Join queue' then
             OrderService:JoinQueue():andThen(function(success)
                 if success then
@@ -430,7 +434,6 @@ function OrderController:SetState(selectedButton: ImageButton)
     for _, button in ipairs(Buttons.List:GetChildren()) do
         if button:IsA("ImageButton") then
             local isSelected = button == selectedButton
-
             AnimNation.target(button, {s = 10}, {ImageTransparency = isSelected and 0 or 1})
             AnimNation.target(button.TextLabel, {s = 10}, {TextColor3 = isSelected and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(255, 255, 255)})
         end
@@ -445,5 +448,4 @@ function OrderController:OpenPage(Page: ScrollingFrame | Frame)
     end
 end
 
--- Return Controller to Knit
 return OrderController

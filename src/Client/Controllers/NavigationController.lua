@@ -39,7 +39,7 @@ function NavigationController:KnitStart()
 end
 
 function NavigationController:InitBeam(model: Instance)
-    assert(model and model:IsA("Model") or model:IsA("BasePart"), "Invalid model provided.")
+    assert(model and model:IsA("Model") or model:IsA("BasePart") or model:IsA("Humanoid"), "Invalid model provided.")
     assert(Beam and PlayerStorage, "Missing Beam or PlayerStorage references.")
 
     -- Clean up any existing beam first

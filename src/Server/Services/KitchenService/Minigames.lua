@@ -52,7 +52,6 @@ function Minigames:startRandomMinigame(Player: Player)
 
 		local connection
 		connection = completedSignal:Connect(function()
-			print("Minigame completed: " .. randomMinigame)
 			completedSignal:Destroy()
 			connection:Disconnect()
 			ongoingMinigames[Player.UserId] = nil
