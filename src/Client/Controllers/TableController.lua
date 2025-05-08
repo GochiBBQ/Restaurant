@@ -79,9 +79,6 @@ local function ResetPartyData(fullReset: boolean?)
     return true
 end
 
-
--- Move HandleParty to a higher scope
-
 local function HandleParty(OrderOptions, PartyView, PlayerInput)
     partyTrove:Clean() -- Clean up previous listeners
 
@@ -271,7 +268,6 @@ local function HandleParty(OrderOptions, PartyView, PlayerInput)
     end)
 end
 
--- Move PartyExists to a higher scope
 local function PartyExists(tableData)
     local result = ResetPartyData(false)
 
@@ -315,10 +311,8 @@ local function PartyExists(tableData)
     end
 end
 
--- Add a Trove instance for managing connections
 local controllerTrove = Trove.new()
 
--- Client Functions
 function TableController:KnitStart()
 
     TableService = Knit.GetService("TableService")
@@ -340,6 +334,21 @@ function TableController:KnitStart()
         self:InitUI()
     end)
 
+    TableService.UpdatePrompt:Connect(function(tableInst, status)
+        if tableInst then
+            tableInst.PromptHolder.ProximityPrompt.Enabled = status
+
+            tableInst.PromptHolder.ProximityPrompt.Triggered:Connect(function()
+                TableService:Cook(tableInst)
+            end)
+        end
+    end)
+
+    TableService.Cook:Connect(function(tableInst, item)
+        if tableInst then
+            
+        end
+    end)
 end
 
 function TableController:InitUI()

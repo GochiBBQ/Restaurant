@@ -18,7 +18,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove) --- @module Trove
 local TableMap
 
 -- Variables
-local NotificationService
+local NotificationService, TableService
 
 local Tables
 local SeatTrove
@@ -31,6 +31,7 @@ local TableCount = {
 
 Knit.OnStart():andThen(function()
 	NotificationService = Knit.GetService("NotificationService")
+	TableService = Knit.GetService("TableService")
     TableMap = require(Knit.Structures.TableMap) --- @module TableMap
 
     Tables = TableMap.new() -- TableInstance → TableData
@@ -48,6 +49,8 @@ function Table.new(tab: Instance, Category: string, Seats: number)
 	self.Name = tab.Name
 	self.Category = Category
 	self.Seats = tonumber(Seats)
+
+	tab.PromptHolder.ProximityPrompt.Enabled = false
 
 	Tables:set(tab, {
 		Table = self.Table,
@@ -93,6 +96,22 @@ function Table.new(tab: Instance, Category: string, Seats: number)
 end
 
 -- Methods
+function Table:_cookItem(Player: Player, TableInst: Instance)
+	local data = Tables:get(TableInst)
+	if not data then return false, "Table not found." end
+
+	if not data.isOccupied then return false, "Table is not occupied." end
+
+	for _, occupant in pairs(data.Occupants) do
+		TableService.Client.UpdatePrompt:Fire(occupant, TableInst, false)
+	end
+
+	local Item = Player.Character:FindFirstChildOfClass("Tool")
+
+	TableService.Client.Cook:Fire(Player,TableInst, Item)
+	
+end
+
 function Table:_getTableCount()
     
     repeat task.wait() until self.__loaded
@@ -161,6 +180,7 @@ function Table:_setOccupied(Server: Player, TableInst: Instance, Occupants: { Pl
 	for _, p in pairs(Occupants) do
 		p:SetAttribute("Table", data.Name)
 		p:SetAttribute("InParty", true)
+		TableService.Client.UpdatePrompt:Fire(p, TableInst, true)
 	end
 
 	return true
@@ -181,6 +201,16 @@ function Table:_setUnoccupied(TableInst: Instance)
 			if p:IsA("Player") then
 				p:SetAttribute("Table", nil)
 				p:SetAttribute("InParty", false)
+				TableService.Client.UpdatePrompt:Fire(p, TableInst, false)
+
+				-- Force the player to leave the table
+				local character = p.Character
+				if character then
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						humanoid.Jump = true
+					end
+				end
 			end
 		end
 	end
@@ -201,7 +231,7 @@ function Table:_addOccupant(TableInst: Instance, Player: Player)
 	table.insert(data.Occupants, Player)
 	Player:SetAttribute("Table", data.Name)
 	Player:SetAttribute("InParty", true)
-
+	TableService.Client.UpdatePrompt:Fire(Player, TableInst, true)
 	return true
 end
 
@@ -217,6 +247,16 @@ function Table:_removeOccupant(TableInst: Instance, Player: Player)
 	table.remove(data.Occupants, index)
 	Player:SetAttribute("Table", nil)
 	Player:SetAttribute("InParty", false)
+	TableService.Client.UpdatePrompt:Fire(Player, TableInst, false)
+
+	local character = Player.Character
+
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.Jump = true
+		end
+	end
 
 	if #data.Occupants == 0 then
 		self:_setUnoccupied(TableInst)

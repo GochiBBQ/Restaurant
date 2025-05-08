@@ -20,11 +20,9 @@ local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap)
 local TableService = Knit.CreateService {
     Name = "TableService",
     Client = {
-        TableOccupied = Knit.CreateSignal(),
-        TableUnoccupied = Knit.CreateSignal(),
-        OccupantAdded = Knit.CreateSignal(),
-        OccupantRemoved = Knit.CreateSignal(),
-        UpdateCount = Knit.CreateSignal()
+        UpdateCount = Knit.CreateSignal(),
+		UpdatePrompt = Knit.CreateSignal(),
+		Cook = Knit.CreateSignal(),
     },
 }
 
@@ -258,6 +256,10 @@ end
 
 function TableService.Client:SetUnoccupied(Player, Table)
 	return self.Server:SetTableUnoccupied(Table)
+end
+
+function TableService.Client:Cook(Player, Table)
+	return TableClass:_cookItem(Player, Table)
 end
 
 function TableService.Client:AddOccupant(Player, Table, Occupant)
