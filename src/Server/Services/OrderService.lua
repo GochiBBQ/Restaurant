@@ -240,7 +240,7 @@ function OrderService:_cancelOrder(Player: Player, orderId: string)
         return false, "Order does not exist."
     end
 
-    if Player ~= Players:GetPlayerByUserId(orderData.Server.UserId) or RankService:GetRank(Player) < 7 then
+    if Player ~= Players:GetPlayerByUserId(orderData.Server.UserId) or not Player:GetAttribute("Staff") then
         return false, "You do not have permission to cancel this order."
     end
 
