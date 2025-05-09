@@ -59,7 +59,7 @@ local template: table = {
         Tricks = {},
 
         Equipped = {
-            Nametags = nil,
+            Nametags = "White",
             Trails = nil,
             Particles = nil,
             Tricks = nil,
