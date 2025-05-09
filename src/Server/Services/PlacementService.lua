@@ -14,9 +14,7 @@ local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) --- @module 
 -- Create Service
 local PlacementService = Knit.CreateService {
     Name = "PlacementService",
-    Client = {
-        RequestPlacement = Knit.CreateSignal(),
-    },
+    Client = {},
 }
 
 -- Variables
@@ -52,6 +50,14 @@ function PlacementService:_placeItem(Player: Player, itemName: string, position:
     local placed = item:Clone()
     placed.CFrame = position
     placed.Parent = tableInstance:FindFirstChild("Placed")
+end
+
+-- Client Functions
+function PlacementService.Client:RequestPlacement(Player: Player, itemName: string, position: Vector3)
+    if not Player then return end
+    if not itemName or not position then return end
+
+    return PlacementService:_placeItem(Player, itemName, position)
 end
 
 -- Return Service to Knit
