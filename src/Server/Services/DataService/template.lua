@@ -51,7 +51,9 @@ local template: table = {
     Inventory = {
         Currency = 0,
 
-        Nametags = {},
+        Nametags = {
+            "White",
+        },
         Trails = {},
         Particles = {},
         Tricks = {},

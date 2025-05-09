@@ -41,11 +41,11 @@ function StoreController:KnitStart()
             _trove:Connect(button.MouseButton1Click, function()
                 if self.Selected ~= button.Name then
                     Pages[self.Selected].Visible = false
-                    self:AnimateTab(Buttons.List[self.Selected], true)
+                    self:SetState(Buttons.List[self.Selected], true)
 
                     self.Selected = button.Name
                     Pages[self.Selected].Visible = true
-                    self:AnimateTab(button, false)
+                    self:SetState(button, false)
                 end
 
                 self:SetState(button, true)
@@ -113,14 +113,6 @@ function StoreController:OpenPage(Page: ScrollingFrame | Frame)
         end
     end
     Page.Visible = true
-end
-
-function StoreController:AnimateTab(button: ImageButton, isDeselected: boolean)
-    local transparency = isDeselected and 1 or 0
-    local color = isDeselected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(30, 30, 30)
-
-    AnimNation.target(button, {s = 10, d = 0.5}, {ImageTransparency = transparency})
-    AnimNation.target(button.TextLabel, {s = 10, d = 0.5}, {TextColor3 = color})
 end
 
 -- Return Controller to Knit.

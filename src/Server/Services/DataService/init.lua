@@ -48,7 +48,7 @@ local key: string = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
 -- Server Functions
 function DataService:LoadProfile(Player: Player)
-	local PlayerProfile = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev3`, "ForceLoad")
+	local PlayerProfile = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev101`, "ForceLoad")
 
 	if Knit.Profiles[Player] then return end
 
@@ -154,13 +154,13 @@ function DataService:_getJoined(Player: Player)
 	repeat task.wait() until Player:GetAttribute("Loaded")
 
 	local Profile = Knit.Profiles[Player]
-	if not Profile then return nil end
+	if not Profile or not Profile.Data then return nil end
 
-	if Profile.Data.JoinedBefore == nil then
-		Profile.Data.JoinedBefore = true
+	if Profile.Data.HasJoinedBefore then
 		return false
 	else
-		return Profile.Data.JoinedBefore
+		Profile.Data.HasJoinedBefore = true
+		return true
 	end
 end
 

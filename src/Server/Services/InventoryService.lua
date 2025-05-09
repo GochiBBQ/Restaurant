@@ -13,6 +13,7 @@ local Players: Players = game:GetService("Players")
 -- Modules
 local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit)
 local NametagList: ModuleScript = require(Knit.Data.NametagList) -- @module NametagList
+local ParticleList: ModuleScript = require(Knit.Data.ParticleList) -- @module ParticleList
 local TableMap: ModuleScript = require(ServerScriptService.Structures.TableMap) --- @module TableMap
 
 -- Create Knit Service
@@ -28,10 +29,12 @@ local InventoryService = Knit.CreateService {
         ["Right Leg"] = { "RightUpperLeg", "RightLowerLeg", "RightFoot" },
         ["Left Leg"] = { "LeftUpperLeg", "LeftLowerLeg", "LeftFoot" },
     },
-    Equipped = TableMap.new(), -- Player → { Particles, Trails }
+    Equipped = TableMap.new(), -- Player → { Particles }
 }
 
 -- Variables
+local ParticlesFolder: Folder = Knit.Static:WaitForChild("Particles")
+
 local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
 local OverheadService
 local RankService
@@ -45,8 +48,7 @@ function InventoryService:KnitStart()
         repeat task.wait() until Player:GetAttribute("Loaded")
 
         self.Equipped:set(Player, {
-            Particles = {},
-            Trails = {},
+            Particles = nil,
         })
 
         for _, category in pairs(PlayerStorage:GetChildren()) do
@@ -61,10 +63,18 @@ function InventoryService:KnitStart()
             for _, gradient in next, NametagList do
                 self:_update(Player, "Nametags", gradient.Name, true)
             end
+
+            for _, particle in next, ParticleList do
+                self:_update(Player, "Particles", particle.Name, true)
+            end
         end
 
-        Player.CharacterAdded:Connect(function(character)
-            -- Placeholder if any setup logic is added later
+        Player.CharacterAdded:Connect(function()
+            local particles = self:_getEquipped(Player, "Particles")
+
+            if particles then
+                self:_equip(Player, "Particles", particles, true)
+            end
         end)
     end)
 
@@ -122,6 +132,55 @@ function InventoryService:_search(Player: Player, Category: string, Item: string
     return Inventory[Category] and table.find(Inventory[Category], Item) ~= nil
 end
 
+function InventoryService:_getEquipped(Player: Player, Category: string)
+    repeat task.wait() until Player:GetAttribute("Loaded")
+
+    local Profile = Knit.Profiles[Player]
+    if not Profile then return end
+
+    return Profile.Data.Inventory.Equipped[Category]
+end
+
+function InventoryService:_unequipParticle(Player: Player)
+    local equipped = self.Equipped:get(Player)
+    if equipped and equipped.Particles then
+        equipped.Particles:Destroy()
+        equipped.Particles = nil
+    end
+end
+
+function InventoryService:_equipParticle(Player: Player, Item: string)
+    self:_unequipParticle(Player)
+
+    local particleTemplate = ParticlesFolder:FindFirstChild(Item)
+    if not particleTemplate then
+        warn("Particle not found in ParticlesFolder:", Item)
+        return
+    end
+
+    local attachment = particleTemplate:FindFirstChildOfClass("Attachment")
+    if not attachment then
+        warn("No Attachment found in particle item:", Item)
+        return
+    end
+
+    local character = Player.Character
+    if not character then return end
+
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local particle = attachment:Clone()
+    particle.Parent = hrp
+
+    local equipped = self.Equipped:get(Player)
+    if not equipped then
+        self.Equipped:set(Player, { Particles = particle })
+    else
+        equipped.Particles = particle
+    end
+end
+
 function InventoryService:_equip(Player: Player, Category: string, Item: string, equip: boolean)
     repeat task.wait() until Player:GetAttribute("Loaded")
 
@@ -139,20 +198,16 @@ function InventoryService:_equip(Player: Player, Category: string, Item: string,
             Inventory.Equipped[Category] = Item
             if Category == "Nametags" then
                 EquipNametag(Player, Item)
+            elseif Category == "Particles" then
+                self:_equipParticle(Player, Item)
             end
         end
     else
-        -- Add unequip logic here if needed
+        if Category == "Particles" then
+            self:_unequipParticle(Player)
+            Inventory.Equipped[Category] = nil
+        end
     end
-end
-
-function InventoryService:_getEquipped(Player: Player, Category: string)
-    repeat task.wait() until Player:GetAttribute("Loaded")
-
-    local Profile = Knit.Profiles[Player]
-    if not Profile then return end
-
-    return Profile.Data.Inventory.Equipped[Category]
 end
 
 -- Client Functions
