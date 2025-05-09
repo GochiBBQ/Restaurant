@@ -249,6 +249,19 @@ function TableService:GetTableInfo(tableInstance)
 	end
 end
 
+function TableService:GetTableFromPlayer(player)
+	for tableInstance, tableObj in Tables:entries() do
+		local data = tableObj:_getTableInfo(tableInstance)
+		if not data then continue end
+
+		if table.find(data.Occupants, player) or data.Server == player then
+			return tableInstance
+		end
+	end
+
+	return nil
+end
+
 -- Client Functions
 function TableService.Client:SetOccupied(Player, Table, Occupants)
 	return self.Server:SetTableOccupied(Player, Table, Occupants)
