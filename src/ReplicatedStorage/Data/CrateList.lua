@@ -1,37 +1,37 @@
 return {
 	["Hanguk Crate"] = {
 		Name = "Hanguk Crate",
-		Cost = 350,
+		Cost = 500,
 		DuplicateRefund = 0.5,
 		Rewards = {
 			-- Particles
-			{ Name = "Tteok", Type = "Particles", Chance = 25 },
-			{ Name = "Hwatu", Type = "Particles", Chance = 19 },
-			{ Name = "Wooden Masks", Type = "Particles", Chance = 9 },
-			{ Name = "Mugunghwa", Type = "Particles", Chance = 5 },
-			{ Name = "Hwahae", Type = "Particles", Chance = 1 },
-			
-			-- Ombres
-			{ Name = "Sky", Type = "Nametags", Chance = 5 },
-			{ Name = "Korea", Type = "Nametags", Chance = 1 },
+			{ Name = "Tteok", Type = "Particles", Chance = 25, Rarity = "Common" },
+			{ Name = "Hwatu", Type = "Particles", Chance = 19, Rarity = "Uncommon" },
+			{ Name = "Wooden Masks", Type = "Particles", Chance = 9, Rarity = "Uncommon" },
+			{ Name = "Mugunghwa", Type = "Particles", Chance = 5, Rarity = "Rare" },
+			{ Name = "Hwahae", Type = "Particles", Chance = 1, Rarity = "Legendary" },
+
+			-- Nametags
+			{ Name = "Sky", Type = "Nametags", Chance = 5, Rarity = "Rare" },
+			{ Name = "Korea", Type = "Nametags", Chance = 1, Rarity = "Legendary" },
 		}
 	},
 
 	["Gochi Crate"] = {
 		Name = "Gochi Crate",
-		Cost = 350,
+		Cost = 400,
 		DuplicateRefund = 0.5,
 		Rewards = {
 			-- Particles
-			{ Name = "Purple Aura", Type = "Particles", Chance = 50 },
-			{ Name = "Neon Signs", Type = "Particles", Chance = 19 },
-			{ Name = "Money", Type = "Particles", Chance = 9 },
-			{ Name = "KPop", Type = "Particles", Chance = 5 },
-			{ Name = "Folding Fans", Type = "Particles", Chance = 1 }, -- aka Jeopseon
-
-			-- Ombres
-			{ Name = "Gochi", Type = "Nametags", Chance = 2 },
-			{ Name = "Cherry Love", Type = "Nametags", Chance = 2 },
+			{ Name = "Purple Aura", Type = "Particles", Chance = 50, Rarity = "Common" },
+			{ Name = "Neon Signs", Type = "Particles", Chance = 19, Rarity = "Uncommon" },
+			{ Name = "Money", Type = "Particles", Chance = 9, Rarity = "Uncommon" },
+			{ Name = "KPop", Type = "Particles", Chance = 5, Rarity = "Rare" },
+			{ Name = "Folding Fans", Type = "Particles", Chance = 1, Rarity = "Legendary" },
+			
+			-- Nametags
+			{ Name = "Gochi", Type = "Nametags", Chance = 2, Rarity = "Rare" },
+			{ Name = "Cherry Love", Type = "Nametags", Chance = 2, Rarity = "Rare" },
 		}
 	},
 
@@ -41,17 +41,17 @@ return {
 		DuplicateRefund = 0.5,
 		Rewards = {
 			-- Particles
-			{ Name = "Stars", Type = "Particles", Chance = 45 },
-			{ Name = "Crane", Type = "Particles", Chance = 30 },
-			{ Name = "Bamboo", Type = "Particles", Chance = 12 },
-			{ Name = "Lotus", Type = "Particles", Chance = 4 },
-			{ Name = "Hearts", Type = "Particles", Chance = 0.5 },
+			{ Name = "Stars", Type = "Particles", Chance = 45, Rarity = "Common" },
+			{ Name = "Crane", Type = "Particles", Chance = 30, Rarity = "Common" },
+			{ Name = "Bamboo", Type = "Particles", Chance = 12, Rarity = "Uncommon" },
+			{ Name = "Lotus", Type = "Particles", Chance = 4, Rarity = "Rare" },
+			{ Name = "Hearts", Type = "Particles", Chance = 0.5, Rarity = "Legendary" },
 
-			-- Ombres
-			{ Name = "Blue", Type = "Nametags", Chance = 35 },
-			{ Name = "Red", Type = "Nametags", Chance = 35 },
-			{ Name = "Chrome", Type = "Nametags", Chance = 12 },
-			{ Name = "Fauna", Type = "Nametags", Chance = 2 },
+			-- Nametags
+			{ Name = "Blue", Type = "Nametags", Chance = 35, Rarity = "Common" },
+			{ Name = "Red", Type = "Nametags", Chance = 35, Rarity = "Common" },
+			{ Name = "Chrome", Type = "Nametags", Chance = 12, Rarity = "Uncommon" },
+			{ Name = "Fauna", Type = "Nametags", Chance = 2, Rarity = "Rare" },
 		}
 	},
 
@@ -61,17 +61,17 @@ return {
 		DuplicateRefund = 0.5,
 		Rewards = {
 			-- Particles
-			{ Name = "Purple Butterfly", Type = "Particles", Chance = 45 },
-			{ Name = "Fire", Type = "Particles", Chance = 30 },
-			{ Name = "Water", Type = "Particles", Chance = 30 },
-			{ Name = "Phoenix", Type = "Particles", Chance = 12 },
-			{ Name = "Crescent Moon", Type = "Particles", Chance = 2 },
+			{ Name = "Purple Butterfly", Type = "Particles", Chance = 45, Rarity = "Common" },
+			{ Name = "Fire", Type = "Particles", Chance = 30, Rarity = "Common" },
+			{ Name = "Water", Type = "Particles", Chance = 30, Rarity = "Common" },
+			{ Name = "Phoenix", Type = "Particles", Chance = 12, Rarity = "Uncommon" },
+			{ Name = "Crescent Moon", Type = "Particles", Chance = 2, Rarity = "Rare" },
 
-			-- Ombres
-			{ Name = "Green", Type = "Nametags", Chance = 35 },
-			{ Name = "Yellow", Type = "Nametags", Chance = 35 },
-			{ Name = "Elemental", Type = "Nametags", Chance = 5 },
-			{ Name = "Horizon", Type = "Nametags", Chance = 1 },
+			-- Nametags
+			{ Name = "Green", Type = "Nametags", Chance = 35, Rarity = "Common" },
+			{ Name = "Yellow", Type = "Nametags", Chance = 35, Rarity = "Common" },
+			{ Name = "Elemental", Type = "Nametags", Chance = 5, Rarity = "Uncommon" },
+			{ Name = "Horizon", Type = "Nametags", Chance = 1, Rarity = "Legendary" },
 		}
-	},
+	}
 }

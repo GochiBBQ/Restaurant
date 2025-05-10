@@ -39,34 +39,70 @@ function StoreService:_getCrateReward(Player: Player, Crate: string)
 
     for _, item in ipairs(CrateList[Crate].Rewards) do
         cumulative += item.Chance
-
         if roll <= cumulative then
             return item
         end
     end
+
+    -- Fallback in case total Chance is under 100
+    return CrateList[Crate].Rewards[#CrateList[Crate].Rewards]
 end
 
-function StoreService:PurchaseCrate(Player: Player, Crate: string)
+function StoreService:_purchaseCrate(Player: Player, Crate: string)
     repeat task.wait() until Player:GetAttribute("Loaded")
 
-    if InventoryService:Get(Player) >= CrateList[Crate].Price then
-        CurrencyService:Remove(Player, CrateList[Crate].Price)
+    local crateInfo = CrateList[Crate]
+    local playerBalance = tonumber(CurrencyService:Get(Player))
+    local crateCost = crateInfo.Cost
 
-        local reward = self:_getCrateReward(Player, Crate)
-
-        if reward then
-            if InventoryService:_search(Player, reward.Type, reward.Name) then
-                NotificationService:_createNotif(Player, "You already have this item! You have been refunded " .. math.floor(CrateList[Crate].DuplicateRefund * CrateList[Crate].Price) .. " coins.")
-                CurrencyService:Give(Player, math.floor(CrateList[Crate].DuplicateRefund * CrateList[Crate].Price))
-            end
-        else
-            NotificationService:_createNotif(Player, "You have received a " .. reward.Name .. "!")
-            InventoryService:_update(Player, reward.Type, reward.Name, true)
-            return reward
-        end
-    else
+    if playerBalance < crateCost then
         NotificationService:_createNotif(Player, "You do not have enough coins to purchase this crate!")
+        return
     end
+
+    -- Roll reward *before* charging
+    local reward = self:_getCrateReward(Player, Crate)
+
+    if not reward then
+        NotificationService:_createNotif(Player, "Crate opening failed — please try again.")
+        return
+    end
+
+    -- Deduct coins now that reward is valid
+    CurrencyService:Remove(Player, crateCost)
+
+    local isDuplicate = InventoryService:_search(Player, reward.Type, reward.Name)
+
+    if isDuplicate then
+        local refundAmount = math.floor(crateInfo.DuplicateRefund * crateCost)
+        CurrencyService:Give(Player, refundAmount)
+        NotificationService:_createNotif(Player, `You already own this item! You have been refunded {refundAmount} coins.`)
+    else
+        InventoryService:_update(Player, reward.Type, reward.Name, true)
+    end
+
+    -- Generate spinner items (fake spin)
+    local spinnerItems = {}
+    local possible = crateInfo.Rewards
+
+    for _ = 1, 20 do
+        local rand = possible[math.random(1, #possible)]
+        table.insert(spinnerItems, rand)
+    end
+
+    -- Ensure reward is at the end
+    table.insert(spinnerItems, reward)
+
+    return {
+        Reward = reward,
+        SpinnerList = spinnerItems,
+    }
+end
+
+
+-- Client Functions
+function StoreService.Client:PurchaseCrate(Player: Player, Crate: string)
+    return self.Server:_purchaseCrate(Player, Crate)
 end
 
 -- Return Service to Knit
