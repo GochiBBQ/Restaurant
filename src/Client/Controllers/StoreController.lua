@@ -149,21 +149,26 @@ function StoreController:StartCrateSpin(items, finalReward)
     local itemTemplate = spinnerFrame.Template
     local uiListLayout = spinnerFrame.UIListLayout
 
-    -- Clear previous items (without touching the template)
+    -- Clear previous items (keeping template)
     for _, child in ipairs(spinnerFrame:GetChildren()) do
         if child:IsA("Frame") and child ~= itemTemplate then
             child:Destroy()
         end
     end
 
-    -- Make template invisible (without reparenting)
+    -- Store original template size and scale
+    local originalSize = itemTemplate.Size
+    local originalScale = itemTemplate.Size
+
+    -- Make template invisible during setup (without reparenting)
     itemTemplate.Visible = false
 
-    -- Clone base items
+    -- Clone base items with proper scaling
     local allItems = {}
     for i, reward in ipairs(items) do
         local newItem = itemTemplate:Clone()
         newItem.Name = string.format("%02d_%s", i, reward.Name)
+        newItem.Size = originalSize -- Maintain original size
         newItem["Item Name"].Text = reward.Name
         newItem["Item Type"].Text = reward.Type
         newItem["Rarity"].Text = reward.Rarity
@@ -175,11 +180,12 @@ function StoreController:StartCrateSpin(items, finalReward)
         table.insert(allItems, newItem)
     end
 
-    -- Clone items to create looping effect (3 full loops)
+    -- Clone items to create looping effect (3 full loops) with consistent scaling
     for loopNum = 1, 3 do
         for _, original in ipairs(allItems) do
             local clone = original:Clone()
             clone.Name = string.format("L%d_%s", loopNum, original.Name)
+            clone.Size = originalSize -- Maintain original size
             clone.Parent = spinnerFrame
         end
     end
@@ -188,13 +194,13 @@ function StoreController:StartCrateSpin(items, finalReward)
     spinnerFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     spinnerFrame.CanvasPosition = Vector2.new(0, 0)
     
-    -- Wait for layout (using both Heartbeat and Stepped for reliability)
+    -- Wait for proper layout (using both Heartbeat and Stepped)
     for _ = 1, 5 do
         game:GetService("RunService").Heartbeat:Wait()
         game:GetService("RunService").Stepped:Wait()
     end
 
-    -- Calculate dimensions
+    -- Calculate dimensions with scaled items
     local firstItem = spinnerFrame:FindFirstChildWhichIsA("Frame")
     if not firstItem then
         warn("No items created in spinner!")
@@ -242,7 +248,7 @@ function StoreController:StartCrateSpin(items, finalReward)
     -- Extra delay to ensure UI is ready
     task.wait(0.2)
 
-    -- Create tween
+    -- Create tween with proper scaling
     local tweenInfo = TweenInfo.new(
         4, -- Full 4 second duration
         Enum.EasingStyle.Quint,
