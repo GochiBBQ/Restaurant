@@ -132,7 +132,7 @@ function StoreController:TableToClrSeq(table)
 end
 
 function StoreController:StartCrateSpin(items, finalReward)
-    -- Clean up any previous spin connections
+    -- Clean up previous spin
     if self._currentSpinConnection then
         self._currentSpinConnection:Disconnect()
         self._currentSpinConnection = nil
@@ -143,19 +143,20 @@ function StoreController:StartCrateSpin(items, finalReward)
         self._currentTween = nil
     end
 
+    -- Reset UI state
     GochiUI.Spin.Description.Visible = false
     local spinnerFrame = GochiUI.Spin.Main
     local itemTemplate = spinnerFrame.Template
     local uiListLayout = spinnerFrame.UIListLayout
 
-    -- Clear previous items (keeping only template)
+    -- Clear previous items (without touching the template)
     for _, child in ipairs(spinnerFrame:GetChildren()) do
-        if child:IsA("Frame") and child.Name ~= "Template" then
+        if child:IsA("Frame") and child ~= itemTemplate then
             child:Destroy()
         end
     end
 
-    -- Make template invisible during setup
+    -- Make template invisible (without reparenting)
     itemTemplate.Visible = false
 
     -- Clone base items
@@ -175,84 +176,95 @@ function StoreController:StartCrateSpin(items, finalReward)
     end
 
     -- Clone items to create looping effect (3 full loops)
-    for _ = 1, 3 do
+    for loopNum = 1, 3 do
         for _, original in ipairs(allItems) do
             local clone = original:Clone()
-            clone.Name = "Clone_" .. original.Name
+            clone.Name = string.format("L%d_%s", loopNum, original.Name)
             clone.Parent = spinnerFrame
         end
     end
 
-    -- Force layout recalculation
+    -- Force complete UI reset
     spinnerFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    for _ = 1, 3 do game:GetService("RunService").Heartbeat:Wait() end
+    spinnerFrame.CanvasPosition = Vector2.new(0, 0)
+    
+    -- Wait for layout (using both Heartbeat and Stepped for reliability)
+    for _ = 1, 5 do
+        game:GetService("RunService").Heartbeat:Wait()
+        game:GetService("RunService").Stepped:Wait()
+    end
 
     -- Calculate dimensions
     local firstItem = spinnerFrame:FindFirstChildWhichIsA("Frame")
-    if not firstItem then warn("No items created!"); return end
+    if not firstItem then
+        warn("No items created in spinner!")
+        return nil
+    end
     
     local itemWidth = firstItem.AbsoluteSize.X + uiListLayout.Padding.Offset
     local totalItems = #spinnerFrame:GetChildren() - 1 -- exclude template
     local totalWidth = itemWidth * totalItems
     spinnerFrame.CanvasSize = UDim2.new(0, totalWidth, 0, 0)
     
-    -- Wait for final layout
-    for _ = 1, 3 do game:GetService("RunService").Heartbeat:Wait() end
+    -- Additional layout wait
+    for _ = 1, 3 do
+        game:GetService("RunService").Heartbeat:Wait()
+    end
 
-    -- Find all instances of the reward (we want the last clone)
+    -- Find reward instances (searching backwards)
     local rewardFrames = {}
-    for _, child in ipairs(spinnerFrame:GetChildren()) do
-        if child:IsA("Frame") and child.Name ~= "Template" and child:FindFirstChild("Item Name") 
-           and child["Item Name"].Text == finalReward.Name then
+    for i = #spinnerFrame:GetChildren(), 1, -1 do
+        local child = spinnerFrame:GetChildren()[i]
+        if child:IsA("Frame") and child:FindFirstChild("Item Name") and child["Item Name"].Text == finalReward.Name then
             table.insert(rewardFrames, child)
+            if #rewardFrames >= 3 then break end
         end
     end
 
     if #rewardFrames == 0 then
         warn("Final reward frame not found for: "..finalReward.Name)
-        return
+        return nil
     end
 
-    -- We want to stop at the last clone (approximately 2/3 through the total width)
-    local finalFrame = rewardFrames[#rewardFrames]
+    -- Select the middle clone for consistent stopping
+    local finalFrame = rewardFrames[math.floor(#rewardFrames/2)+1] or rewardFrames[1]
     local targetPosition = (finalFrame.AbsolutePosition.X - spinnerFrame.AbsolutePosition.X) + 
-                          (finalFrame.AbsoluteSize.X/2) - 
-                          (spinnerFrame.AbsoluteSize.X/2)
+                         (finalFrame.AbsoluteSize.X/2) - 
+                         (spinnerFrame.AbsoluteSize.X/2)
 
     -- Ensure position is within bounds
     targetPosition = math.clamp(targetPosition, 0, totalWidth - spinnerFrame.AbsoluteSize.X)
 
-    -- Start spinning from left
+    -- Reset position and open UI
     spinnerFrame.CanvasPosition = Vector2.new(0, 0)
     UIController:Open(GochiUI.Spin)
-    task.wait(0.1) -- Small delay before starting
+    
+    -- Extra delay to ensure UI is ready
+    task.wait(0.2)
 
-    -- Create the tween
-    local startTime = tick()
+    -- Create tween
     local tweenInfo = TweenInfo.new(
         4, -- Full 4 second duration
         Enum.EasingStyle.Quint,
         Enum.EasingDirection.Out
     )
 
-    local tween = TweenService:Create(
+    self._currentTween = TweenService:Create(
         spinnerFrame,
         tweenInfo,
         {CanvasPosition = Vector2.new(targetPosition, 0)}
     )
-    self._currentTween = tween
 
-    -- Track when we pass the final frame to highlight it at the exact right moment
+    -- Highlight tracking
     local passedFinalFrame = false
     self._currentSpinConnection = game:GetService("RunService").RenderStepped:Connect(function()
-        if not passedFinalFrame then
+        if not passedFinalFrame and finalFrame then
             local currentPos = spinnerFrame.CanvasPosition.X
             local framePos = finalFrame.AbsolutePosition.X - spinnerFrame.AbsolutePosition.X
             
-            -- Check if we've passed the final frame
-            if currentPos + spinnerFrame.AbsoluteSize.X >= framePos + finalFrame.AbsoluteSize.X then
+            if currentPos + spinnerFrame.AbsoluteSize.X >= framePos + (finalFrame.AbsoluteSize.X * 0.8) then
                 passedFinalFrame = true
-                -- Highlight the final frame
+                -- Clean highlight transition
                 for _, child in ipairs(spinnerFrame:GetChildren()) do
                     if child:IsA("Frame") and child:FindFirstChild("Selected") then
                         child.Selected.Visible = false
@@ -263,26 +275,33 @@ function StoreController:StartCrateSpin(items, finalReward)
         end
     end)
 
-    tween:Play()
+    -- Start tween with completion handler
+    self._currentTween:Play()
     
-    tween.Completed:Connect(function()
+    self._currentTween.Completed:Connect(function()
+        -- Final cleanup
         if self._currentSpinConnection then
             self._currentSpinConnection:Disconnect()
             self._currentSpinConnection = nil
         end
-        
-        -- Final position verification
-        spinnerFrame.CanvasPosition = Vector2.new(targetPosition, 0)
-        finalFrame.Selected.Visible = true
 
+        -- Ensure final position
+        spinnerFrame.CanvasPosition = Vector2.new(targetPosition, 0)
+        if finalFrame then
+            finalFrame.Selected.Visible = true
+        end
+
+        -- Show reward message
         GochiUI.Spin.Description.Visible = true
         GochiUI.Spin.Description.Description.Text = `You won an <b>{finalReward.Rarity} {finalReward.Name} {finalReward.Type:sub(1, -2)}</b>. Head on over to your inventory to equip your new collectible!`
 
+        -- Close after delay
         task.delay(2, function()
             UIController:Close(GochiUI.Spin)
             self._currentTween = nil
         end)
     end)
+
 end
 
 function StoreController:SetState(Button: ImageButton, State: boolean)
