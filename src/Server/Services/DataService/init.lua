@@ -48,7 +48,7 @@ local key: string = `QJvdks3RUn6vklV1G2kQPsUsclZxvDzd`
 
 -- Server Functions
 function DataService:LoadProfile(Player: Player)
-	local PlayerProfile = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev101`, "ForceLoad")
+	local PlayerProfile = ProfileStore:LoadProfileAsync(`PlayerData{Player.UserId}_dev103`, "ForceLoad")
 
 	if Knit.Profiles[Player] then return end
 

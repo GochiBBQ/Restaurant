@@ -6,24 +6,24 @@ For: Gochi
 ]]
 
 -- Services
-local MarketplaceService: MarketplaceService = game:GetService("MarketplaceService")
-local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService: ServerScriptService = game:GetService("ServerScriptService")
-local TweenService: TweenService = game:GetService("TweenService")
-local RunService: RunService = game:GetService("RunService")
-local Players: Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 -- Modules
-local Knit: ModuleScript = require(ReplicatedStorage.Packages.Knit) -- @module Knit
-local AnimNation: ModuleScript = require(Knit.Modules.AnimNation) -- @module AnimNation
+local Knit = require(ReplicatedStorage.Packages.Knit)
+local AnimNation = require(Knit.Modules.AnimNation)
 
-local BadgeList: ModuleScript = require(Knit.Data.BadgesList) -- @module BadgesList
-local NametagList: ModuleScript = require(Knit.Data.NametagList) -- @module NametagList
-local HashSet: ModuleScript = require(ServerScriptService.Structures.HashSet) --- @module HashSet
+local BadgeList = require(Knit.Data.BadgesList)
+local NametagList = require(Knit.Data.NametagList)
+local HashSet = require(ServerScriptService.Structures.HashSet)
 
 -- Variables
-local PlayerStorage: Folder = workspace:WaitForChild("PlayerStorage")
-local NametagTemplate: GuiObject = script.Rank
+local PlayerStorage = workspace:WaitForChild("PlayerStorage")
+local NametagTemplate = script.Rank
 
 local RankService
 local InventoryService
@@ -31,7 +31,7 @@ local InventoryService
 -- Create Knit Service
 local OverheadService = Knit.CreateService({
 	Name = "OverheadService",
-	Gradients = HashSet.new(),
+	Gradients = HashSet.new(), -- HashSet + table of player → { GradientInstance, Connection }
 	Overheads = HashSet.new(),
 	Client = {
 		Update = Knit.CreateSignal(),
@@ -43,39 +43,37 @@ function OverheadService:KnitStart()
 	InventoryService = Knit.GetService("InventoryService")
 	RankService = Knit.GetService("RankService")
 
-	Players.PlayerAdded:Connect(function(Player: Player)
+	Players.PlayerAdded:Connect(function(Player)
 		Player.CharacterAdded:Connect(function()
 			self:CreateFunction(Player)
 		end)
 
-		if not OverheadService.Gradients:contains(Player) then
-			OverheadService.Gradients:add(Player)
-			OverheadService.Gradients[Player] = {}
+		if not self.Gradients:contains(Player) then
+			self.Gradients:add(Player)
+			self.Gradients[Player] = { Gradient = nil, Connection = nil }
 		end
 	end)
 
-	Players.PlayerRemoving:Connect(function(Player: Player)
-		if OverheadService.Gradients:contains(Player) then
-			OverheadService.Gradients:remove(Player)
-			OverheadService.Gradients[Player] = nil
-		end
+	Players.PlayerRemoving:Connect(function(Player)
+		self:StopGradient(Player)
 
-		if OverheadService.Overheads:contains(Player) then
-			local overhead = OverheadService.Overheads[Player]
+		if self.Overheads:contains(Player) then
+			local overhead = self.Overheads[Player]
 			if overhead then overhead:Destroy() end
-			OverheadService.Overheads[Player] = nil
-			OverheadService.Overheads:remove(Player)
+			self.Overheads[Player] = nil
+			self.Overheads:remove(Player)
 		end
 	end)
 end
 
-function OverheadService:CreateFunction(Player: Player)
+function OverheadService:CreateFunction(Player)
 	repeat task.wait() until Player:GetAttribute("Loaded")
 
 	local Character = Player.Character or Player.CharacterAdded:Wait()
 	Character.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	repeat task.wait() until Character:FindFirstChild("Head")
-	local ClonedNametag = nil
+
+	local ClonedNametag
 
 	if self.Overheads[Player] then
 		self.Overheads[Player].Adornee = Character.Head
@@ -99,26 +97,26 @@ function OverheadService:CreateFunction(Player: Player)
 	end
 end
 
-function OverheadService:EligibleBadges(Player: Player)
+function OverheadService:EligibleBadges(Player)
 	local toReturn = {}
 
-	if Player then
-		local Rank = RankService:GetRank(Player)
+	local Rank = RankService:GetRank(Player)
 
-		if Rank == 15 then table.insert(toReturn, "DEVELOPER") end
-		if Rank == 16 then table.insert(toReturn, "LEAD DEVELOPER") end
-		if Rank >= 7 and Rank <= 11 then table.insert(toReturn, "MIDDLE RANK") end
-		if Rank >= 12 and Rank <= 14 then table.insert(toReturn, "HIGH RANK") end
-		if Rank >= 17 and Rank <= 255 then table.insert(toReturn, "LEADERSHIP TEAM") end
+	if Rank == 15 then table.insert(toReturn, "DEVELOPER") end
+	if Rank == 16 then table.insert(toReturn, "LEAD DEVELOPER") end
+	if Rank >= 7 and Rank <= 11 then table.insert(toReturn, "MIDDLE RANK") end
+	if Rank >= 12 and Rank <= 14 then table.insert(toReturn, "HIGH RANK") end
+	if Rank >= 17 and Rank <= 255 then table.insert(toReturn, "LEADERSHIP TEAM") end
 
-		repeat task.wait() until Player:GetAttribute("Booster") ~= nil
-		if Player:GetAttribute("Booster") then table.insert(toReturn, "NITRO BOOSTER") end
+	repeat task.wait() until Player:GetAttribute("Booster") ~= nil
+	if Player:GetAttribute("Booster") then
+		table.insert(toReturn, "NITRO BOOSTER")
 	end
 
 	return toReturn
 end
 
-function OverheadService:CreateBadges(Player: Player)
+function OverheadService:CreateBadges(Player)
 	local Overhead = self.Overheads[Player]
 	local Frame = Overhead:WaitForChild("Main")
 	local Badges = Frame:WaitForChild("Titles")
@@ -132,9 +130,9 @@ function OverheadService:CreateBadges(Player: Player)
 		local clone = template:Clone()
 		local BadgeData = BadgeList[badge]
 
-		clone.Name = BadgeData["Title"]
-		clone.Title.Text = BadgeData["Title"]
-		clone.UIGradient.Color = BadgeData["Color"]
+		clone.Name = BadgeData.Title
+		clone.Title.Text = BadgeData.Title
+		clone.UIGradient.Color = BadgeData.Color
 		clone.Parent = Badges
 
 		task.spawn(function()
@@ -147,79 +145,78 @@ function OverheadService:CreateBadges(Player: Player)
 	return true
 end
 
-function OverheadService:CreateGradient(Player: Player, Gradient: string)
+function OverheadService:CreateGradient(Player, Gradient)
 	repeat task.wait() until Player:GetAttribute("Loaded") and self.Overheads[Player]
 
 	local Overhead = self.Overheads[Player]
 	local Frame = Overhead:WaitForChild("Main")
+	local GradientData = NametagList[Gradient]
+	if not GradientData then return end
 
-	task.spawn(function()
-		local GradientData = NametagList[Gradient]
-		if not GradientData then return end
+	self:StopGradient(Player) -- Clean up existing
 
-		if self.Gradients:contains(Player) then
-			self.Gradients[Player] = {}
+	-- Create new UIGradient
+	local gradient = Instance.new("UIGradient")
+	gradient.Name = Gradient
+	gradient.Parent = Frame.Username
+	if GradientData.Rotation then
+		gradient.Rotation = GradientData.Rotation
+	end
 
-			local gradient = Instance.new("UIGradient")
-			gradient.Parent = Frame.Username
-			gradient.Name = Gradient
+	local GradientTime = GradientData.Time or 4
+	local NumColors = #GradientData.Colors
+	local ColorLength = 1 / NumColors
 
-			if GradientData["Rotation"] then
-				gradient.Rotation = GradientData["Rotation"]
-			end
+	local connection = RunService.Heartbeat:Connect(function()
+		local progress = (tick() % GradientTime) / GradientTime
+		local NewColors = {}
 
-			local GradientTime = GradientData["Time"] or 4
-			self.Gradients[Player] = gradient
+		for i = 1, NumColors + 1 do
+			local color = GradientData.Colors[i] or GradientData.Colors[i - NumColors]
+			local position = progress + (i - 1) / NumColors
+			if position > 1 then position = position - 1 end
 
-			local NumColors = #GradientData["Colors"]
-			local ColorLength = 1 / NumColors
-
-			RunService.Heartbeat:Connect(function()
-				local progress = (tick() % GradientTime) / GradientTime
-				local NewColors = {}
-				local WrapColor = false
-
-				for i = 1, NumColors + 1 do
-					local color = GradientData["Colors"][i] or GradientData["Colors"][i - NumColors]
-					local position = progress + (i - 1) / NumColors
-
-					if position > 1 then position = position - 1 end
-					if position == 0 or position == 1 then WrapColor = true end
-
-					table.insert(NewColors, ColorSequenceKeypoint.new(position, color))
-				end
-
-				if not WrapColor then
-					local IndexProgress = ((1 - progress) / ColorLength) + 1
-					local Color1 = GradientData["Colors"][math.floor(IndexProgress)]
-					local Color2 = GradientData["Colors"][math.ceil(IndexProgress)] or GradientData["Colors"][1]
-					local FinalColors = Color1:Lerp(Color2, IndexProgress % 1)
-
-					table.insert(NewColors, ColorSequenceKeypoint.new(0, FinalColors))
-					table.insert(NewColors, ColorSequenceKeypoint.new(1, FinalColors))
-				end
-
-				table.sort(NewColors, function(a, b)
-					return a.Time < b.Time
-				end)
-
-				gradient.Color = ColorSequence.new(NewColors)
-			end)
+			table.insert(NewColors, ColorSequenceKeypoint.new(position, color))
 		end
+
+		table.sort(NewColors, function(a, b)
+			return a.Time < b.Time
+		end)
+		
+		-- Ensure it starts at 0.0 and ends at 1.0
+		if NewColors[1].Time > 0 then
+			table.insert(NewColors, 1, ColorSequenceKeypoint.new(0.0, NewColors[1].Value))
+		end
+		if NewColors[#NewColors].Time < 1 then
+			table.insert(NewColors, ColorSequenceKeypoint.new(1.0, NewColors[#NewColors].Value))
+		end
+		
+		gradient.Color = ColorSequence.new(NewColors)
+		
+
+		gradient.Color = ColorSequence.new(NewColors)
 	end)
+
+	self.Gradients[Player] = {
+		Gradient = gradient,
+		Connection = connection,
+	}
 end
 
-function OverheadService:StopGradient(Player: Player)
-	if self.Gradients:contains(Player) then
-		local gradient = self.Gradients[Player]
-		if typeof(gradient) == "Instance" then
-			gradient:Destroy()
+function OverheadService:StopGradient(Player)
+	local data = self.Gradients[Player]
+	if data then
+		if data.Connection then
+			data.Connection:Disconnect()
 		end
-		self.Gradients[Player] = {}
+		if data.Gradient then
+			data.Gradient:Destroy()
+		end
+		self.Gradients[Player] = nil
 	end
 end
 
-function OverheadService:TweenFunction(Player: Player)
+function OverheadService:TweenFunction(Player)
 	local Overhead = self.Overheads[Player]:WaitForChild("Main")
 	local result = self:CreateBadges(Player)
 
