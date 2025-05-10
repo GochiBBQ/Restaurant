@@ -87,7 +87,7 @@ end
 
 function InventoryController:InitInventory()
 
-    print("InitInventory")
+    repeat task.wait() until Player:GetAttribute("Loaded")
 
     for _, category in next, self.Categories do
         local inventory = self.Inventory[category]
@@ -97,9 +97,6 @@ function InventoryController:InitInventory()
         end
 
         for _, item in next, inventory do
-
-            print(item, category)
-
             if not Pages[category]:FindFirstChild(item) then
                 local template = InventoryUI.Template:Clone()
                 template.Name = item
